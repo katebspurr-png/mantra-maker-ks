@@ -1,30 +1,32 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        navigate("/home");
-      } else {
-        navigate("/auth");
-      }
+      setIsAuthenticated(!!session);
+      setLoading(false);
     };
 
     checkAuth();
-  }, [navigate]);
+  }, []);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-muted-foreground">Loading...</p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // Use Navigate component instead of useNavigate hook
+  return isAuthenticated ? <Navigate to="/home" replace /> : <Navigate to="/auth" replace />;
 };
 
 export default Index;
