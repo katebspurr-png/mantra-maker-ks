@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Recording } from "@/types/recording";
+import { Recording } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
