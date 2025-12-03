@@ -8,73 +8,73 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Warm, minimal color palette for Loop Voice Recorder */
-    --background: 36 33% 97%;
-    --foreground: 24 9% 20%;
+    /* Warm, minimal color palette for Loop Voice Mantra */
+    --background: 40 33% 98%;
+    --foreground: 24 10% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 24 9% 20%;
+    --card-foreground: 24 10% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 24 9% 20%;
+    --popover-foreground: 24 10% 18%;
 
-    /* Warm coral/orange accent */
-    --primary: 14 100% 64%;
-    --primary-foreground: 0 0% 100%;
+    /* Warm golden/amber accent */
+    --primary: 36 100% 50%;
+    --primary-foreground: 24 10% 10%;
 
     /* Soft cream secondary */
-    --secondary: 36 44% 95%;
-    --secondary-foreground: 24 9% 20%;
+    --secondary: 40 40% 96%;
+    --secondary-foreground: 24 10% 30%;
 
-    --muted: 36 33% 94%;
-    --muted-foreground: 24 6% 46%;
+    --muted: 40 30% 94%;
+    --muted-foreground: 24 10% 45%;
 
-    --accent: 14 100% 64%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 36 100% 50%;
+    --accent-foreground: 24 10% 10%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 22% 88%;
-    --input: 36 22% 88%;
-    --ring: 14 100% 64%;
+    --border: 40 20% 90%;
+    --input: 40 20% 90%;
+    --ring: 36 100% 50%;
 
     --radius: 1rem;
 
     /* Animation tokens */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.1);
   }
 
   .dark {
-    --background: 24 9% 10%;
-    --foreground: 36 33% 97%;
+    --background: 24 10% 8%;
+    --foreground: 40 33% 96%;
 
-    --card: 24 9% 14%;
-    --card-foreground: 36 33% 97%;
+    --card: 24 10% 12%;
+    --card-foreground: 40 33% 96%;
 
-    --popover: 24 9% 14%;
-    --popover-foreground: 36 33% 97%;
+    --popover: 24 10% 12%;
+    --popover-foreground: 40 33% 96%;
 
-    --primary: 14 100% 64%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 36 100% 55%;
+    --primary-foreground: 24 10% 10%;
 
-    --secondary: 24 9% 18%;
-    --secondary-foreground: 36 33% 97%;
+    --secondary: 24 10% 16%;
+    --secondary-foreground: 40 33% 90%;
 
-    --muted: 24 9% 18%;
-    --muted-foreground: 24 6% 62%;
+    --muted: 24 10% 18%;
+    --muted-foreground: 24 10% 60%;
 
-    --accent: 14 100% 64%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 36 100% 55%;
+    --accent-foreground: 24 10% 10%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 24 9% 22%;
-    --input: 24 9% 22%;
-    --ring: 14 100% 64%;
+    --border: 24 10% 20%;
+    --input: 24 10% 20%;
+    --ring: 36 100% 55%;
   }
 }
 
@@ -99,6 +99,19 @@ All colors MUST be HSL.
 
   .animate-in {
     animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .safe-area-pb {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

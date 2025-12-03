@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Recording, LoopMode } from "@/types/recording";
+import { Recording, LoopMode } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import AudioPlayer from "@/components/AudioPlayer";
+import { BottomNavigation } from "@/components/BottomNavigation";
 import { ArrowLeft, Pencil, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -37,11 +38,10 @@ const RecordingDetail = () => {
 
       if (error) throw error;
 
-      setRecording(data);
+      setRecording(data as Recording);
       setEditedTitle(data.title);
       setEditedLoopMode(data.loop_mode);
 
-      // Get signed URL for audio
       const { data: urlData } = await supabase.storage
         .from("recordings")
         .createSignedUrl(data.audio_file_path, 3600);
@@ -51,7 +51,7 @@ const RecordingDetail = () => {
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to load recording");
-      navigate("/");
+      navigate("/home");
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ const RecordingDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -108,23 +108,19 @@ const RecordingDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-            >
+            <button onClick={() => navigate("/home")} className="p-2 -ml-2">
               <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-xl font-bold">Recording</h1>
+            </button>
+            <h1 className="text-xl font-semibold">Recording</h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         <div className="bg-card rounded-2xl p-6 border border-border space-y-6">
           {/* Title Section */}
           <div className="space-y-3">
@@ -178,6 +174,14 @@ const RecordingDetail = () => {
             )}
           </div>
 
+          {/* Affirmation Text */}
+          {recording.text && (
+            <div className="bg-secondary/50 rounded-xl p-4">
+              <p className="text-sm text-muted-foreground mb-1">Affirmation:</p>
+              <p className="text-base">{recording.text}</p>
+            </div>
+          )}
+
           {/* Audio Player */}
           <AudioPlayer
             audioUrl={audioUrl}
@@ -214,6 +218,8 @@ const RecordingDetail = () => {
           </div>
         </div>
       </div>
+
+      <BottomNavigation />
     </div>
   );
 };

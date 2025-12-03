@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      playlist_recordings: {
+        Row: {
+          created_at: string
+          id: string
+          playlist_id: string
+          position: number
+          recording_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          playlist_id: string
+          position?: number
+          recording_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          playlist_id?: string
+          position?: number
+          recording_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_recordings_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playlist_recordings_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlists: {
+        Row: {
+          created_at: string
+          delay_seconds: number | null
+          id: string
+          loop_playlist: boolean | null
+          shuffle: boolean | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delay_seconds?: number | null
+          id?: string
+          loop_playlist?: boolean | null
+          shuffle?: boolean | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delay_seconds?: number | null
+          id?: string
+          loop_playlist?: boolean | null
+          shuffle?: boolean | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -39,6 +108,7 @@ export type Database = {
           duration_seconds: number
           id: string
           loop_mode: Database["public"]["Enums"]["loop_mode"] | null
+          text: string | null
           title: string
           user_id: string
         }
@@ -48,6 +118,7 @@ export type Database = {
           duration_seconds: number
           id?: string
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
+          text?: string | null
           title: string
           user_id: string
         }
@@ -57,6 +128,7 @@ export type Database = {
           duration_seconds?: number
           id?: string
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
+          text?: string | null
           title?: string
           user_id?: string
         }

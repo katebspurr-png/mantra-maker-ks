@@ -1,33 +1,50 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import AudioRecorder from "@/components/AudioRecorder";
+import { Teleprompter } from "@/components/Teleprompter";
+import { BottomNavigation } from "@/components/BottomNavigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { LoopMode } from "@/types/recording";
+import { LoopMode } from "@/types";
 
 const NewRecording = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefilledText = (location.state as { prefilledText?: string })?.prefilledText || "";
+  
+  const [teleprompterText, setTeleprompterText] = useState(prefilledText);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const [title, setTitle] = useState("");
-  const [loopMode, setLoopMode] = useState<LoopMode>("infinite");
+  const [loopMode, setLoopMode] = useState<LoopMode>(() => {
+    const saved = localStorage.getItem("defaultLoopMode") as LoopMode;
+    return saved || "infinite";
+  });
   const [saving, setSaving] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    // Clear location state after reading
+    if (prefilledText) {
+      window.history.replaceState({}, document.title);
+    }
+  }, [prefilledText]);
 
   const handleRecordingComplete = (blob: Blob, recordingDuration: number) => {
     setRecordingBlob(blob);
     setDuration(recordingDuration);
+    setIsRecording(false);
     
     // Generate default title
     const now = new Date();
-    const defaultTitle = `Recording ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })}`;
+    const defaultTitle = teleprompterText
+      ? teleprompterText.slice(0, 30) + (teleprompterText.length > 30 ? "..." : "")
+      : `Affirmation – ${now.toLocaleDateString()}`;
     setTitle(defaultTitle);
   };
 
@@ -39,7 +56,6 @@ const NewRecording = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Upload audio file
       const fileName = `${user.id}/${Date.now()}.webm`;
       const { error: uploadError } = await supabase.storage
         .from("recordings")
@@ -49,22 +65,22 @@ const NewRecording = () => {
 
       if (uploadError) throw uploadError;
 
-      // Create database record
       const { error: dbError } = await supabase.from("recordings").insert({
         user_id: user.id,
         title,
         duration_seconds: duration,
         audio_file_path: fileName,
         loop_mode: loopMode,
+        text: teleprompterText || null,
       });
 
       if (dbError) throw dbError;
 
-      toast.success("Recording saved!");
-      navigate("/");
+      toast.success("Affirmation saved!");
+      navigate("/home");
     } catch (error: any) {
       console.error("Save error:", error);
-      toast.error(error.message || "Failed to save recording");
+      toast.error(error.message || "Failed to save");
     } finally {
       setSaving(false);
     }
@@ -73,35 +89,60 @@ const NewRecording = () => {
   const handleDiscard = () => {
     if (recordingBlob) {
       if (confirm("Discard this recording?")) {
-        navigate("/");
+        setRecordingBlob(null);
+        setDuration(0);
+        setTitle("");
       }
     } else {
-      navigate("/");
+      navigate("/home");
     }
   };
 
+  const handleRecordingStart = () => {
+    setIsRecording(true);
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDiscard}
-            >
+            <button onClick={handleDiscard} className="p-2 -ml-2">
               <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <h1 className="text-xl font-bold">New Recording</h1>
+            </button>
+            <h1 className="text-xl font-semibold">New Recording</h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-lg mx-auto px-4 py-6">
         {!recordingBlob ? (
-          <AudioRecorder onRecordingComplete={handleRecordingComplete} />
+          <div className="space-y-6">
+            {/* Teleprompter */}
+            <Teleprompter
+              value={teleprompterText}
+              onChange={setTeleprompterText}
+              disabled={isRecording}
+              placeholder="Type or paste your affirmation here to read while recording..."
+            />
+
+            {/* Recorder */}
+            <AudioRecorder 
+              onRecordingComplete={handleRecordingComplete}
+              onRecordingStart={handleRecordingStart}
+            />
+          </div>
         ) : (
           <div className="space-y-6 animate-in">
+            {/* Show teleprompter text if present */}
+            {teleprompterText && (
+              <div className="bg-card rounded-xl border border-border p-4">
+                <p className="text-sm text-muted-foreground mb-1">Your affirmation:</p>
+                <p className="text-base">{teleprompterText}</p>
+              </div>
+            )}
+
             <div className="bg-card rounded-2xl p-6 border border-border">
               <div className="text-center space-y-2 mb-6">
                 <div className="text-3xl font-bold text-primary">
@@ -117,7 +158,7 @@ const NewRecording = () => {
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Recording title"
+                    placeholder="Affirmation title"
                   />
                 </div>
 
@@ -167,6 +208,8 @@ const NewRecording = () => {
           </div>
         )}
       </div>
+
+      <BottomNavigation />
     </div>
   );
 };

@@ -5,11 +5,12 @@ import { toast } from "sonner";
 
 interface AudioRecorderProps {
   onRecordingComplete: (blob: Blob, duration: number) => void;
+  onRecordingStart?: () => void;
 }
 
 const MAX_RECORDING_TIME = 600; // 10 minutes in seconds
 
-const AudioRecorder = ({ onRecordingComplete }: AudioRecorderProps) => {
+const AudioRecorder = ({ onRecordingComplete, onRecordingStart }: AudioRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [permissionDenied, setPermissionDenied] = useState(false);
@@ -66,6 +67,7 @@ const AudioRecorder = ({ onRecordingComplete }: AudioRecorderProps) => {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      onRecordingStart?.();
 
       // Start timer
       timerRef.current = setInterval(() => {

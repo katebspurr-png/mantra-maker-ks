@@ -1,15 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Recording } from "@/types/recording";
-import { Button } from "@/components/ui/button";
+import { Recording } from "@/types";
 import RecordingsList from "@/components/RecordingsList";
-import { Plus, LogOut } from "lucide-react";
-import { toast } from "sonner";
+import { BottomNavigation } from "@/components/BottomNavigation";
 
 const Home = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +14,6 @@ const Home = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // Check auth and fetch data
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -25,8 +21,6 @@ const Home = () => {
         navigate("/auth");
         return;
       }
-
-      setUser(session.user);
       
       // Fetch profile
       const { data: profileData } = await supabase
@@ -36,15 +30,12 @@ const Home = () => {
         .single();
       
       setProfile(profileData);
-      
-      // Fetch recordings
       await fetchRecordings();
       setLoading(false);
     };
 
     init();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) {
         navigate("/auth");
@@ -60,12 +51,9 @@ const Home = () => {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      toast.error("Failed to load recordings");
-      return;
+    if (!error) {
+      setRecordings((data as Recording[]) || []);
     }
-
-    setRecordings(data || []);
   };
 
   const handlePlayToggle = async (recording: Recording) => {
@@ -87,14 +75,9 @@ const Home = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("Signed out successfully");
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Loading...</p>
       </div>
     );
@@ -102,35 +85,22 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <audio
-        ref={audioRef}
-        onEnded={() => setPlayingId(null)}
-      />
+      <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
       
+      {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">
-                Hi, {profile?.first_name || "there"}! 👋
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {recordings.length} {recordings.length === 1 ? "recording" : "recordings"}
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleSignOut}
-              title="Sign out"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
+        <div className="max-w-lg mx-auto px-4 py-4">
+          <h1 className="text-2xl font-semibold">
+            Hi, {profile?.first_name || "there"}! 👋
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {recordings.length} {recordings.length === 1 ? "affirmation" : "affirmations"}
+          </p>
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* Content */}
+      <div className="max-w-lg mx-auto px-4 py-4">
         <RecordingsList
           recordings={recordings}
           onRecordingsChange={fetchRecordings}
@@ -139,18 +109,7 @@ const Home = () => {
         />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background to-transparent">
-        <div className="max-w-2xl mx-auto">
-          <Button
-            size="lg"
-            className="w-full touch-target shadow-lg"
-            onClick={() => navigate("/new-recording")}
-          >
-            <Plus className="w-5 h-5" />
-            New Recording
-          </Button>
-        </div>
-      </div>
+      <BottomNavigation />
     </div>
   );
 };
