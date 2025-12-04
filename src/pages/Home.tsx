@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Recording } from "@/types";
 import RecordingsList from "@/components/RecordingsList";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { WelcomeDialog } from "@/components/WelcomeDialog";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <WelcomeDialog />
       <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
       
       {/* Header */}
