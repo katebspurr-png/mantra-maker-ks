@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { icon: Home, label: "Home", path: "/home" },
   { icon: BookOpen, label: "Library", path: "/library" },
-  { icon: Sparkles, label: "Transform", path: "/thought-rewriter" },
+  { icon: Sparkles, label: "Transform", path: "/thought-rewriter", isAccent: true },
   { icon: Mic, label: "Record", path: "/new-recording", isCenter: true },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
   { icon: User, label: "Profile", path: "/profile" },
@@ -31,6 +31,21 @@ export function BottomNavigation() {
               >
                 <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
                   <Icon className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <span className="text-xs mt-1 text-muted-foreground">{item.label}</span>
+              </button>
+            );
+          }
+
+          if (item.isAccent) {
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="flex flex-col items-center justify-center -mt-6"
+              >
+                <div className="w-14 h-14 rounded-full bg-sky-400 flex items-center justify-center shadow-lg">
+                  <Icon className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xs mt-1 text-muted-foreground">{item.label}</span>
               </button>
