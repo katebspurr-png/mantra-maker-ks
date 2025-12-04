@@ -1,10 +1,11 @@
-import { Home, BookOpen, Mic, ListMusic, User } from "lucide-react";
+import { Home, BookOpen, Mic, ListMusic, User, Sparkles } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/home" },
   { icon: BookOpen, label: "Library", path: "/library" },
+  { icon: Sparkles, label: "Transform", path: "/thought-rewriter" },
   { icon: Mic, label: "Record", path: "/new-recording", isCenter: true },
   { icon: ListMusic, label: "Playlists", path: "/playlists" },
   { icon: User, label: "Profile", path: "/profile" },
@@ -16,7 +17,7 @@ export function BottomNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border safe-area-pb">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -40,7 +41,7 @@ export function BottomNavigation() {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className="flex flex-col items-center justify-center py-2 px-3 min-w-[60px]"
+              className="flex flex-col items-center justify-center py-2 px-1 min-w-[48px]"
             >
               <Icon
                 className={cn(
@@ -50,7 +51,7 @@ export function BottomNavigation() {
               />
               <span
                 className={cn(
-                  "text-xs mt-1 transition-colors",
+                  "text-[10px] mt-1 transition-colors truncate",
                   isActive ? "text-primary font-medium" : "text-muted-foreground"
                 )}
               >
