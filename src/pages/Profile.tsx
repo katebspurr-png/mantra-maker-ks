@@ -151,52 +151,54 @@ export default function Profile() {
           </RadioGroup>
         </div>
 
-        {/* Timer Settings */}
-        <div className="bg-card rounded-xl border border-border p-4 mb-6">
-          <h2 className="font-medium mb-4">Playback Timer</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Auto-stop playback after a set duration
-          </p>
-          <RadioGroup
-            value={timerMode}
-            onValueChange={(v) => handleTimerModeChange(v as TimerMode)}
-            className="space-y-2"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="timer-none" />
-              <Label htmlFor="timer-none">No timer (manual stop)</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="5" id="timer-5" />
-              <Label htmlFor="timer-5">5 minutes</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="10" id="timer-10" />
-              <Label htmlFor="timer-10">10 minutes</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="15" id="timer-15" />
-              <Label htmlFor="timer-15">15 minutes</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="custom" id="timer-custom" />
-              <Label htmlFor="timer-custom">Custom</Label>
-            </div>
-          </RadioGroup>
-          {timerMode === "custom" && (
-            <div className="mt-3 flex items-center gap-2">
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="Enter minutes"
-                value={customMinutes}
-                onChange={(e) => handleCustomMinutesChange(e.target.value)}
-                className="w-32"
-              />
-              <span className="text-sm text-muted-foreground">minutes</span>
-            </div>
-          )}
-        </div>
+        {/* Timer Settings - only show when loop mode is infinite */}
+        {defaultLoopMode === "infinite" && (
+          <div className="bg-card rounded-xl border border-border p-4 mb-6">
+            <h2 className="font-medium mb-4">Playback Timer</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Auto-stop playback after a set duration
+            </p>
+            <RadioGroup
+              value={timerMode}
+              onValueChange={(v) => handleTimerModeChange(v as TimerMode)}
+              className="space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="none" id="timer-none" />
+                <Label htmlFor="timer-none">No timer (manual stop)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="5" id="timer-5" />
+                <Label htmlFor="timer-5">5 minutes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="10" id="timer-10" />
+                <Label htmlFor="timer-10">10 minutes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="15" id="timer-15" />
+                <Label htmlFor="timer-15">15 minutes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="custom" id="timer-custom" />
+                <Label htmlFor="timer-custom">Custom</Label>
+              </div>
+            </RadioGroup>
+            {timerMode === "custom" && (
+              <div className="mt-3 flex items-center gap-2">
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Enter minutes"
+                  value={customMinutes}
+                  onChange={(e) => handleCustomMinutesChange(e.target.value)}
+                  className="w-32"
+                />
+                <span className="text-sm text-muted-foreground">minutes</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Mic Info */}
         <div className="bg-card rounded-xl border border-border p-4 mb-6">
