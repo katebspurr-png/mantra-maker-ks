@@ -4,10 +4,11 @@ import { LogOut, Mic, Sparkles, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { LoopMode } from "@/types";
+import { LoopMode, TimerMode } from "@/types";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -15,6 +16,8 @@ export default function Profile() {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [defaultLoopMode, setDefaultLoopMode] = useState<LoopMode>("infinite");
+  const [timerMode, setTimerMode] = useState<TimerMode>("none");
+  const [customMinutes, setCustomMinutes] = useState("");
 
   useEffect(() => {
     fetchProfile();
@@ -22,6 +25,15 @@ export default function Profile() {
     const savedMode = localStorage.getItem("defaultLoopMode") as LoopMode;
     if (savedMode) {
       setDefaultLoopMode(savedMode);
+    }
+    // Load timer settings
+    const savedTimerMode = localStorage.getItem("defaultTimerMode") as TimerMode;
+    const savedCustomMinutes = localStorage.getItem("defaultCustomMinutes");
+    if (savedTimerMode) {
+      setTimerMode(savedTimerMode);
+    }
+    if (savedCustomMinutes) {
+      setCustomMinutes(savedCustomMinutes);
     }
   }, []);
 
@@ -50,6 +62,23 @@ export default function Profile() {
     setDefaultLoopMode(mode);
     localStorage.setItem("defaultLoopMode", mode);
     toast({ title: "Default loop mode updated" });
+  };
+
+  const handleTimerModeChange = (mode: TimerMode) => {
+    setTimerMode(mode);
+    localStorage.setItem("defaultTimerMode", mode);
+    if (mode !== "custom") {
+      toast({ title: `Timer set to ${mode === "none" ? "no limit" : mode + " minutes"}` });
+    }
+  };
+
+  const handleCustomMinutesChange = (value: string) => {
+    const num = value.replace(/\D/g, "");
+    setCustomMinutes(num);
+    if (num) {
+      localStorage.setItem("defaultCustomMinutes", num);
+      toast({ title: `Custom timer set to ${num} minutes` });
+    }
   };
 
   const handleLogout = async () => {
@@ -120,6 +149,53 @@ export default function Profile() {
               <Label htmlFor="infinite">Loop until stopped</Label>
             </div>
           </RadioGroup>
+        </div>
+
+        {/* Timer Settings */}
+        <div className="bg-card rounded-xl border border-border p-4 mb-6">
+          <h2 className="font-medium mb-4">Playback Timer</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Auto-stop playback after a set duration
+          </p>
+          <RadioGroup
+            value={timerMode}
+            onValueChange={(v) => handleTimerModeChange(v as TimerMode)}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="none" id="timer-none" />
+              <Label htmlFor="timer-none">No timer (manual stop)</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="5" id="timer-5" />
+              <Label htmlFor="timer-5">5 minutes</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="10" id="timer-10" />
+              <Label htmlFor="timer-10">10 minutes</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="15" id="timer-15" />
+              <Label htmlFor="timer-15">15 minutes</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="custom" id="timer-custom" />
+              <Label htmlFor="timer-custom">Custom</Label>
+            </div>
+          </RadioGroup>
+          {timerMode === "custom" && (
+            <div className="mt-3 flex items-center gap-2">
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="Enter minutes"
+                value={customMinutes}
+                onChange={(e) => handleCustomMinutesChange(e.target.value)}
+                className="w-32"
+              />
+              <span className="text-sm text-muted-foreground">minutes</span>
+            </div>
+          )}
         </div>
 
         {/* Mic Info */}

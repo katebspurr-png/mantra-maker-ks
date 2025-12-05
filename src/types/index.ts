@@ -1,4 +1,5 @@
 export type LoopMode = "once" | "three_times" | "infinite";
+export type TimerMode = "none" | "5" | "10" | "15" | "custom";
 
 export interface Recording {
   id: string;
