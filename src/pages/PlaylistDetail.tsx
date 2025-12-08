@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, Plus, GripVertical, Trash2, Shuffle } from "lucide-react";
+import { ArrowLeft, Play, Pause, Plus, GripVertical, Trash2, Shuffle, Volume2 } from "lucide-react";
+import { usePlaylistPlayer } from "@/hooks/usePlaylistPlayer";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -25,7 +26,20 @@ export default function PlaylistDetail() {
   const [allRecordings, setAllRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Playlist player hook - handles sequential playback of all recordings
+  const {
+    isPlaying,
+    currentTrackIndex,
+    currentTrackId,
+    togglePlayPause,
+    stop,
+  } = usePlaylistPlayer({
+    recordings,
+    shuffle: playlist?.shuffle ?? false,
+    loopPlaylist: playlist?.loop_playlist ?? false,
+    delaySeconds: playlist?.delay_seconds ?? 0,
+  });
 
   useEffect(() => {
     if (id) {
@@ -176,8 +190,9 @@ export default function PlaylistDetail() {
         {/* Play Button */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg"
+            onClick={togglePlayPause}
+            disabled={recordings.length === 0}
+            className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg disabled:opacity-50"
           >
             {isPlaying ? (
               <Pause className="w-8 h-8 text-primary-foreground" />
@@ -277,9 +292,18 @@ export default function PlaylistDetail() {
             {recordings.map((rec, index) => (
               <div
                 key={rec.id}
-                className="flex items-center gap-3 p-3 bg-card rounded-xl border border-border"
+                className={`flex items-center gap-3 p-3 bg-card rounded-xl border transition-colors ${
+                  currentTrackId === rec.id && isPlaying
+                    ? "border-primary bg-primary/5"
+                    : "border-border"
+                }`}
               >
-                <GripVertical className="w-4 h-4 text-muted-foreground" />
+                {/* Playing indicator */}
+                {currentTrackId === rec.id && isPlaying ? (
+                  <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+                ) : (
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                )}
                 <span className="text-sm text-muted-foreground w-5">
                   {index + 1}
                 </span>
