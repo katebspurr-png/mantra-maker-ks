@@ -42,9 +42,18 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // Navigation fallback should NOT apply to API or storage requests
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [
+          // Exclude Supabase API and storage URLs from navigation fallback
+          /^\/rest\//,
+          /^\/storage\//,
+          /supabase\.co/,
+        ],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            // Cache Supabase REST API calls (metadata, playlists, etc.)
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "supabase-api-cache",
@@ -56,6 +65,14 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            // AUDIO FILES: Always fetch from network, never cache
+            // This ensures signed URLs for audio recordings are always fresh
+            // and prevents the service worker from serving stale/expired URLs
+            // or incorrectly returning cached HTML for audio requests
+            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+            handler: "NetworkOnly"
           }
         ]
       }

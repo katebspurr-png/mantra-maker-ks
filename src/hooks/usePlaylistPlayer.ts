@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Recording } from "@/types";
 
@@ -8,9 +8,16 @@ import { Recording } from "@/types";
  * Handles sequential playback of recordings in a playlist.
  * In playlist mode, each track plays once in order; per-recording loop_mode is ignored.
  * 
+ * PWA AUDIO COMPATIBILITY:
+ * Mobile browsers and PWAs require audio.play() to be called directly within a user gesture
+ * (click/tap) handler - not in a useEffect or async callback chain. This hook ensures:
+ * 1. The first track is played IMMEDIATELY in the play() function (called from button click)
+ * 2. Subsequent tracks are played from the 'ended' event, which is allowed after initial gesture
+ * 3. A single persistent audio element is reused to maintain the audio context
+ * 
  * Flow:
- * 1. User clicks play -> starts playing first recording
- * 2. When a recording ends -> wait for delay -> play next recording
+ * 1. User clicks play -> immediately fetches URL and plays first recording (same call stack)
+ * 2. When a recording ends -> wait for delay -> load and play next recording
  * 3. When last recording ends -> stop (or loop if loop_playlist is enabled)
  */
 
@@ -25,11 +32,11 @@ interface UsePlaylistPlayerReturn {
   isPlaying: boolean;
   currentTrackIndex: number;
   currentTrackId: string | null;
-  play: () => void;
+  play: () => Promise<void>;
   pause: () => void;
   togglePlayPause: () => void;
   stop: () => void;
-  playTrack: (index: number) => void;
+  playTrack: (index: number) => Promise<void>;
 }
 
 export function usePlaylistPlayer({
@@ -40,10 +47,14 @@ export function usePlaylistPlayer({
 }: UsePlaylistPlayerProps): UsePlaylistPlayerReturn {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [playOrder, setPlayOrder] = useState<number[]>([]);
   
+  // Use a persistent audio element to maintain audio context across tracks
+  // This is important for PWA compatibility - reusing the same element
+  // that was "unlocked" by the initial user gesture
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const playOrderRef = useRef<number[]>([]);
+  const currentIndexRef = useRef(0);
 
   // Generate play order (shuffled or sequential)
   const generatePlayOrder = useCallback(() => {
@@ -56,25 +67,7 @@ export function usePlaylistPlayer({
       }
     }
     return indices;
-  }, [recordings, shuffle]);
-
-  // Initialize play order
-  useEffect(() => {
-    setPlayOrder(generatePlayOrder());
-  }, [generatePlayOrder]);
-
-  // Cleanup audio on unmount
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      if (delayTimeoutRef.current) {
-        clearTimeout(delayTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [recordings.length, shuffle]);
 
   const getAudioUrl = async (recording: Recording): Promise<string | null> => {
     try {
@@ -93,86 +86,105 @@ export function usePlaylistPlayer({
     }
   };
 
-  const playNextTrack = useCallback(() => {
-    const currentOrderIndex = playOrder.indexOf(currentTrackIndex);
+  // Play a specific track by its index in the recordings array
+  const playTrackAtIndex = useCallback(async (index: number): Promise<boolean> => {
+    if (index < 0 || index >= recordings.length) {
+      return false;
+    }
+
+    const recording = recordings[index];
+    if (!recording) return false;
+
+    const audioUrl = await getAudioUrl(recording);
+    if (!audioUrl) {
+      console.error("Failed to get audio URL for recording:", recording.id);
+      return false;
+    }
+
+    // Create audio element if it doesn't exist, or reuse existing one
+    // Reusing the same element helps maintain "user gesture" permission on mobile
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+
+    const audio = audioRef.current;
+    
+    // Remove old event listeners
+    audio.onended = null;
+    
+    // Set new source and play
+    audio.src = audioUrl;
+    audio.load();
+
+    // Set up ended handler for auto-advance
+    audio.onended = () => {
+      handleTrackEnded();
+    };
+
+    try {
+      await audio.play();
+      currentIndexRef.current = index;
+      setCurrentTrackIndex(index);
+      setIsPlaying(true);
+      return true;
+    } catch (error) {
+      console.error("Error playing audio:", error);
+      setIsPlaying(false);
+      return false;
+    }
+  }, [recordings]);
+
+  const handleTrackEnded = useCallback(() => {
+    const currentOrderIndex = playOrderRef.current.indexOf(currentIndexRef.current);
     const nextOrderIndex = currentOrderIndex + 1;
 
-    if (nextOrderIndex < playOrder.length) {
+    if (nextOrderIndex < playOrderRef.current.length) {
       // Play next track after delay
+      const nextIndex = playOrderRef.current[nextOrderIndex];
       if (delaySeconds > 0) {
         delayTimeoutRef.current = setTimeout(() => {
-          setCurrentTrackIndex(playOrder[nextOrderIndex]);
+          playTrackAtIndex(nextIndex);
         }, delaySeconds * 1000);
       } else {
-        setCurrentTrackIndex(playOrder[nextOrderIndex]);
+        playTrackAtIndex(nextIndex);
       }
     } else if (loopPlaylist) {
       // Loop back to start
-      const newOrder = generatePlayOrder();
-      setPlayOrder(newOrder);
+      playOrderRef.current = generatePlayOrder();
+      const firstIndex = playOrderRef.current[0];
       if (delaySeconds > 0) {
         delayTimeoutRef.current = setTimeout(() => {
-          setCurrentTrackIndex(newOrder[0]);
+          playTrackAtIndex(firstIndex);
         }, delaySeconds * 1000);
       } else {
-        setCurrentTrackIndex(newOrder[0]);
+        playTrackAtIndex(firstIndex);
       }
     } else {
       // Playlist finished
       setIsPlaying(false);
       setCurrentTrackIndex(0);
+      currentIndexRef.current = 0;
     }
-  }, [currentTrackIndex, playOrder, loopPlaylist, delaySeconds, generatePlayOrder]);
+  }, [delaySeconds, loopPlaylist, generatePlayOrder, playTrackAtIndex]);
 
-  // Play current track when index changes or playback starts
-  useEffect(() => {
-    if (!isPlaying || recordings.length === 0) return;
-
-    const recording = recordings[currentTrackIndex];
-    if (!recording) return;
-
-    const playCurrentTrack = async () => {
-      const audioUrl = await getAudioUrl(recording);
-      if (!audioUrl) {
-        console.error("Failed to get audio URL for recording:", recording.id);
-        playNextTrack();
-        return;
-      }
-
-      // Cleanup previous audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeEventListener("ended", playNextTrack);
-      }
-
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      audio.addEventListener("ended", playNextTrack);
-      
-      try {
-        await audio.play();
-      } catch (error) {
-        console.error("Error playing audio:", error);
-        setIsPlaying(false);
-      }
-    };
-
-    playCurrentTrack();
-  }, [isPlaying, currentTrackIndex, recordings]);
-
-  const play = useCallback(() => {
+  /**
+   * Start playlist playback.
+   * IMPORTANT FOR PWA: This function is called directly from the button click handler.
+   * The audio.play() call happens within the same promise chain as the user gesture,
+   * which is required for mobile browsers and PWAs to allow audio playback.
+   */
+  const play = useCallback(async () => {
     if (recordings.length === 0) return;
     
-    // If we're at the end and not playing, restart from beginning
-    if (!isPlaying && currentTrackIndex >= recordings.length) {
-      const newOrder = generatePlayOrder();
-      setPlayOrder(newOrder);
-      setCurrentTrackIndex(newOrder[0]);
-    }
+    // Generate fresh play order
+    playOrderRef.current = generatePlayOrder();
     
-    setIsPlaying(true);
-  }, [recordings.length, isPlaying, currentTrackIndex, generatePlayOrder]);
+    // Determine starting index
+    const startIndex = playOrderRef.current[0];
+    
+    // Play immediately - this maintains the user gesture chain for PWA compatibility
+    await playTrackAtIndex(startIndex);
+  }, [recordings.length, generatePlayOrder, playTrackAtIndex]);
 
   const pause = useCallback(() => {
     if (audioRef.current) {
@@ -195,21 +207,33 @@ export function usePlaylistPlayer({
   const stop = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current = null;
+      audioRef.current.src = "";
     }
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
     }
     setIsPlaying(false);
     setCurrentTrackIndex(0);
-    setPlayOrder(generatePlayOrder());
+    currentIndexRef.current = 0;
+    playOrderRef.current = generatePlayOrder();
   }, [generatePlayOrder]);
 
-  const playTrack = useCallback((index: number) => {
+  const playTrack = useCallback(async (index: number) => {
     if (index < 0 || index >= recordings.length) return;
-    setCurrentTrackIndex(index);
-    setIsPlaying(true);
-  }, [recordings.length]);
+    
+    // Update play order to start from this track
+    playOrderRef.current = generatePlayOrder();
+    const orderIndex = playOrderRef.current.indexOf(index);
+    if (orderIndex > 0) {
+      // Rotate the order so the selected track is first
+      playOrderRef.current = [
+        ...playOrderRef.current.slice(orderIndex),
+        ...playOrderRef.current.slice(0, orderIndex)
+      ];
+    }
+    
+    await playTrackAtIndex(index);
+  }, [recordings.length, generatePlayOrder, playTrackAtIndex]);
 
   return {
     isPlaying,
