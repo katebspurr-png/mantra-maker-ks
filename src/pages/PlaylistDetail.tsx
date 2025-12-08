@@ -322,10 +322,15 @@ export default function PlaylistDetail() {
           <h1 className="text-xl font-semibold">{playlist.title}</h1>
         </div>
 
-        {/* Play Button */}
+        {/* Play Button - onClick directly triggers play() to maintain user gesture chain for PWA audio */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={togglePlayPause}
+            onClick={() => {
+              // PWA COMPATIBILITY: Call togglePlayPause directly in click handler
+              // This ensures audio.play() is called within the user gesture context,
+              // which is required for mobile browsers and PWAs to allow audio playback
+              togglePlayPause();
+            }}
             disabled={recordings.length === 0}
             className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg disabled:opacity-50"
           >
