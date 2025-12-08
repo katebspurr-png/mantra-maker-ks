@@ -59,6 +59,7 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- vite-plugin-pwa (Progressive Web App support)
 
 ## How can I deploy this project?
 
@@ -71,3 +72,51 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## PWA Testing Guide
+
+### Testing PWA Installation
+
+1. **Chrome DevTools (Desktop)**
+   - Open Chrome DevTools (F12)
+   - Go to the **Application** tab
+   - Check the **Manifest** section to verify the web app manifest is loaded correctly
+   - Check the **Service Workers** section to verify the service worker is registered
+   - Use the "Install" button in the address bar or the Application tab to test installation
+
+2. **Lighthouse Audit**
+   - Open Chrome DevTools (F12)
+   - Go to the **Lighthouse** tab
+   - Select "Progressive Web App" category
+   - Click "Analyze page load" to run the PWA audit
+   - Review the results for any failed criteria
+
+3. **Mobile Testing (Android)**
+   - Open the app in Chrome on Android
+   - Look for the "Add to Home Screen" banner or use Chrome menu → "Install app"
+   - The app should appear on your home screen with the Loop Voice Mantra icon
+   - Launch it and verify it opens in standalone mode (no browser URL bar)
+
+4. **Mobile Testing (iOS)**
+   - Open the app in Safari on iOS
+   - Tap the Share button → "Add to Home Screen"
+   - The app icon should appear on the home screen
+   - Launch it to verify standalone mode
+
+### Testing Offline Mode
+
+1. **DevTools Network Tab**
+   - Open Chrome DevTools → Network tab
+   - Check the "Offline" checkbox to simulate offline mode
+   - Refresh the page - the app shell should still load from cache
+   - Note: API calls to the database will fail offline, but cached static assets will work
+
+2. **Service Worker Cache**
+   - Go to Application → Cache Storage in DevTools
+   - You should see cached assets including HTML, CSS, JS, and icons
+
+### Notes
+
+- The service worker only registers in production builds
+- Audio recording and playback require an active internet connection for saving to the database
+- Cached audio files from previous sessions may be available offline depending on browser caching
