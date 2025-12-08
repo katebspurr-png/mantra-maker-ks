@@ -16,6 +16,94 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Playlist, Recording, PlaylistRecording } from "@/types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+interface SortableRecordingItemProps {
+  rec: Recording & { position: number };
+  index: number;
+  isCurrentlyPlaying: boolean;
+  formatDuration: (seconds: number) => string;
+  onRemove: (id: string) => void;
+}
+
+function SortableRecordingItem({
+  rec,
+  index,
+  isCurrentlyPlaying,
+  formatDuration,
+  onRemove,
+}: SortableRecordingItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rec.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 p-3 bg-card rounded-xl border transition-colors ${
+        isCurrentlyPlaying
+          ? "border-primary bg-primary/5"
+          : "border-border"
+      }`}
+    >
+      {/* Drag handle or playing indicator */}
+      {isCurrentlyPlaying ? (
+        <Volume2 className="w-4 h-4 text-primary animate-pulse" />
+      ) : (
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none"
+        >
+          <GripVertical className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
+      <span className="text-sm text-muted-foreground w-5">
+        {index + 1}
+      </span>
+      <div className="flex-1">
+        <p className="font-medium text-sm">{rec.title}</p>
+        <p className="text-xs text-muted-foreground">
+          {formatDuration(rec.duration_seconds)}
+        </p>
+      </div>
+      <button
+        onClick={() => onRemove(rec.id)}
+        className="p-2 text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
 
 export default function PlaylistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -156,6 +244,53 @@ export default function PlaylistDetail() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = recordings.findIndex((r) => r.id === active.id);
+      const newIndex = recordings.findIndex((r) => r.id === over.id);
+
+      const newRecordings = arrayMove(recordings, oldIndex, newIndex);
+      setRecordings(newRecordings);
+
+      // Update positions in database
+      try {
+        const updates = newRecordings.map((rec, index) => ({
+          playlist_id: id,
+          recording_id: rec.id,
+          position: index,
+        }));
+
+        for (const update of updates) {
+          await supabase
+            .from("playlist_recordings")
+            .update({ position: update.position })
+            .eq("playlist_id", update.playlist_id)
+            .eq("recording_id", update.recording_id);
+        }
+      } catch (error) {
+        console.error("Error updating positions:", error);
+        toast({
+          title: "Failed to save order",
+          variant: "destructive",
+        });
+        fetchPlaylist(); // Revert on error
+      }
+    }
+  };
+
   const availableRecordings = allRecordings.filter(
     (r) => !recordings.find((pr) => pr.id === r.id)
   );
@@ -288,40 +423,29 @@ export default function PlaylistDetail() {
             No recordings in this playlist
           </p>
         ) : (
-          <div className="space-y-2">
-            {recordings.map((rec, index) => (
-              <div
-                key={rec.id}
-                className={`flex items-center gap-3 p-3 bg-card rounded-xl border transition-colors ${
-                  currentTrackId === rec.id && isPlaying
-                    ? "border-primary bg-primary/5"
-                    : "border-border"
-                }`}
-              >
-                {/* Playing indicator */}
-                {currentTrackId === rec.id && isPlaying ? (
-                  <Volume2 className="w-4 h-4 text-primary animate-pulse" />
-                ) : (
-                  <GripVertical className="w-4 h-4 text-muted-foreground" />
-                )}
-                <span className="text-sm text-muted-foreground w-5">
-                  {index + 1}
-                </span>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{rec.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDuration(rec.duration_seconds)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => removeRecording(rec.id)}
-                  className="p-2 text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={recordings.map((r) => r.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-2">
+                {recordings.map((rec, index) => (
+                  <SortableRecordingItem
+                    key={rec.id}
+                    rec={rec}
+                    index={index}
+                    isCurrentlyPlaying={currentTrackId === rec.id && isPlaying}
+                    formatDuration={formatDuration}
+                    onRemove={removeRecording}
+                  />
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
