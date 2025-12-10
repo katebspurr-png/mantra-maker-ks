@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, Pause, Plus, GripVertical, Trash2, Shuffle, Volume2 } from "lucide-react";
-import { usePlaylistPlayer } from "@/hooks/usePlaylistPlayer";
+import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Playlist, Recording, PlaylistRecording } from "@/types";
+import { Playlist, Recording } from "@/types";
 import {
   DndContext,
   closestCenter,
@@ -115,19 +115,18 @@ export default function PlaylistDetail() {
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  // Playlist player hook - handles sequential playback of all recordings
+  // Use global audio context for persistent playback
   const {
     isPlaying,
-    currentTrackIndex,
-    currentTrackId,
+    currentTrack,
+    source,
+    playPlaylist,
     togglePlayPause,
-    stop,
-  } = usePlaylistPlayer({
-    recordings,
-    shuffle: playlist?.shuffle ?? false,
-    loopPlaylist: playlist?.loop_playlist ?? false,
-    delaySeconds: playlist?.delay_seconds ?? 0,
-  });
+  } = useGlobalAudio();
+
+  // Check if this playlist is currently playing in global player
+  const isThisPlaylistPlaying = source?.type === "playlist" && source?.id === id;
+  const currentTrackId = isThisPlaylistPlaying ? currentTrack?.id : null;
 
   useEffect(() => {
     if (id) {
@@ -291,9 +290,34 @@ export default function PlaylistDetail() {
     }
   };
 
+  /**
+   * Handle play/pause - uses global audio context
+   * PWA COMPATIBILITY: Called directly from user gesture (button click)
+   */
+  const handlePlayPause = async () => {
+    if (!playlist || recordings.length === 0) return;
+    
+    if (isThisPlaylistPlaying) {
+      // This playlist is already in global player, just toggle
+      togglePlayPause();
+    } else {
+      // Start playing this playlist in global player
+      await playPlaylist(recordings, {
+        shuffle: playlist.shuffle ?? false,
+        loopPlaylist: playlist.loop_playlist ?? false,
+        delaySeconds: playlist.delay_seconds ?? 0,
+        playlistId: playlist.id,
+        playlistTitle: playlist.title,
+      });
+    }
+  };
+
   const availableRecordings = allRecordings.filter(
     (r) => !recordings.find((pr) => pr.id === r.id)
   );
+
+  // Determine display state
+  const displayIsPlaying = isThisPlaylistPlaying && isPlaying;
 
   if (loading) {
     return (
@@ -325,16 +349,11 @@ export default function PlaylistDetail() {
         {/* Play Button - onClick directly triggers play() to maintain user gesture chain for PWA audio */}
         <div className="flex justify-center mb-6">
           <button
-            onClick={() => {
-              // PWA COMPATIBILITY: Call togglePlayPause directly in click handler
-              // This ensures audio.play() is called within the user gesture context,
-              // which is required for mobile browsers and PWAs to allow audio playback
-              togglePlayPause();
-            }}
+            onClick={handlePlayPause}
             disabled={recordings.length === 0}
             className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg disabled:opacity-50"
           >
-            {isPlaying ? (
+            {displayIsPlaying ? (
               <Pause className="w-8 h-8 text-primary-foreground" />
             ) : (
               <Play className="w-8 h-8 text-primary-foreground ml-1" />
@@ -443,7 +462,7 @@ export default function PlaylistDetail() {
                     key={rec.id}
                     rec={rec}
                     index={index}
-                    isCurrentlyPlaying={currentTrackId === rec.id && isPlaying}
+                    isCurrentlyPlaying={currentTrackId === rec.id && displayIsPlaying}
                     formatDuration={formatDuration}
                     onRemove={removeRecording}
                   />
