@@ -119,15 +119,16 @@ const NewRecording = () => {
       <div className="max-w-lg mx-auto px-4 py-6">
         {!recordingBlob ? (
           <div className="space-y-6">
-            {/* Teleprompter */}
+            {/* Teleprompter with auto-scroll, text size controls, and play/pause */}
             <Teleprompter
               value={teleprompterText}
               onChange={setTeleprompterText}
               disabled={isRecording}
               placeholder="Type or paste your affirmation here to read while recording..."
+              isRecording={isRecording}
             />
 
-            {/* Recorder */}
+            {/* Recorder - works seamlessly with teleprompter in PWA and web */}
             <AudioRecorder 
               onRecordingComplete={handleRecordingComplete}
               onRecordingStart={handleRecordingStart}
