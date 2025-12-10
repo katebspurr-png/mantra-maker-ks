@@ -5,6 +5,7 @@ import { Recording } from "@/types";
 import RecordingsList from "@/components/RecordingsList";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
+import { InstallPromptBanner } from "@/components/InstallPromptBanner";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -99,6 +100,11 @@ const Home = () => {
             {recordings.length} {recordings.length === 1 ? "affirmation" : "affirmations"}
           </p>
         </div>
+      </div>
+
+      {/* Install Banner */}
+      <div className="max-w-lg mx-auto pt-4">
+        <InstallPromptBanner />
       </div>
 
       {/* Content */}
