@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import AudioPlayer from "@/components/AudioPlayer";
+import { Slider } from "@/components/ui/slider";
 import { BottomNavigation } from "@/components/BottomNavigation";
-import { ArrowLeft, Pencil, Check, X } from "lucide-react";
+import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { ArrowLeft, Pencil, Check, X, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -16,11 +17,27 @@ const RecordingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [recording, setRecording] = useState<Recording | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [editedLoopMode, setEditedLoopMode] = useState<LoopMode>("infinite");
+
+  // Use global audio context for persistent playback
+  const {
+    isPlaying,
+    currentTime,
+    duration,
+    currentTrack,
+    source,
+    loopMode: currentLoopMode,
+    playSingleRecording,
+    togglePlayPause,
+    seek,
+    setLoopMode,
+  } = useGlobalAudio();
+
+  // Check if this recording is currently playing in global player
+  const isThisRecordingPlaying = source?.type === "single" && source?.id === id;
 
   useEffect(() => {
     fetchRecording();
@@ -41,14 +58,6 @@ const RecordingDetail = () => {
       setRecording(data as Recording);
       setEditedTitle(data.title);
       setEditedLoopMode(data.loop_mode);
-
-      const { data: urlData } = await supabase.storage
-        .from("recordings")
-        .createSignedUrl(data.audio_file_path, 3600);
-
-      if (urlData?.signedUrl) {
-        setAudioUrl(urlData.signedUrl);
-      }
     } catch (error: any) {
       toast.error(error.message || "Failed to load recording");
       navigate("/home");
@@ -89,11 +98,51 @@ const RecordingDetail = () => {
 
       setRecording({ ...recording, loop_mode: newMode });
       setEditedLoopMode(newMode);
+      
+      // Also update global player if this recording is playing
+      if (isThisRecordingPlaying) {
+        setLoopMode(newMode);
+      }
+      
       toast.success("Loop mode updated");
     } catch (error: any) {
       toast.error(error.message || "Failed to update loop mode");
     }
   };
+
+  /**
+   * Handle play/pause - uses global audio context
+   * PWA COMPATIBILITY: Called directly from user gesture (button click)
+   */
+  const handlePlayPause = async () => {
+    if (!recording) return;
+    
+    if (isThisRecordingPlaying) {
+      // This recording is already in global player, just toggle
+      togglePlayPause();
+    } else {
+      // Start playing this recording in global player
+      await playSingleRecording(recording, editedLoopMode);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (isThisRecordingPlaying) {
+      seek(value[0]);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Use global player state if this recording is playing, otherwise local
+  const displayDuration = isThisRecordingPlaying ? duration : recording?.duration_seconds || 0;
+  const displayCurrentTime = isThisRecordingPlaying ? currentTime : 0;
+  const displayIsPlaying = isThisRecordingPlaying && isPlaying;
+  const displayLoopMode = isThisRecordingPlaying ? currentLoopMode : editedLoopMode;
 
   if (loading) {
     return (
@@ -103,7 +152,7 @@ const RecordingDetail = () => {
     );
   }
 
-  if (!recording || !audioUrl) {
+  if (!recording) {
     return null;
   }
 
@@ -182,12 +231,52 @@ const RecordingDetail = () => {
             </div>
           )}
 
-          {/* Audio Player */}
-          <AudioPlayer
-            audioUrl={audioUrl}
-            loopMode={editedLoopMode}
-            duration={recording.duration_seconds}
-          />
+          {/* Audio Player - Using Global Context */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-center">
+              <Button
+                size="icon"
+                className="w-20 h-20 rounded-full"
+                onClick={handlePlayPause}
+              >
+                {displayIsPlaying ? (
+                  <Pause className="w-8 h-8" />
+                ) : (
+                  <Play className="w-8 h-8" />
+                )}
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Slider
+                value={[displayCurrentTime]}
+                max={displayDuration || 1}
+                step={0.1}
+                onValueChange={handleSeek}
+                className="w-full"
+              />
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>{formatTime(displayCurrentTime)}</span>
+                <span>{formatTime(displayDuration)}</span>
+              </div>
+            </div>
+
+            {displayLoopMode === "three_times" && displayIsPlaying && (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Looping 3 times...
+                </p>
+              </div>
+            )}
+
+            {displayLoopMode === "infinite" && displayIsPlaying && (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Playing on infinite loop...
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Loop Mode Selection */}
           <div className="space-y-3 pt-4 border-t border-border">
