@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Recording, LoopMode } from "@/types";
+import { Recording, LoopMode, PlaybackSettings as PlaybackSettingsType, DEFAULT_PLAYBACK_SETTINGS } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { PlaybackSettings, usePlaybackSettings, saveDefaultPlaybackSettings } from "@/components/PlaybackSettings";
+import { PlaybackStatus } from "@/components/PlaybackStatus";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { ArrowLeft, Pencil, Check, X, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
@@ -20,7 +21,9 @@ const RecordingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
-  const [editedLoopMode, setEditedLoopMode] = useState<LoopMode>("infinite");
+  
+  // Playback settings with session persistence
+  const { settings: playbackSettings, setSettings: setPlaybackSettings, saveAsDefault } = usePlaybackSettings();
 
   // Use global audio context for persistent playback
   const {
@@ -29,11 +32,11 @@ const RecordingDetail = () => {
     duration,
     currentTrack,
     source,
-    loopMode: currentLoopMode,
+    playbackStatus,
     playSingleRecording,
     togglePlayPause,
     seek,
-    setLoopMode,
+    updatePlaybackSettings,
   } = useGlobalAudio();
 
   // Check if this recording is currently playing in global player
@@ -57,7 +60,6 @@ const RecordingDetail = () => {
 
       setRecording(data as Recording);
       setEditedTitle(data.title);
-      setEditedLoopMode(data.loop_mode);
     } catch (error: any) {
       toast.error(error.message || "Failed to load recording");
       navigate("/home");
@@ -85,29 +87,17 @@ const RecordingDetail = () => {
     }
   };
 
-  const handleSaveLoopMode = async (newMode: LoopMode) => {
-    if (!recording) return;
-
-    try {
-      const { error } = await supabase
-        .from("recordings")
-        .update({ loop_mode: newMode })
-        .eq("id", recording.id);
-
-      if (error) throw error;
-
-      setRecording({ ...recording, loop_mode: newMode });
-      setEditedLoopMode(newMode);
-      
-      // Also update global player if this recording is playing
-      if (isThisRecordingPlaying) {
-        setLoopMode(newMode);
-      }
-      
-      toast.success("Loop mode updated");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update loop mode");
+  const handlePlaybackSettingsChange = (newSettings: PlaybackSettingsType) => {
+    setPlaybackSettings(newSettings);
+    // Also update the global player if this recording is playing
+    if (isThisRecordingPlaying) {
+      updatePlaybackSettings(newSettings);
     }
+  };
+
+  const handleSaveAsDefault = () => {
+    saveAsDefault();
+    toast.success("Saved as default playback settings");
   };
 
   /**
@@ -122,7 +112,7 @@ const RecordingDetail = () => {
       togglePlayPause();
     } else {
       // Start playing this recording in global player
-      await playSingleRecording(recording, editedLoopMode);
+      await playSingleRecording(recording, playbackSettings);
     }
   };
 
@@ -142,7 +132,6 @@ const RecordingDetail = () => {
   const displayDuration = isThisRecordingPlaying ? duration : recording?.duration_seconds || 0;
   const displayCurrentTime = isThisRecordingPlaying ? currentTime : 0;
   const displayIsPlaying = isThisRecordingPlaying && isPlaying;
-  const displayLoopMode = isThisRecordingPlaying ? currentLoopMode : editedLoopMode;
 
   if (loading) {
     return (
@@ -231,7 +220,7 @@ const RecordingDetail = () => {
             </div>
           )}
 
-          {/* Audio Player - Using Global Context */}
+          {/* Audio Player */}
           <div className="space-y-6">
             <div className="flex items-center justify-center">
               <Button
@@ -261,49 +250,26 @@ const RecordingDetail = () => {
               </div>
             </div>
 
-            {displayLoopMode === "three_times" && displayIsPlaying && (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Looping 3 times...
-                </p>
-              </div>
-            )}
-
-            {displayLoopMode === "infinite" && displayIsPlaying && (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  Playing on infinite loop...
-                </p>
-              </div>
+            {/* Playback Status */}
+            {displayIsPlaying && (
+              <PlaybackStatus
+                mode={playbackStatus.mode}
+                currentRepetition={playbackStatus.currentRepetition}
+                totalRepetitions={playbackStatus.totalRepetitions}
+                elapsedSeconds={playbackStatus.elapsedSeconds}
+                totalDurationSeconds={playbackStatus.totalDurationSeconds}
+                isPlaying={displayIsPlaying}
+              />
             )}
           </div>
 
-          {/* Loop Mode Selection */}
+          {/* Playback Settings */}
           <div className="space-y-3 pt-4 border-t border-border">
-            <Label>Loop Mode</Label>
-            <RadioGroup
-              value={editedLoopMode}
-              onValueChange={(value) => handleSaveLoopMode(value as LoopMode)}
-            >
-              <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                <RadioGroupItem value="once" id="detail-once" />
-                <Label htmlFor="detail-once" className="flex-1 cursor-pointer font-normal">
-                  Play once
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                <RadioGroupItem value="three_times" id="detail-three" />
-                <Label htmlFor="detail-three" className="flex-1 cursor-pointer font-normal">
-                  Loop 3 times
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                <RadioGroupItem value="infinite" id="detail-infinite" />
-                <Label htmlFor="detail-infinite" className="flex-1 cursor-pointer font-normal">
-                  Loop until I stop
-                </Label>
-              </div>
-            </RadioGroup>
+            <PlaybackSettings
+              settings={playbackSettings}
+              onChange={handlePlaybackSettingsChange}
+              onSaveAsDefault={handleSaveAsDefault}
+            />
           </div>
         </div>
       </div>
