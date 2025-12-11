@@ -3,6 +3,7 @@ import { Play, Pause, X } from "lucide-react";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { Progress } from "@/components/ui/progress";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
+import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
 
 /**
  * MiniPlayer - Persistent bottom audio player
@@ -10,6 +11,7 @@ import { PlaybackStatus } from "@/components/PlaybackStatus";
  * Shows when audio is playing or paused with active track.
  * Positioned above the bottom navigation.
  * Displays playback status (mode, repetition, time remaining).
+ * Includes playback speed control for quick adjustments.
  * Tapping navigates to the full playback view.
  */
 export function MiniPlayer() {
@@ -21,8 +23,10 @@ export function MiniPlayer() {
     currentTrack,
     source,
     playbackStatus,
+    playbackSpeed,
     togglePlayPause,
     stop,
+    setPlaybackSpeed,
   } = useGlobalAudio();
 
   // Don't show if no active source or track
@@ -82,7 +86,13 @@ export function MiniPlayer() {
           </div>
           
           {/* Controls */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Speed control */}
+            <PlaybackSpeedControl
+              speed={playbackSpeed}
+              onSpeedChange={setPlaybackSpeed}
+              compact
+            />
             <button
               onClick={handlePlayPause}
               className="w-10 h-10 rounded-full bg-primary flex items-center justify-center"

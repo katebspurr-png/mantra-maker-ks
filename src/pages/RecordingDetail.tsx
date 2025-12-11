@@ -9,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { PlaybackSettings, usePlaybackSettings, saveDefaultPlaybackSettings } from "@/components/PlaybackSettings";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
+import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
 import { ToneAnalysis } from "@/components/ToneAnalysis";
 import { TagInput } from "@/components/TagInput";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
@@ -37,10 +38,12 @@ const RecordingDetail = () => {
     currentTrack,
     source,
     playbackStatus,
+    playbackSpeed,
     playSingleRecording,
     togglePlayPause,
     seek,
     updatePlaybackSettings,
+    setPlaybackSpeed,
   } = useGlobalAudio();
 
   // Check if this recording is currently playing in global player
@@ -347,6 +350,14 @@ const RecordingDetail = () => {
                 isPlaying={displayIsPlaying}
               />
             )}
+          </div>
+
+          {/* Playback Speed */}
+          <div className="pt-4 border-t border-border">
+            <PlaybackSpeedControl
+              speed={playbackSpeed}
+              onSpeedChange={setPlaybackSpeed}
+            />
           </div>
 
           {/* Playback Settings */}

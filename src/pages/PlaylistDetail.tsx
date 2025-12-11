@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { PlaybackSettings, usePlaybackSettings } from "@/components/PlaybackSettings";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
+import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
 import {
   Dialog,
   DialogContent,
@@ -127,9 +128,11 @@ export default function PlaylistDetail() {
     currentTrack,
     source,
     playbackStatus,
+    playbackSpeed,
     playPlaylist,
     togglePlayPause,
     updatePlaybackSettings,
+    setPlaybackSpeed,
   } = useGlobalAudio();
 
   // Check if this playlist is currently playing in global player
@@ -400,6 +403,14 @@ export default function PlaylistDetail() {
             )}
           </div>
         )}
+
+        {/* Playback Speed */}
+        <div className="bg-card rounded-xl border border-border p-4 mb-4">
+          <PlaybackSpeedControl
+            speed={playbackSpeed}
+            onSpeedChange={setPlaybackSpeed}
+          />
+        </div>
 
         {/* Playback Settings */}
         <div className="bg-card rounded-xl border border-border p-4 mb-4">
