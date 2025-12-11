@@ -2,26 +2,24 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Recording } from "@/types";
-import RecordingsList from "@/components/RecordingsList";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
-import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { Button } from "@/components/ui/button";
+import { Mic } from "lucide-react";
+import {
+  ThoughtTransformerCard,
+  DailyProgressPreview,
+  PlaylistsPreview,
+  RecentRecordingsPreview,
+  TryTodayCard,
+} from "@/components/home";
 
 const Home = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Use global audio context for persistent background playback
-  const { 
-    currentTrack, 
-    isPlaying, 
-    source,
-    playSingleRecording, 
-    togglePlayPause 
-  } = useGlobalAudio();
 
   useEffect(() => {
     const init = async () => {
@@ -37,11 +35,14 @@ const Home = () => {
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
       
       setProfile(profileData);
       await fetchRecordings();
       setLoading(false);
+      
+      // Mark today as completed (user visited app)
+      markTodayComplete(session.user.id);
     };
 
     init();
@@ -66,28 +67,17 @@ const Home = () => {
     }
   };
 
-  /**
-   * Handle play/pause for a recording using global audio context
-   * This ensures audio persists across route changes (background playback)
-   */
-  const handlePlayToggle = async (recording: Recording) => {
-    const isCurrentTrack = source?.type === "single" && currentTrack?.id === recording.id;
+  const markTodayComplete = async (userId: string) => {
+    const today = new Date().toISOString().split('T')[0];
     
-    if (isCurrentTrack) {
-      // Same track, just toggle play/pause
-      togglePlayPause();
-    } else {
-      // Different track, start playing with default loop mode
-      await playSingleRecording(recording, {
-        mode: "loop",
-        repeatCount: 10,
-        durationMinutes: 15,
-      });
-    }
+    // Upsert today's progress
+    await supabase
+      .from("daily_progress")
+      .upsert(
+        { user_id: userId, date: today, completed: true },
+        { onConflict: "user_id,date" }
+      );
   };
-  
-  // Determine which recording is currently playing (if any single recording)
-  const playingId = source?.type === "single" && isPlaying ? currentTrack?.id : null;
 
   if (loading) {
     return (
@@ -98,7 +88,7 @@ const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-32">
       <WelcomeDialog />
       
       {/* Header */}
@@ -108,24 +98,42 @@ const Home = () => {
             Hi, {profile?.first_name || "there"}! 👋
           </h1>
           <p className="text-sm text-muted-foreground">
-            {recordings.length} {recordings.length === 1 ? "affirmation" : "affirmations"}
+            Your daily affirmation practice
           </p>
         </div>
       </div>
 
       {/* Install Banner */}
-      <div className="max-w-lg mx-auto pt-4">
+      <div className="max-w-lg mx-auto px-4 pt-4">
         <InstallPromptBanner />
       </div>
 
-      {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-4">
-        <RecordingsList
-          recordings={recordings}
-          onRecordingsChange={fetchRecordings}
-          playingId={playingId}
-          onPlayToggle={handlePlayToggle}
-        />
+      {/* Main Content */}
+      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+        {/* 1. Thought Transformer */}
+        <ThoughtTransformerCard />
+
+        {/* 2. Record New Affirmation - Primary CTA */}
+        <Button 
+          size="lg"
+          className="w-full h-14 text-lg font-semibold shadow-lg"
+          onClick={() => navigate("/new-recording")}
+        >
+          <Mic className="w-5 h-5 mr-2" />
+          Record New Affirmation
+        </Button>
+
+        {/* 3. Your Practice (Playlists) */}
+        <PlaylistsPreview />
+
+        {/* 4. Daily Progress */}
+        <DailyProgressPreview />
+
+        {/* 5. Recent Recordings */}
+        <RecentRecordingsPreview recordings={recordings} />
+
+        {/* 6. Try This Today */}
+        <TryTodayCard />
       </div>
 
       <BottomNavigation />
