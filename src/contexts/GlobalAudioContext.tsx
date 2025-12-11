@@ -1,12 +1,16 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Recording, LoopMode } from "@/types";
+import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_SETTINGS } from "@/types";
 
 /**
  * Global Audio Context
  * 
  * Provides centralized audio playback that persists across route changes.
- * Both single-recording and playlist playback use this same engine.
+ * Supports four playback modes:
+ * - Once: Play one time, then stop
+ * - Loop: Repeat continuously until stopped
+ * - Repeat: Play exactly N times
+ * - Duration: Play for a set amount of time
  * 
  * PWA COMPATIBILITY:
  * - Uses a single persistent audio element
@@ -16,8 +20,21 @@ import { Recording, LoopMode } from "@/types";
 
 interface PlaybackSource {
   type: "single" | "playlist";
-  id: string; // recording ID or playlist ID
+  id: string;
   title: string;
+}
+
+interface PlaybackStatus {
+  mode: PlaybackMode;
+  // For repeat mode
+  currentRepetition: number;
+  totalRepetitions: number;
+  // For duration mode
+  elapsedSeconds: number;
+  totalDurationSeconds: number;
+  // For playlist tracking
+  currentTrackNumber: number;
+  totalTracks: number;
 }
 
 interface GlobalAudioState {
@@ -28,26 +45,27 @@ interface GlobalAudioState {
   currentTrackIndex: number;
   source: PlaybackSource | null;
   loopMode: LoopMode;
+  playbackSettings: PlaybackSettings;
+  playbackStatus: PlaybackStatus;
   // Playlist-specific
   playlist: Recording[];
   playlistSettings: {
     shuffle: boolean;
-    loopPlaylist: boolean;
     delaySeconds: number;
   };
 }
 
 interface GlobalAudioContextType extends GlobalAudioState {
   // Single recording playback
-  playSingleRecording: (recording: Recording, loopMode: LoopMode) => Promise<void>;
+  playSingleRecording: (recording: Recording, settings: PlaybackSettings) => Promise<void>;
   
   // Playlist playback
   playPlaylist: (recordings: Recording[], settings: {
     shuffle?: boolean;
-    loopPlaylist?: boolean;
     delaySeconds?: number;
     playlistId: string;
     playlistTitle: string;
+    playbackSettings: PlaybackSettings;
   }) => Promise<void>;
   
   // Common controls
@@ -57,6 +75,7 @@ interface GlobalAudioContextType extends GlobalAudioState {
   stop: () => void;
   seek: (time: number) => void;
   setLoopMode: (mode: LoopMode) => void;
+  updatePlaybackSettings: (settings: PlaybackSettings) => void;
 }
 
 const GlobalAudioContext = createContext<GlobalAudioContextType | null>(null);
@@ -72,12 +91,24 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const [playlist, setPlaylist] = useState<Recording[]>([]);
   const [playlistSettings, setPlaylistSettings] = useState({
     shuffle: false,
-    loopPlaylist: false,
     delaySeconds: 0,
   });
+  const [playbackSettings, setPlaybackSettings] = useState<PlaybackSettings>(DEFAULT_PLAYBACK_SETTINGS);
+  const [playbackStatus, setPlaybackStatus] = useState<PlaybackStatus>({
+    mode: "loop",
+    currentRepetition: 1,
+    totalRepetitions: 1,
+    elapsedSeconds: 0,
+    totalDurationSeconds: 0,
+    currentTrackNumber: 1,
+    totalTracks: 1,
+  });
 
-  // Track loops for three_times mode
-  const loopsCompletedRef = useRef(0);
+  // Refs for tracking
+  const repetitionCountRef = useRef(0);
+  const playlistRepetitionRef = useRef(0);
+  const durationStartTimeRef = useRef<number | null>(null);
+  const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playOrderRef = useRef<number[]>([]);
   
@@ -121,6 +152,33 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       audio.removeEventListener("pause", handlePause);
     };
   }, []);
+
+  // Duration timer - tracks elapsed time for duration mode
+  useEffect(() => {
+    if (isPlaying && playbackSettings.mode === "duration" && durationStartTimeRef.current) {
+      durationTimerRef.current = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - durationStartTimeRef.current!) / 1000);
+        const totalSeconds = playbackSettings.durationMinutes * 60;
+        
+        setPlaybackStatus(prev => ({
+          ...prev,
+          elapsedSeconds: elapsed,
+          totalDurationSeconds: totalSeconds,
+        }));
+        
+        if (elapsed >= totalSeconds) {
+          // Duration reached, stop playback
+          stopPlayback();
+        }
+      }, 1000);
+    }
+    
+    return () => {
+      if (durationTimerRef.current) {
+        clearInterval(durationTimerRef.current);
+      }
+    };
+  }, [isPlaying, playbackSettings.mode, playbackSettings.durationMinutes]);
 
   const getAudioUrl = async (recording: Recording): Promise<string | null> => {
     try {
@@ -174,33 +232,85 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  const stopPlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = "";
+    }
+    if (delayTimeoutRef.current) {
+      clearTimeout(delayTimeoutRef.current);
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setCurrentTrack(null);
+    setSource(null);
+    setPlaylist([]);
+    repetitionCountRef.current = 0;
+    playlistRepetitionRef.current = 0;
+    durationStartTimeRef.current = null;
+    setPlaybackStatus({
+      mode: playbackSettings.mode,
+      currentRepetition: 1,
+      totalRepetitions: 1,
+      elapsedSeconds: 0,
+      totalDurationSeconds: 0,
+      currentTrackNumber: 1,
+      totalTracks: 1,
+    });
+  }, [playbackSettings.mode]);
+
   const handleTrackEnded = useCallback(() => {
     if (!source) return;
     
+    const settings = playbackSettings;
+    
     if (source.type === "single") {
-      // Handle single recording loop modes
-      if (loopMode === "once") {
-        setIsPlaying(false);
-        setCurrentTime(0);
-      } else if (loopMode === "three_times") {
-        loopsCompletedRef.current += 1;
-        if (loopsCompletedRef.current >= 3) {
-          setIsPlaying(false);
-          setCurrentTime(0);
-          loopsCompletedRef.current = 0;
-        } else {
+      // Single recording playback
+      repetitionCountRef.current += 1;
+      
+      switch (settings.mode) {
+        case "once":
+          stopPlayback();
+          break;
+          
+        case "loop":
           audioRef.current?.play();
-        }
-      } else if (loopMode === "infinite") {
-        audioRef.current?.play();
+          break;
+          
+        case "repeat":
+          if (repetitionCountRef.current >= settings.repeatCount) {
+            stopPlayback();
+          } else {
+            setPlaybackStatus(prev => ({
+              ...prev,
+              currentRepetition: repetitionCountRef.current + 1,
+            }));
+            audioRef.current?.play();
+          }
+          break;
+          
+        case "duration":
+          // Duration mode continues until time runs out
+          audioRef.current?.play();
+          break;
       }
     } else {
-      // Handle playlist sequential playback
+      // Playlist playback
       const currentOrderIndex = playOrderRef.current.indexOf(currentTrackIndex);
       const nextOrderIndex = currentOrderIndex + 1;
       
       if (nextOrderIndex < playOrderRef.current.length) {
+        // Play next track in playlist
         const nextIndex = playOrderRef.current[nextOrderIndex];
+        setPlaybackStatus(prev => ({
+          ...prev,
+          currentTrackNumber: nextOrderIndex + 1,
+        }));
+        
         if (playlistSettings.delaySeconds > 0) {
           delayTimeoutRef.current = setTimeout(() => {
             playTrackAtIndex(playlist, nextIndex);
@@ -208,24 +318,73 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
         } else {
           playTrackAtIndex(playlist, nextIndex);
         }
-      } else if (playlistSettings.loopPlaylist) {
-        playOrderRef.current = generatePlayOrder(playlist.length, playlistSettings.shuffle);
-        const firstIndex = playOrderRef.current[0];
-        if (playlistSettings.delaySeconds > 0) {
-          delayTimeoutRef.current = setTimeout(() => {
-            playTrackAtIndex(playlist, firstIndex);
-          }, playlistSettings.delaySeconds * 1000);
-        } else {
-          playTrackAtIndex(playlist, firstIndex);
-        }
       } else {
-        // Playlist finished
-        setIsPlaying(false);
-        setCurrentTime(0);
-        setCurrentTrackIndex(0);
+        // End of playlist - handle based on mode
+        playlistRepetitionRef.current += 1;
+        
+        switch (settings.mode) {
+          case "once":
+            stopPlayback();
+            break;
+            
+          case "loop":
+            // Restart playlist
+            playOrderRef.current = generatePlayOrder(playlist.length, playlistSettings.shuffle);
+            setPlaybackStatus(prev => ({
+              ...prev,
+              currentTrackNumber: 1,
+            }));
+            const firstIndexLoop = playOrderRef.current[0];
+            if (playlistSettings.delaySeconds > 0) {
+              delayTimeoutRef.current = setTimeout(() => {
+                playTrackAtIndex(playlist, firstIndexLoop);
+              }, playlistSettings.delaySeconds * 1000);
+            } else {
+              playTrackAtIndex(playlist, firstIndexLoop);
+            }
+            break;
+            
+          case "repeat":
+            if (playlistRepetitionRef.current >= settings.repeatCount) {
+              stopPlayback();
+            } else {
+              playOrderRef.current = generatePlayOrder(playlist.length, playlistSettings.shuffle);
+              setPlaybackStatus(prev => ({
+                ...prev,
+                currentRepetition: playlistRepetitionRef.current + 1,
+                currentTrackNumber: 1,
+              }));
+              const firstIndexRepeat = playOrderRef.current[0];
+              if (playlistSettings.delaySeconds > 0) {
+                delayTimeoutRef.current = setTimeout(() => {
+                  playTrackAtIndex(playlist, firstIndexRepeat);
+                }, playlistSettings.delaySeconds * 1000);
+              } else {
+                playTrackAtIndex(playlist, firstIndexRepeat);
+              }
+            }
+            break;
+            
+          case "duration":
+            // Duration mode continues until time runs out
+            playOrderRef.current = generatePlayOrder(playlist.length, playlistSettings.shuffle);
+            setPlaybackStatus(prev => ({
+              ...prev,
+              currentTrackNumber: 1,
+            }));
+            const firstIndexDuration = playOrderRef.current[0];
+            if (playlistSettings.delaySeconds > 0) {
+              delayTimeoutRef.current = setTimeout(() => {
+                playTrackAtIndex(playlist, firstIndexDuration);
+              }, playlistSettings.delaySeconds * 1000);
+            } else {
+              playTrackAtIndex(playlist, firstIndexDuration);
+            }
+            break;
+        }
       }
     }
-  }, [source, loopMode, currentTrackIndex, playlist, playlistSettings, playTrackAtIndex, generatePlayOrder]);
+  }, [source, playbackSettings, currentTrackIndex, playlist, playlistSettings, playTrackAtIndex, generatePlayOrder, stopPlayback]);
 
   // Update ended handler when dependencies change
   useEffect(() => {
@@ -240,54 +399,88 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   }, [handleTrackEnded]);
 
   /**
-   * Play a single recording with specified loop mode.
-   * Called from user gesture (button click) for PWA compatibility.
+   * Play a single recording with specified playback settings.
    */
-  const playSingleRecording = useCallback(async (recording: Recording, mode: LoopMode) => {
-    // Clear any playlist state
+  const playSingleRecording = useCallback(async (recording: Recording, settings: PlaybackSettings) => {
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
     }
     
     setSource({ type: "single", id: recording.id, title: recording.title });
     setPlaylist([]);
-    setLoopModeState(mode);
-    loopsCompletedRef.current = 0;
+    setPlaybackSettings(settings);
+    repetitionCountRef.current = 0;
+    
+    // Initialize duration tracking
+    if (settings.mode === "duration") {
+      durationStartTimeRef.current = Date.now();
+    }
+    
+    // Set initial status
+    setPlaybackStatus({
+      mode: settings.mode,
+      currentRepetition: 1,
+      totalRepetitions: settings.mode === "repeat" ? settings.repeatCount : 1,
+      elapsedSeconds: 0,
+      totalDurationSeconds: settings.mode === "duration" ? settings.durationMinutes * 60 : 0,
+      currentTrackNumber: 1,
+      totalTracks: 1,
+    });
     
     await playTrackAtIndex([recording], 0);
   }, [playTrackAtIndex]);
 
   /**
    * Play a playlist of recordings.
-   * Called from user gesture (button click) for PWA compatibility.
    */
   const playPlaylist = useCallback(async (
     recordings: Recording[],
     settings: {
       shuffle?: boolean;
-      loopPlaylist?: boolean;
       delaySeconds?: number;
       playlistId: string;
       playlistTitle: string;
+      playbackSettings: PlaybackSettings;
     }
   ) => {
     if (recordings.length === 0) return;
     
-    // Clear any existing timeouts
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
+    }
+    if (durationTimerRef.current) {
+      clearInterval(durationTimerRef.current);
     }
     
     const newSettings = {
       shuffle: settings.shuffle ?? false,
-      loopPlaylist: settings.loopPlaylist ?? false,
       delaySeconds: settings.delaySeconds ?? 0,
     };
     
     setSource({ type: "playlist", id: settings.playlistId, title: settings.playlistTitle });
     setPlaylist(recordings);
     setPlaylistSettings(newSettings);
-    setLoopModeState("once"); // In playlist mode, individual loop is ignored
+    setPlaybackSettings(settings.playbackSettings);
+    playlistRepetitionRef.current = 0;
+    
+    // Initialize duration tracking
+    if (settings.playbackSettings.mode === "duration") {
+      durationStartTimeRef.current = Date.now();
+    }
+    
+    // Set initial status
+    setPlaybackStatus({
+      mode: settings.playbackSettings.mode,
+      currentRepetition: 1,
+      totalRepetitions: settings.playbackSettings.mode === "repeat" ? settings.playbackSettings.repeatCount : 1,
+      elapsedSeconds: 0,
+      totalDurationSeconds: settings.playbackSettings.mode === "duration" ? settings.playbackSettings.durationMinutes * 60 : 0,
+      currentTrackNumber: 1,
+      totalTracks: recordings.length,
+    });
     
     playOrderRef.current = generatePlayOrder(recordings.length, newSettings.shuffle);
     const startIndex = playOrderRef.current[0];
@@ -296,8 +489,11 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   }, [playTrackAtIndex, generatePlayOrder]);
 
   const play = useCallback(() => {
+    if (playbackSettings.mode === "duration" && !durationStartTimeRef.current) {
+      durationStartTimeRef.current = Date.now();
+    }
     audioRef.current?.play();
-  }, []);
+  }, [playbackSettings.mode]);
 
   const pause = useCallback(() => {
     audioRef.current?.pause();
@@ -315,21 +511,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   }, [isPlaying, play, pause]);
 
   const stop = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      audioRef.current.src = "";
-    }
-    if (delayTimeoutRef.current) {
-      clearTimeout(delayTimeoutRef.current);
-    }
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setCurrentTrack(null);
-    setSource(null);
-    setPlaylist([]);
-    loopsCompletedRef.current = 0;
-  }, []);
+    stopPlayback();
+  }, [stopPlayback]);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {
@@ -340,7 +523,17 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
 
   const setLoopMode = useCallback((mode: LoopMode) => {
     setLoopModeState(mode);
-    loopsCompletedRef.current = 0;
+    repetitionCountRef.current = 0;
+  }, []);
+
+  const updatePlaybackSettings = useCallback((settings: PlaybackSettings) => {
+    setPlaybackSettings(settings);
+    setPlaybackStatus(prev => ({
+      ...prev,
+      mode: settings.mode,
+      totalRepetitions: settings.mode === "repeat" ? settings.repeatCount : 1,
+      totalDurationSeconds: settings.mode === "duration" ? settings.durationMinutes * 60 : 0,
+    }));
   }, []);
 
   const value: GlobalAudioContextType = {
@@ -351,6 +544,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     currentTrackIndex,
     source,
     loopMode,
+    playbackSettings,
+    playbackStatus,
     playlist,
     playlistSettings,
     playSingleRecording,
@@ -361,6 +556,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     stop,
     seek,
     setLoopMode,
+    updatePlaybackSettings,
   };
 
   return (

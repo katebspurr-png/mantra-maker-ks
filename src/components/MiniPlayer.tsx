@@ -2,12 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Play, Pause, X } from "lucide-react";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { Progress } from "@/components/ui/progress";
+import { PlaybackStatus } from "@/components/PlaybackStatus";
 
 /**
  * MiniPlayer - Persistent bottom audio player
  * 
  * Shows when audio is playing or paused with active track.
  * Positioned above the bottom navigation.
+ * Displays playback status (mode, repetition, time remaining).
  * Tapping navigates to the full playback view.
  */
 export function MiniPlayer() {
@@ -18,6 +20,7 @@ export function MiniPlayer() {
     duration,
     currentTrack,
     source,
+    playbackStatus,
     togglePlayPause,
     stop,
   } = useGlobalAudio();
@@ -60,9 +63,22 @@ export function MiniPlayer() {
           {/* Track info */}
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm truncate">{currentTrack.title}</p>
-            <p className="text-xs text-muted-foreground truncate">
-              {source.type === "playlist" ? source.title : "Now playing"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground truncate">
+                {source.type === "playlist" ? source.title : "Now playing"}
+              </p>
+              {isPlaying && (
+                <PlaybackStatus
+                  mode={playbackStatus.mode}
+                  currentRepetition={playbackStatus.currentRepetition}
+                  totalRepetitions={playbackStatus.totalRepetitions}
+                  elapsedSeconds={playbackStatus.elapsedSeconds}
+                  totalDurationSeconds={playbackStatus.totalDurationSeconds}
+                  isPlaying={isPlaying}
+                  compact
+                />
+              )}
+            </div>
           </div>
           
           {/* Controls */}

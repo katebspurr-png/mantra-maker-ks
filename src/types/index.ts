@@ -1,6 +1,21 @@
 export type LoopMode = "once" | "three_times" | "infinite";
 export type TimerMode = "none" | "5" | "10" | "15" | "custom";
 
+// New playback mode types
+export type PlaybackMode = "once" | "loop" | "repeat" | "duration";
+
+export interface PlaybackSettings {
+  mode: PlaybackMode;
+  repeatCount: number;      // For "repeat" mode
+  durationMinutes: number;  // For "duration" mode
+}
+
+export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
+  mode: "loop",
+  repeatCount: 10,
+  durationMinutes: 15,
+};
+
 export interface Recording {
   id: string;
   user_id: string;

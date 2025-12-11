@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { PlaybackSettings, usePlaybackSettings } from "@/components/PlaybackSettings";
+import { PlaybackStatus } from "@/components/PlaybackStatus";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Playlist, Recording } from "@/types";
+import { Playlist, Recording, PlaybackSettings as PlaybackSettingsType } from "@/types";
 import {
   DndContext,
   closestCenter,
@@ -33,6 +35,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { toast as sonnerToast } from "sonner";
 
 interface SortableRecordingItemProps {
   rec: Recording & { position: number };
@@ -115,13 +118,18 @@ export default function PlaylistDetail() {
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+  // Playback settings with session persistence
+  const { settings: playbackSettings, setSettings: setPlaybackSettings, saveAsDefault } = usePlaybackSettings();
+
   // Use global audio context for persistent playback
   const {
     isPlaying,
     currentTrack,
     source,
+    playbackStatus,
     playPlaylist,
     togglePlayPause,
+    updatePlaybackSettings,
   } = useGlobalAudio();
 
   // Check if this playlist is currently playing in global player
@@ -237,6 +245,19 @@ export default function PlaylistDetail() {
     }
   };
 
+  const handlePlaybackSettingsChange = (newSettings: PlaybackSettingsType) => {
+    setPlaybackSettings(newSettings);
+    // Also update the global player if this playlist is playing
+    if (isThisPlaylistPlaying) {
+      updatePlaybackSettings(newSettings);
+    }
+  };
+
+  const handleSaveAsDefault = () => {
+    saveAsDefault();
+    sonnerToast.success("Saved as default playback settings");
+  };
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -304,10 +325,10 @@ export default function PlaylistDetail() {
       // Start playing this playlist in global player
       await playPlaylist(recordings, {
         shuffle: playlist.shuffle ?? false,
-        loopPlaylist: playlist.loop_playlist ?? false,
         delaySeconds: playlist.delay_seconds ?? 0,
         playlistId: playlist.id,
         playlistTitle: playlist.title,
+        playbackSettings: playbackSettings,
       });
     }
   };
@@ -346,8 +367,8 @@ export default function PlaylistDetail() {
           <h1 className="text-xl font-semibold">{playlist.title}</h1>
         </div>
 
-        {/* Play Button - onClick directly triggers play() to maintain user gesture chain for PWA audio */}
-        <div className="flex justify-center mb-6">
+        {/* Play Button */}
+        <div className="flex justify-center mb-4">
           <button
             onClick={handlePlayPause}
             disabled={recordings.length === 0}
@@ -361,7 +382,35 @@ export default function PlaylistDetail() {
           </button>
         </div>
 
-        {/* Settings */}
+        {/* Playback Status */}
+        {displayIsPlaying && (
+          <div className="mb-4">
+            <PlaybackStatus
+              mode={playbackStatus.mode}
+              currentRepetition={playbackStatus.currentRepetition}
+              totalRepetitions={playbackStatus.totalRepetitions}
+              elapsedSeconds={playbackStatus.elapsedSeconds}
+              totalDurationSeconds={playbackStatus.totalDurationSeconds}
+              isPlaying={displayIsPlaying}
+            />
+            {playbackStatus.totalTracks > 1 && (
+              <p className="text-center text-sm text-muted-foreground mt-1">
+                Track {playbackStatus.currentTrackNumber} of {playbackStatus.totalTracks}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Playback Settings */}
+        <div className="bg-card rounded-xl border border-border p-4 mb-4">
+          <PlaybackSettings
+            settings={playbackSettings}
+            onChange={handlePlaybackSettingsChange}
+            onSaveAsDefault={handleSaveAsDefault}
+          />
+        </div>
+
+        {/* Playlist Settings */}
         <div className="bg-card rounded-xl border border-border p-4 mb-4 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -372,16 +421,6 @@ export default function PlaylistDetail() {
               checked={playlist.shuffle}
               onCheckedChange={(checked) =>
                 updatePlaylistSettings({ shuffle: checked })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Loop Playlist</span>
-            <Switch
-              checked={playlist.loop_playlist}
-              onCheckedChange={(checked) =>
-                updatePlaylistSettings({ loop_playlist: checked })
               }
             />
           </div>

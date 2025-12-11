@@ -77,8 +77,12 @@ const Home = () => {
       // Same track, just toggle play/pause
       togglePlayPause();
     } else {
-      // Different track, start playing with its loop mode
-      await playSingleRecording(recording, recording.loop_mode);
+      // Different track, start playing with default loop mode
+      await playSingleRecording(recording, {
+        mode: "loop",
+        repeatCount: 10,
+        durationMinutes: 15,
+      });
     }
   };
   
