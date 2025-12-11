@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_progress: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       playlist_recordings: {
         Row: {
           created_at: string
