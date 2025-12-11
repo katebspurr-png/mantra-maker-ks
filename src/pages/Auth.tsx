@@ -4,14 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Mic } from "lucide-react";
+
+const REMEMBER_ME_KEY = "loop-remember-me";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem(REMEMBER_ME_KEY) !== "false";
+  });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -44,6 +50,10 @@ const Auth = () => {
           password,
         });
         if (error) throw error;
+        
+        // Save remember me preference
+        localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
+        
         toast.success("Welcome back!");
       } else {
         const { error } = await supabase.auth.signUp({
@@ -57,6 +67,10 @@ const Auth = () => {
           },
         });
         if (error) throw error;
+        
+        // Save remember me preference for new signups too
+        localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
+        
         toast.success("Account created! Welcome to Loop.");
       }
     } catch (error: any) {
@@ -118,6 +132,19 @@ const Auth = () => {
               minLength={6}
             />
           </div>
+
+          {isLogin && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="rememberMe"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
+              />
+              <Label htmlFor="rememberMe" className="text-sm font-normal cursor-pointer">
+                Remember me
+              </Label>
+            </div>
+          )}
 
           <Button
             type="submit"
