@@ -57,7 +57,6 @@ const AudioRecorder = ({ onRecordingComplete, onRecordingStart }: AudioRecorderP
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType });
         onRecordingComplete(blob, recordingTimeRef.current);
-        onRecordingComplete(blob, recordingTime);
         
         // Cleanup
         if (streamRef.current) {
