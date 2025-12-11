@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { useRecordingDurations } from "@/hooks/useAudioDuration";
 
 interface RecordingsListProps {
   recordings: Recording[];
@@ -35,6 +36,14 @@ const RecordingsList = ({ recordings, onRecordingsChange, playingId, onPlayToggl
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const { currentTrack, source, isPlaying } = useGlobalAudio();
+  
+  // Load actual durations for recordings that have 0 stored
+  const loadedDurations = useRecordingDurations(recordings);
+  
+  const getDuration = (recording: Recording) => {
+    if (recording.duration_seconds > 0) return recording.duration_seconds;
+    return loadedDurations.get(recording.id) || 0;
+  };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -138,7 +147,7 @@ const RecordingsList = ({ recordings, onRecordingsChange, playingId, onPlayToggl
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold truncate">{recording.title}</h3>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{formatDuration(recording.duration_seconds)}</span>
+                  <span>{formatDuration(getDuration(recording))}</span>
                   <span>•</span>
                   <span>{format(new Date(recording.created_at), "MMM d")}</span>
                   <span>•</span>
