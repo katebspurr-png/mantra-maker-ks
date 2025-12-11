@@ -5,12 +5,25 @@ import { Slider } from "@/components/ui/slider";
 import { 
   Play, 
   Pause, 
-  Minus, 
-  Plus, 
   Type, 
-  Gauge 
+  Gauge,
+  RotateCcw,
+  Hand
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/**
+ * Teleprompter Component - Karaoke Style
+ * 
+ * Text Splitting: Words are split by whitespace while preserving punctuation.
+ * 
+ * Highlight Timing: Based on words-per-minute (WPM) converted to ms-per-word.
+ * - Slow: 80 WPM = 750ms per word
+ * - Medium: 120 WPM = 500ms per word  
+ * - Fast: 180 WPM = 333ms per word
+ * 
+ * Note: This is a guided reading aid, not speech-aligned. Pace is approximate.
+ */
 
 interface TeleprompterProps {
   value: string;
@@ -22,17 +35,17 @@ interface TeleprompterProps {
 
 // Text size presets
 const TEXT_SIZES = [
-  { label: "S", value: 18, lineHeight: 1.6 },
-  { label: "M", value: 24, lineHeight: 1.7 },
-  { label: "L", value: 32, lineHeight: 1.8 },
-  { label: "XL", value: 40, lineHeight: 1.9 },
+  { label: "S", value: 20, lineHeight: 1.8 },
+  { label: "M", value: 28, lineHeight: 1.9 },
+  { label: "L", value: 36, lineHeight: 2.0 },
+  { label: "XL", value: 44, lineHeight: 2.1 },
 ];
 
-// Scroll speed presets (pixels per second)
-const SCROLL_SPEEDS = [
-  { label: "Slow", value: 20 },
-  { label: "Medium", value: 40 },
-  { label: "Fast", value: 70 },
+// Pace presets (words per minute -> milliseconds per word)
+const PACE_PRESETS = [
+  { label: "Slow", wpm: 80, msPerWord: 750 },
+  { label: "Medium", wpm: 120, msPerWord: 500 },
+  { label: "Fast", wpm: 180, msPerWord: 333 },
 ];
 
 export function Teleprompter({ 
@@ -47,20 +60,24 @@ export function Teleprompter({
     const saved = sessionStorage.getItem("teleprompterTextSize");
     return saved ? parseInt(saved, 10) : 1; // Default to Medium
   });
-  const [scrollSpeedIndex, setScrollSpeedIndex] = useState(() => {
-    const saved = sessionStorage.getItem("teleprompterScrollSpeed");
+  const [paceIndex, setPaceIndex] = useState(() => {
+    const saved = sessionStorage.getItem("teleprompterPace");
     return saved ? parseInt(saved, 10) : 1; // Default to Medium
   });
-  const [isScrolling, setIsScrolling] = useState(false);
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [isHighlighting, setIsHighlighting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(!value);
   const [showControls, setShowControls] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
   
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number>();
-  const lastTimeRef = useRef<number>(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const currentTextSize = TEXT_SIZES[textSizeIndex];
-  const currentScrollSpeed = SCROLL_SPEEDS[scrollSpeedIndex];
+  const currentPace = PACE_PRESETS[paceIndex];
+
+  // Split text into words, preserving punctuation with words
+  const words = value.trim().split(/\s+/).filter(Boolean);
 
   // Persist settings to session storage
   useEffect(() => {
@@ -68,56 +85,30 @@ export function Teleprompter({
   }, [textSizeIndex]);
 
   useEffect(() => {
-    sessionStorage.setItem("teleprompterScrollSpeed", scrollSpeedIndex.toString());
-  }, [scrollSpeedIndex]);
+    sessionStorage.setItem("teleprompterPace", paceIndex.toString());
+  }, [paceIndex]);
 
-  // Auto-scroll logic with smooth animation
-  const scroll = useCallback((timestamp: number) => {
-    if (!scrollContainerRef.current) return;
-    
-    if (lastTimeRef.current === 0) {
-      lastTimeRef.current = timestamp;
-    }
-    
-    const deltaTime = (timestamp - lastTimeRef.current) / 1000; // Convert to seconds
-    lastTimeRef.current = timestamp;
-    
-    const container = scrollContainerRef.current;
-    const scrollAmount = currentScrollSpeed.value * deltaTime;
-    
-    if (container.scrollTop < container.scrollHeight - container.clientHeight) {
-      container.scrollTop += scrollAmount;
-      animationFrameRef.current = requestAnimationFrame(scroll);
-    } else {
-      // Reached the end, stop scrolling
-      setIsScrolling(false);
-    }
-  }, [currentScrollSpeed.value]);
-
-  // Start/stop scrolling
+  // Clear interval on unmount
   useEffect(() => {
-    if (isScrolling && !isEditMode) {
-      lastTimeRef.current = 0;
-      animationFrameRef.current = requestAnimationFrame(scroll);
-    } else {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    }
-    
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
-  }, [isScrolling, isEditMode, scroll]);
+  }, []);
 
-  // Stop scrolling when recording stops
+  // Start/stop highlighting based on recording state
   useEffect(() => {
-    if (!isRecording && isScrolling) {
-      setIsScrolling(false);
+    if (isRecording && value.trim() && !manualMode) {
+      // Auto-start highlighting when recording begins
+      setIsEditMode(false);
+      setShowControls(true);
+      startHighlighting();
+    } else if (!isRecording && isHighlighting) {
+      // Stop highlighting when recording stops
+      stopHighlighting();
     }
-  }, [isRecording, isScrolling]);
+  }, [isRecording]);
 
   // Switch to reader mode when there's text and recording starts
   useEffect(() => {
@@ -127,6 +118,69 @@ export function Teleprompter({
     }
   }, [isRecording, value]);
 
+  const startHighlighting = useCallback(() => {
+    if (words.length === 0 || manualMode) return;
+    
+    // Reset to beginning if at the end
+    if (currentWordIndex >= words.length) {
+      setCurrentWordIndex(0);
+    }
+    
+    setIsHighlighting(true);
+    
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = setInterval(() => {
+      setCurrentWordIndex(prev => {
+        if (prev >= words.length - 1) {
+          // Reached the end, stop highlighting
+          stopHighlighting();
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, currentPace.msPerWord);
+  }, [words.length, currentPace.msPerWord, currentWordIndex, manualMode]);
+
+  const stopHighlighting = useCallback(() => {
+    setIsHighlighting(false);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  const toggleHighlighting = () => {
+    if (isHighlighting) {
+      stopHighlighting();
+    } else {
+      startHighlighting();
+    }
+  };
+
+  const resetHighlighting = () => {
+    stopHighlighting();
+    setCurrentWordIndex(0);
+  };
+
+  const advanceWord = () => {
+    if (currentWordIndex < words.length - 1) {
+      setCurrentWordIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePaceChange = (values: number[]) => {
+    setPaceIndex(values[0]);
+    // If currently highlighting, restart with new pace
+    if (isHighlighting) {
+      stopHighlighting();
+      setTimeout(() => startHighlighting(), 50);
+    }
+  };
+
   const handleTextSizeChange = (direction: "up" | "down") => {
     setTextSizeIndex(prev => {
       if (direction === "up" && prev < TEXT_SIZES.length - 1) return prev + 1;
@@ -135,29 +189,13 @@ export function Teleprompter({
     });
   };
 
-  const handleScrollSpeedChange = (values: number[]) => {
-    setScrollSpeedIndex(values[0]);
-  };
-
-  const toggleScroll = () => {
-    if (!isScrolling) {
-      // Reset scroll position when starting
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 0;
-      }
+  const toggleManualMode = () => {
+    setManualMode(prev => !prev);
+    if (!manualMode) {
+      // Switching to manual mode - stop auto highlighting
+      stopHighlighting();
     }
-    setIsScrolling(!isScrolling);
   };
-
-  const resetScroll = () => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = 0;
-    }
-    setIsScrolling(false);
-  };
-
-  // Split text into lines for highlighting
-  const lines = value.split('\n').filter(line => line.trim());
 
   // If in edit mode or no text, show textarea
   if (isEditMode || !value.trim()) {
@@ -178,7 +216,7 @@ export function Teleprompter({
         {value && (
           <div className="flex items-center justify-between mt-3">
             <p className="text-xs text-muted-foreground">
-              {value.split(/\s+/).filter(Boolean).length} words
+              {words.length} words
             </p>
             <Button
               variant="ghost"
@@ -197,7 +235,7 @@ export function Teleprompter({
     );
   }
 
-  // Reader/teleprompter mode
+  // Reader/teleprompter mode - Karaoke style
   return (
     <div className="relative w-full">
       {/* Main teleprompter display */}
@@ -219,44 +257,62 @@ export function Teleprompter({
           )}
         </div>
 
-        {/* Scrolling text area with gradient overlays */}
-        <div className="relative">
-          {/* Top gradient fade */}
-          <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-card to-transparent z-10 pointer-events-none" />
-          
-          {/* Bottom gradient fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent z-10 pointer-events-none" />
-          
-          {/* Center highlight line indicator */}
-          <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-[60px] bg-primary/5 border-y border-primary/20 z-0 pointer-events-none" />
-          
-          {/* Scrolling content */}
-          <div
-            ref={scrollContainerRef}
-            className="h-[300px] overflow-y-auto scroll-smooth px-6 py-16"
-            style={{ scrollBehavior: isScrolling ? "auto" : "smooth" }}
+        {/* Karaoke text display */}
+        <div 
+          ref={containerRef}
+          className="min-h-[280px] px-6 py-8 cursor-pointer select-none"
+          onClick={manualMode ? advanceWord : undefined}
+        >
+          <div 
+            className="text-center leading-relaxed"
+            style={{ 
+              fontSize: `${currentTextSize.value}px`,
+              lineHeight: currentTextSize.lineHeight,
+            }}
           >
+            {words.map((word, index) => (
+              <span
+                key={index}
+                className={cn(
+                  "inline-block mx-1 py-1 px-0.5 rounded transition-all duration-200",
+                  index === currentWordIndex && (
+                    // Active word styling - very obvious
+                    "text-primary font-semibold scale-105 bg-primary/10"
+                  ),
+                  index < currentWordIndex && (
+                    // Already read words - slightly muted
+                    "text-muted-foreground/60"
+                  ),
+                  index > currentWordIndex && (
+                    // Upcoming words - visible but dimmer
+                    "text-foreground/80"
+                  )
+                )}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+          
+          {/* Manual mode tap hint */}
+          {manualMode && (
+            <p className="text-xs text-center text-muted-foreground mt-6">
+              Tap anywhere to advance
+            </p>
+          )}
+        </div>
+
+        {/* Progress indicator */}
+        <div className="px-4 pb-3">
+          <div className="h-1 bg-muted rounded-full overflow-hidden">
             <div 
-              className="text-center font-medium text-foreground"
-              style={{ 
-                fontSize: `${currentTextSize.value}px`,
-                lineHeight: currentTextSize.lineHeight,
-              }}
-            >
-              {lines.map((line, index) => (
-                <p 
-                  key={index}
-                  className={cn(
-                    "py-2 transition-opacity duration-300",
-                    // Add subtle styling for better readability
-                  )}
-                >
-                  {line}
-                </p>
-              ))}
-              {/* Extra padding at the end for scrolling */}
-              <div className="h-32" />
-            </div>
+              className="h-full bg-primary transition-all duration-300 ease-out"
+              style={{ width: `${((currentWordIndex + 1) / words.length) * 100}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <span>{currentWordIndex + 1} / {words.length}</span>
+            <span>{Math.round((currentWordIndex / words.length) * 100)}%</span>
           </div>
         </div>
 
@@ -269,120 +325,114 @@ export function Teleprompter({
         )}
       </div>
 
-      {/* Controls toolbar - always visible when in reader mode */}
+      {/* Controls toolbar */}
       {showControls && (
         <div className="mt-4 bg-card rounded-xl border border-border p-4 space-y-4 animate-in fade-in slide-in-from-bottom-2">
           {/* Text size controls */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-1 text-muted-foreground min-w-[50px]">
               <Type className="w-4 h-4" />
               <span className="text-xs">Size</span>
             </div>
-            <div className="flex items-center gap-2 flex-1 justify-center">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => handleTextSizeChange("down")}
-                disabled={textSizeIndex === 0}
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <div className="flex gap-1">
-                {TEXT_SIZES.map((size, index) => (
-                  <button
-                    key={size.label}
-                    onClick={() => setTextSizeIndex(index)}
-                    className={cn(
-                      "w-8 h-8 rounded-lg text-xs font-medium transition-colors",
-                      index === textSizeIndex
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {size.label}
-                  </button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => handleTextSizeChange("up")}
-                disabled={textSizeIndex === TEXT_SIZES.length - 1}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              {TEXT_SIZES.map((size, index) => (
+                <button
+                  key={size.label}
+                  onClick={() => setTextSizeIndex(index)}
+                  className={cn(
+                    "w-9 h-9 rounded-lg text-xs font-medium transition-colors",
+                    index === textSizeIndex
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {size.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Scroll speed controls */}
+          {/* Pace controls */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1 text-muted-foreground">
+            <div className="flex items-center gap-1 text-muted-foreground min-w-[50px]">
               <Gauge className="w-4 h-4" />
-              <span className="text-xs">Speed</span>
+              <span className="text-xs">Pace</span>
             </div>
             <div className="flex-1 px-2">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                {SCROLL_SPEEDS.map((speed, index) => (
+                {PACE_PRESETS.map((pace, index) => (
                   <span 
-                    key={speed.label}
+                    key={pace.label}
                     className={cn(
                       "transition-colors",
-                      index === scrollSpeedIndex && "text-primary font-medium"
+                      index === paceIndex && "text-primary font-medium"
                     )}
                   >
-                    {speed.label}
+                    {pace.label}
                   </span>
                 ))}
               </div>
               <Slider
-                value={[scrollSpeedIndex]}
-                onValueChange={handleScrollSpeedChange}
-                max={SCROLL_SPEEDS.length - 1}
+                value={[paceIndex]}
+                onValueChange={handlePaceChange}
+                max={PACE_PRESETS.length - 1}
                 step={1}
                 className="w-full"
               />
             </div>
           </div>
 
-          {/* Play/Pause and Reset controls */}
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <Button
-              variant={isScrolling ? "default" : "outline"}
-              size="lg"
-              className="flex-1 max-w-[200px] touch-target"
-              onClick={toggleScroll}
-            >
-              {isScrolling ? (
-                <>
-                  <Pause className="w-5 h-5 mr-2" />
-                  Pause Scroll
-                </>
-              ) : (
-                <>
-                  <Play className="w-5 h-5 mr-2" />
-                  Start Scroll
-                </>
-              )}
-            </Button>
-            {!isScrolling && (
+          {/* Play/Pause, Reset, and Manual mode controls */}
+          <div className="flex items-center justify-center gap-2 pt-2">
+            {!manualMode && (
               <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetScroll}
-                className="text-muted-foreground"
+                variant={isHighlighting ? "default" : "outline"}
+                size="default"
+                className="flex-1 max-w-[160px] touch-target"
+                onClick={toggleHighlighting}
               >
-                Reset
+                {isHighlighting ? (
+                  <>
+                    <Pause className="w-4 h-4 mr-2" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Start
+                  </>
+                )}
               </Button>
             )}
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={resetHighlighting}
+              className="h-10 w-10"
+              title="Reset"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              variant={manualMode ? "default" : "outline"}
+              size="icon"
+              onClick={toggleManualMode}
+              className="h-10 w-10"
+              title={manualMode ? "Auto mode" : "Manual mode"}
+            >
+              <Hand className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Helpful tip */}
           <p className="text-xs text-center text-muted-foreground">
-            {isRecording 
-              ? "Scroll will pause when you stop recording"
-              : "Tap Start Scroll when you begin recording"
+            {manualMode 
+              ? "Tap the text area to advance words manually"
+              : isRecording 
+                ? "Highlighting auto-advances while recording"
+                : "Tap Start to begin highlighting"
             }
           </p>
         </div>
@@ -390,7 +440,7 @@ export function Teleprompter({
 
       {/* Word count */}
       <p className="text-xs text-muted-foreground mt-3 text-center">
-        {value.split(/\s+/).filter(Boolean).length} words
+        {words.length} words
       </p>
     </div>
   );
