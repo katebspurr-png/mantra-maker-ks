@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, CheckSquare, X, FileText, Mic, Play, Pause } from "lucide-react";
+import { Search, CheckSquare, X, FileText, Mic, Play, Pause, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Recording } from "@/types";
 import { useRecordingDurations } from "@/hooks/useAudioDuration";
+import { toast } from "@/hooks/use-toast";
 
 export default function Library() {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ export default function Library() {
   const [activeTab, setActiveTab] = useState("recordings");
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loadingRecordings, setLoadingRecordings] = useState(true);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [favoriteAffirmationIds, setFavoriteAffirmationIds] = useState<Set<string>>(new Set());
 
   // Load durations for recordings with 0 duration
   const loadedDurations = useRecordingDurations(
@@ -58,6 +61,25 @@ export default function Library() {
     fetchRecordings();
   }, []);
 
+  // Fetch favorite affirmations
+  useEffect(() => {
+    const fetchFavoriteAffirmations = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("favorite_affirmations")
+        .select("affirmation_id")
+        .eq("user_id", user.id);
+
+      if (!error && data) {
+        setFavoriteAffirmationIds(new Set(data.map(f => f.affirmation_id)));
+      }
+    };
+
+    fetchFavoriteAffirmations();
+  }, []);
+
   // Clear selection when leaving the page
   useEffect(() => {
     return () => {
@@ -69,12 +91,15 @@ export default function Library() {
   const filteredAffirmations = AFFIRMATIONS_LIBRARY.filter((a) => {
     const matchesSearch = a.text.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = selectedCategory === "all" || a.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesFavorite = !showFavoritesOnly || favoriteAffirmationIds.has(a.id);
+    return matchesSearch && matchesCategory && matchesFavorite;
   });
 
-  const filteredRecordings = recordings.filter((r) =>
-    r.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredRecordings = recordings.filter((r) => {
+    const matchesSearch = r.title.toLowerCase().includes(search.toLowerCase());
+    const matchesFavorite = !showFavoritesOnly || r.is_favorite;
+    return matchesSearch && matchesFavorite;
+  });
 
   const handleRecord = (text: string) => {
     navigate("/new-recording", { state: { prefilledText: text } });
@@ -143,12 +168,79 @@ export default function Library() {
   const isRecordingPlaying = (recordingId: string) =>
     source?.type === "single" && currentTrack?.id === recordingId && isPlaying;
 
+  const handleToggleRecordingFavorite = async (recording: Recording) => {
+    const newValue = !recording.is_favorite;
+    
+    const { error } = await supabase
+      .from("recordings")
+      .update({ is_favorite: newValue })
+      .eq("id", recording.id);
+
+    if (error) {
+      toast({ title: "Error updating favorite", variant: "destructive" });
+      return;
+    }
+
+    setRecordings(prev => 
+      prev.map(r => r.id === recording.id ? { ...r, is_favorite: newValue } : r)
+    );
+    toast({ title: newValue ? "Added to favorites" : "Removed from favorites" });
+  };
+
+  const handleToggleAffirmationFavorite = async (affirmationId: string, isFavorite: boolean) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    if (isFavorite) {
+      const { error } = await supabase
+        .from("favorite_affirmations")
+        .insert({ user_id: user.id, affirmation_id: affirmationId });
+
+      if (error) {
+        toast({ title: "Error adding to favorites", variant: "destructive" });
+        return;
+      }
+
+      setFavoriteAffirmationIds(prev => new Set([...prev, affirmationId]));
+      toast({ title: "Added to favorites" });
+    } else {
+      const { error } = await supabase
+        .from("favorite_affirmations")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("affirmation_id", affirmationId);
+
+      if (error) {
+        toast({ title: "Error removing from favorites", variant: "destructive" });
+        return;
+      }
+
+      setFavoriteAffirmationIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(affirmationId);
+        return newSet;
+      });
+      toast({ title: "Removed from favorites" });
+    }
+  };
+
   const selectedCount = selectedIds.size;
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="p-4 max-w-lg mx-auto">
-        <h1 className="text-2xl font-semibold mb-4">Library</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-semibold">Library</h1>
+          <Button
+            variant={showFavoritesOnly ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            className="gap-1.5"
+          >
+            <Heart className={cn("w-4 h-4", showFavoritesOnly && "fill-current")} />
+            Favorites
+          </Button>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4">
@@ -177,6 +269,8 @@ export default function Library() {
                 <p className="text-muted-foreground mb-4">
                   {recordings.length === 0
                     ? "No recordings yet. Start by recording your first affirmation!"
+                    : showFavoritesOnly
+                    ? "No favorite recordings yet"
                     : "No recordings found"}
                 </p>
                 {recordings.length === 0 && (
@@ -204,18 +298,36 @@ export default function Library() {
                           {duration > 0 ? formatDuration(duration) : "--:--"}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                        onClick={(e) => handlePlayToggle(recording, e)}
-                      >
-                        {playing ? (
-                          <Pause className="w-4 h-4 text-primary" fill="currentColor" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleRecordingFavorite(recording);
+                          }}
+                        >
+                          <Heart 
+                            className={cn(
+                              "w-4 h-4 transition-colors",
+                              recording.is_favorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                            )} 
+                          />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 h-8 w-8"
+                          onClick={(e) => handlePlayToggle(recording, e)}
+                        >
+                          {playing ? (
+                            <Pause className="w-4 h-4 text-primary" fill="currentColor" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
@@ -292,11 +404,13 @@ export default function Library() {
                   showSelection={selectionMode}
                   isSelected={selectedIds.has(affirmation.id)}
                   onSelectionChange={(selected) => handleSelectionChange(affirmation.id, selected)}
+                  isFavorite={favoriteAffirmationIds.has(affirmation.id)}
+                  onFavoriteToggle={(isFavorite) => handleToggleAffirmationFavorite(affirmation.id, isFavorite)}
                 />
               ))}
               {filteredAffirmations.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">
-                  No affirmations found
+                  {showFavoritesOnly ? "No favorite affirmations yet" : "No affirmations found"}
                 </p>
               )}
             </div>

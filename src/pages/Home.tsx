@@ -1,24 +1,27 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Recording } from "@/types";
+import { Recording, Affirmation } from "@/types";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
 import { Button } from "@/components/ui/button";
 import { Mic } from "lucide-react";
+import { AFFIRMATIONS_LIBRARY } from "@/data/affirmations";
 import {
   ThoughtTransformerCard,
   DailyProgressPreview,
   PlaylistsPreview,
   RecentRecordingsPreview,
   TryTodayCard,
+  FavoritesPreview,
 } from "@/components/home";
 
 const Home = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
+  const [favoriteAffirmationIds, setFavoriteAffirmationIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +41,7 @@ const Home = () => {
         .maybeSingle();
       
       setProfile(profileData);
-      await fetchRecordings();
+      await Promise.all([fetchRecordings(), fetchFavoriteAffirmations()]);
       setLoading(false);
       
       // Mark today as completed (user visited app)
@@ -67,6 +70,16 @@ const Home = () => {
     }
   };
 
+  const fetchFavoriteAffirmations = async () => {
+    const { data, error } = await supabase
+      .from("favorite_affirmations")
+      .select("affirmation_id");
+
+    if (!error && data) {
+      setFavoriteAffirmationIds(new Set(data.map(f => f.affirmation_id)));
+    }
+  };
+
   const markTodayComplete = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
     
@@ -78,6 +91,9 @@ const Home = () => {
         { onConflict: "user_id,date" }
       );
   };
+
+  const favoriteRecordings = recordings.filter(r => r.is_favorite);
+  const favoriteAffirmations = AFFIRMATIONS_LIBRARY.filter(a => favoriteAffirmationIds.has(a.id));
 
   if (loading) {
     return (
@@ -126,13 +142,19 @@ const Home = () => {
           Record New Affirmation
         </Button>
 
-        {/* 4. Your Practice (Playlists) */}
+        {/* 4. Favorites */}
+        <FavoritesPreview 
+          favoriteRecordings={favoriteRecordings}
+          favoriteAffirmations={favoriteAffirmations}
+        />
+
+        {/* 5. Your Practice (Playlists) */}
         <PlaylistsPreview />
 
-        {/* 5. Daily Progress */}
+        {/* 6. Daily Progress */}
         <DailyProgressPreview />
 
-        {/* 6. Recent Recordings */}
+        {/* 7. Recent Recordings */}
         <RecentRecordingsPreview recordings={recordings} />
       </div>
 

@@ -1,7 +1,7 @@
 import { Affirmation, AFFIRMATION_CATEGORIES } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mic } from "lucide-react";
+import { Mic, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AffirmationCardProps {
@@ -10,6 +10,8 @@ interface AffirmationCardProps {
   isSelected?: boolean;
   onSelectionChange?: (selected: boolean) => void;
   showSelection?: boolean;
+  isFavorite?: boolean;
+  onFavoriteToggle?: (isFavorite: boolean) => void;
 }
 
 export function AffirmationCard({ 
@@ -17,7 +19,9 @@ export function AffirmationCard({
   onRecord, 
   isSelected = false,
   onSelectionChange,
-  showSelection = false
+  showSelection = false,
+  isFavorite = false,
+  onFavoriteToggle
 }: AffirmationCardProps) {
   const categoryLabel = AFFIRMATION_CATEGORIES.find(
     (c) => c.value === affirmation.category
@@ -54,7 +58,27 @@ export function AffirmationCard({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-base leading-relaxed mb-3">{affirmation.text}</p>
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <p className="text-base leading-relaxed flex-1">{affirmation.text}</p>
+            {onFavoriteToggle && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="shrink-0 h-8 w-8 -mt-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFavoriteToggle(!isFavorite);
+                }}
+              >
+                <Heart 
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    isFavorite ? "fill-red-500 text-red-500" : "text-muted-foreground"
+                  )} 
+                />
+              </Button>
+            )}
+          </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded-full">
               {categoryLabel}

@@ -38,6 +38,27 @@ export type Database = {
         }
         Relationships: []
       }
+      favorite_affirmations: {
+        Row: {
+          affirmation_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          affirmation_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          affirmation_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       playlist_recordings: {
         Row: {
           created_at: string
@@ -131,6 +152,7 @@ export type Database = {
           created_at: string | null
           duration_seconds: number
           id: string
+          is_favorite: boolean | null
           loop_mode: Database["public"]["Enums"]["loop_mode"] | null
           text: string | null
           title: string
@@ -141,6 +163,7 @@ export type Database = {
           created_at?: string | null
           duration_seconds: number
           id?: string
+          is_favorite?: boolean | null
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
           text?: string | null
           title: string
@@ -151,6 +174,7 @@ export type Database = {
           created_at?: string | null
           duration_seconds?: number
           id?: string
+          is_favorite?: boolean | null
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
           text?: string | null
           title?: string
