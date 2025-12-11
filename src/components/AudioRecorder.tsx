@@ -19,6 +19,7 @@ const AudioRecorder = ({ onRecordingComplete, onRecordingStart }: AudioRecorderP
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recordingTimeRef = useRef<number>(0);
 
   useEffect(() => {
     return () => {
@@ -55,6 +56,7 @@ const AudioRecorder = ({ onRecordingComplete, onRecordingStart }: AudioRecorderP
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType });
+        onRecordingComplete(blob, recordingTimeRef.current);
         onRecordingComplete(blob, recordingTime);
         
         // Cleanup
@@ -67,12 +69,14 @@ const AudioRecorder = ({ onRecordingComplete, onRecordingStart }: AudioRecorderP
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      recordingTimeRef.current = 0;
       onRecordingStart?.();
 
       // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => {
           const newTime = prev + 1;
+          recordingTimeRef.current = newTime;
           if (newTime >= MAX_RECORDING_TIME) {
             stopRecording();
             toast.info("Maximum recording length reached (10 minutes)");
