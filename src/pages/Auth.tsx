@@ -7,6 +7,21 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Mic } from "lucide-react";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signupSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  firstName: z.string().min(1, "First name is required").max(50, "First name is too long"),
+});
 
 const REMEMBER_ME_KEY = "loop-remember-me";
 
@@ -44,33 +59,46 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate input with zod schema
       if (isLogin) {
+        const result = loginSchema.safeParse({ email, password });
+        if (!result.success) {
+          const errorMessage = result.error.errors[0]?.message || "Invalid input";
+          toast.error(errorMessage);
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: result.data.email,
+          password: result.data.password,
         });
         if (error) throw error;
         
-        // Save remember me preference
         localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
-        
         toast.success("Welcome back!");
       } else {
+        const result = signupSchema.safeParse({ email, password, firstName });
+        if (!result.success) {
+          const errorMessage = result.error.errors[0]?.message || "Invalid input";
+          toast.error(errorMessage);
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
+          email: result.data.email,
+          password: result.data.password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
-              first_name: firstName,
+              first_name: result.data.firstName,
             },
           },
         });
         if (error) throw error;
         
-        // Save remember me preference for new signups too
         localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
-        
         toast.success("Account created! Welcome to Loop.");
       }
     } catch (error: any) {
