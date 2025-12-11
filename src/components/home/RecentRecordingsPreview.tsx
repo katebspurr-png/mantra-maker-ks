@@ -126,7 +126,7 @@ export const RecentRecordingsPreview = ({ recordings }: RecentRecordingsPreviewP
           variant="ghost" 
           size="sm" 
           className="w-full mt-3 text-muted-foreground"
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/library")}
         >
           View All Recordings
           <ChevronRight className="w-4 h-4 ml-1" />
