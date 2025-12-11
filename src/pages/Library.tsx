@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Recording } from "@/types";
 import { useRecordingDurations } from "@/hooks/useAudioDuration";
 import { toast } from "@/hooks/use-toast";
+import { BulletFormatToggle, formatCombinedScript } from "@/components/BulletFormatToggle";
 
 export default function Library() {
   const navigate = useNavigate();
@@ -27,6 +28,7 @@ export default function Library() {
   const [loadingRecordings, setLoadingRecordings] = useState(true);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favoriteAffirmationIds, setFavoriteAffirmationIds] = useState<Set<string>>(new Set());
+  const [useBulletFormat, setUseBulletFormat] = useState(false);
 
   // Load durations for recordings with 0 duration
   const loadedDurations = useRecordingDurations(
@@ -126,13 +128,15 @@ export default function Library() {
 
   const handleBuildScript = () => {
     const selectedAffirmations = filteredAffirmations.filter((a) => selectedIds.has(a.id));
-    const combinedScript = selectedAffirmations
-      .map((a) => a.text)
-      .join("\n\n");
+    const combinedScript = formatCombinedScript(
+      selectedAffirmations.map((a) => a.text),
+      useBulletFormat
+    );
 
     navigate("/new-recording", { state: { prefilledText: combinedScript } });
     setSelectedIds(new Set());
     setSelectionMode(false);
+    setUseBulletFormat(false);
   };
 
   const handleClearSelection = () => {
@@ -426,24 +430,30 @@ export default function Library() {
             isPlaying ? "bottom-32" : "bottom-16"
           )}
         >
-          <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">
-                {selectedCount} selected
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearSelection}
-                className="h-7 px-2"
-              >
-                <X className="w-3.5 h-3.5" />
+          <div className="max-w-lg mx-auto space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {selectedCount} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearSelection}
+                  className="h-7 px-2"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+              <Button onClick={handleBuildScript} className="gap-1.5">
+                <FileText className="w-4 h-4" />
+                Build Script
               </Button>
             </div>
-            <Button onClick={handleBuildScript} className="gap-1.5">
-              <FileText className="w-4 h-4" />
-              Build Recording Script
-            </Button>
+            <BulletFormatToggle 
+              enabled={useBulletFormat} 
+              onChange={setUseBulletFormat} 
+            />
           </div>
         </div>
       )}

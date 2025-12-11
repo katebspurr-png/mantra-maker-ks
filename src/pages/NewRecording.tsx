@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import AudioRecorder from "@/components/AudioRecorder";
 import { Teleprompter } from "@/components/Teleprompter";
 import { BottomNavigation } from "@/components/BottomNavigation";
+import { TagInput } from "@/components/TagInput";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { LoopMode } from "@/types";
@@ -25,6 +26,7 @@ const NewRecording = () => {
     const saved = localStorage.getItem("defaultLoopMode") as LoopMode;
     return saved || "infinite";
   });
+  const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
@@ -72,6 +74,7 @@ const NewRecording = () => {
         audio_file_path: fileName,
         loop_mode: loopMode,
         text: teleprompterText || null,
+        tags: tags,
       });
 
       if (dbError) throw dbError;
@@ -160,6 +163,16 @@ const NewRecording = () => {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Affirmation title"
+                  />
+                </div>
+
+                {/* Tags Input */}
+                <div className="space-y-2">
+                  <Label>Tags (optional)</Label>
+                  <TagInput
+                    tags={tags}
+                    onChange={setTags}
+                    placeholder="Add tags (e.g., morning, sleep)..."
                   />
                 </div>
 

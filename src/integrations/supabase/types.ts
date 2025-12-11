@@ -154,6 +154,7 @@ export type Database = {
           id: string
           is_favorite: boolean | null
           loop_mode: Database["public"]["Enums"]["loop_mode"] | null
+          tags: string[]
           text: string | null
           title: string
           user_id: string
@@ -165,6 +166,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean | null
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
+          tags?: string[]
           text?: string | null
           title: string
           user_id: string
@@ -176,6 +178,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean | null
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
+          tags?: string[]
           text?: string | null
           title?: string
           user_id?: string
