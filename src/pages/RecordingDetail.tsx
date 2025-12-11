@@ -10,8 +10,9 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { PlaybackSettings, usePlaybackSettings, saveDefaultPlaybackSettings } from "@/components/PlaybackSettings";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
 import { ToneAnalysis } from "@/components/ToneAnalysis";
+import { TagInput } from "@/components/TagInput";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
-import { ArrowLeft, Pencil, Check, X, Play, Pause } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -22,6 +23,8 @@ const RecordingDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
+  const [isEditingTags, setIsEditingTags] = useState(false);
+  const [editedTags, setEditedTags] = useState<string[]>([]);
   
   // Playback settings with session persistence
   const { settings: playbackSettings, setSettings: setPlaybackSettings, saveAsDefault } = usePlaybackSettings();
@@ -61,6 +64,7 @@ const RecordingDetail = () => {
 
       setRecording(data as Recording);
       setEditedTitle(data.title);
+      setEditedTags(data.tags || []);
     } catch (error: any) {
       toast.error(error.message || "Failed to load recording");
       navigate("/home");
@@ -85,6 +89,25 @@ const RecordingDetail = () => {
       toast.success("Title updated");
     } catch (error: any) {
       toast.error(error.message || "Failed to update title");
+    }
+  };
+
+  const handleSaveTags = async () => {
+    if (!recording) return;
+
+    try {
+      const { error } = await supabase
+        .from("recordings")
+        .update({ tags: editedTags })
+        .eq("id", recording.id);
+
+      if (error) throw error;
+
+      setRecording({ ...recording, tags: editedTags });
+      setIsEditingTags(false);
+      toast.success("Tags updated");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update tags");
     }
   };
 
@@ -213,11 +236,73 @@ const RecordingDetail = () => {
             )}
           </div>
 
+          {/* Tags Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-muted-foreground" />
+                <Label>Tags</Label>
+              </div>
+              {!isEditingTags ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingTags(true)}
+                >
+                  <Pencil className="w-3.5 h-3.5 mr-1" />
+                  Edit
+                </Button>
+              ) : (
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSaveTags}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingTags(false);
+                      setEditedTags(recording.tags || []);
+                    }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              )}
+            </div>
+            {isEditingTags ? (
+              <TagInput
+                tags={editedTags}
+                onChange={setEditedTags}
+                placeholder="Add tags..."
+              />
+            ) : (
+              <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+                {(recording.tags && recording.tags.length > 0) ? (
+                  recording.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-muted-foreground">No tags added</span>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Affirmation Text */}
           {recording.text && (
             <div className="bg-secondary/50 rounded-xl p-4">
               <p className="text-sm text-muted-foreground mb-1">Affirmation:</p>
-              <p className="text-base">{recording.text}</p>
+              <p className="text-base whitespace-pre-wrap">{recording.text}</p>
             </div>
           )}
 

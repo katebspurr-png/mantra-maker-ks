@@ -26,6 +26,8 @@ export interface Recording {
   loop_mode: LoopMode;
   text?: string | null;
   is_favorite?: boolean;
+  // Tags can later be used for filtering recordings or building smart playlists by theme
+  tags?: string[];
 }
 
 export interface Playlist {
