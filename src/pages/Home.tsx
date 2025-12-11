@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Recording } from "@/types";
@@ -6,14 +6,22 @@ import RecordingsList from "@/components/RecordingsList";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
+import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 
 const Home = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Use global audio context for persistent background playback
+  const { 
+    currentTrack, 
+    isPlaying, 
+    source,
+    playSingleRecording, 
+    togglePlayPause 
+  } = useGlobalAudio();
 
   useEffect(() => {
     const init = async () => {
@@ -58,24 +66,24 @@ const Home = () => {
     }
   };
 
+  /**
+   * Handle play/pause for a recording using global audio context
+   * This ensures audio persists across route changes (background playback)
+   */
   const handlePlayToggle = async (recording: Recording) => {
-    if (playingId === recording.id) {
-      audioRef.current?.pause();
-      setPlayingId(null);
+    const isCurrentTrack = source?.type === "single" && currentTrack?.id === recording.id;
+    
+    if (isCurrentTrack) {
+      // Same track, just toggle play/pause
+      togglePlayPause();
     } else {
-      const { data } = await supabase.storage
-        .from("recordings")
-        .createSignedUrl(recording.audio_file_path, 3600);
-
-      if (data?.signedUrl) {
-        if (audioRef.current) {
-          audioRef.current.src = data.signedUrl;
-          audioRef.current.play();
-          setPlayingId(recording.id);
-        }
-      }
+      // Different track, start playing with its loop mode
+      await playSingleRecording(recording, recording.loop_mode);
     }
   };
+  
+  // Determine which recording is currently playing (if any single recording)
+  const playingId = source?.type === "single" && isPlaying ? currentTrack?.id : null;
 
   if (loading) {
     return (
@@ -88,7 +96,6 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <WelcomeDialog />
-      <audio ref={audioRef} onEnded={() => setPlayingId(null)} />
       
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">

@@ -18,10 +18,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Play, Pause, Infinity, X } from "lucide-react";
+import { MoreVertical, Play, Pause, Infinity } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 
 interface RecordingsListProps {
   recordings: Recording[];
@@ -33,6 +34,7 @@ interface RecordingsListProps {
 const RecordingsList = ({ recordings, onRecordingsChange, playingId, onPlayToggle }: RecordingsListProps) => {
   const navigate = useNavigate();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { currentTrack, source, isPlaying } = useGlobalAudio();
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -101,28 +103,37 @@ const RecordingsList = ({ recordings, onRecordingsChange, playingId, onPlayToggl
   return (
     <>
       <div className="space-y-3">
-        {recordings.map((recording) => (
-          <div
-            key={recording.id}
-            className="bg-card rounded-2xl p-4 shadow-sm border border-border hover:shadow-md transition-all cursor-pointer"
-            onClick={() => navigate(`/recording/${recording.id}`)}
-          >
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 touch-target"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPlayToggle(recording);
-                }}
-              >
-                {playingId === recording.id ? (
-                  <Pause className="w-5 h-5" />
-                ) : (
-                  <Play className="w-5 h-5" />
-                )}
-              </Button>
+        {recordings.map((recording) => {
+          // Check if this recording is the current track in the global player
+          const isCurrentInPlayer = source?.type === "single" && currentTrack?.id === recording.id;
+          const isCurrentlyPlaying = isCurrentInPlayer && isPlaying;
+          
+          return (
+            <div
+              key={recording.id}
+              className={`bg-card rounded-2xl p-4 shadow-sm border transition-all cursor-pointer ${
+                isCurrentInPlayer 
+                  ? "border-primary bg-primary/5 shadow-md" 
+                  : "border-border hover:shadow-md"
+              }`}
+              onClick={() => navigate(`/recording/${recording.id}`)}
+            >
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 touch-target"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlayToggle(recording);
+                  }}
+                >
+                  {isCurrentlyPlaying ? (
+                    <Pause className="w-5 h-5" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
+                </Button>
 
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold truncate">{recording.title}</h3>
@@ -165,7 +176,8 @@ const RecordingsList = ({ recordings, onRecordingsChange, playingId, onPlayToggl
               </DropdownMenu>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
