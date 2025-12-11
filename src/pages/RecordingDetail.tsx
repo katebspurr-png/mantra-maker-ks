@@ -9,6 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { PlaybackSettings, usePlaybackSettings, saveDefaultPlaybackSettings } from "@/components/PlaybackSettings";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
+import { ToneAnalysis } from "@/components/ToneAnalysis";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { ArrowLeft, Pencil, Check, X, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
@@ -269,6 +270,14 @@ const RecordingDetail = () => {
               settings={playbackSettings}
               onChange={handlePlaybackSettingsChange}
               onSaveAsDefault={handleSaveAsDefault}
+            />
+          </div>
+
+          {/* Tone Analysis */}
+          <div className="pt-4 border-t border-border">
+            <ToneAnalysis
+              audioUrl={recording.audio_file_path}
+              affirmationText={recording.text || undefined}
             />
           </div>
         </div>
