@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, CheckSquare, X, FileText, Mic, Play, Pause, Heart } from "lucide-react";
+import { Search, CheckSquare, X, FileText, Mic, Play, Pause, Heart, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +29,12 @@ export default function Library() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favoriteAffirmationIds, setFavoriteAffirmationIds] = useState<Set<string>>(new Set());
   const [useBulletFormat, setUseBulletFormat] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+  // Extract all unique tags from recordings for filtering
+  const allTags = Array.from(
+    new Set(recordings.flatMap(r => r.tags || []))
+  ).sort();
 
   // Load durations for recordings with 0 duration
   const loadedDurations = useRecordingDurations(
@@ -100,7 +106,8 @@ export default function Library() {
   const filteredRecordings = recordings.filter((r) => {
     const matchesSearch = r.title.toLowerCase().includes(search.toLowerCase());
     const matchesFavorite = !showFavoritesOnly || r.is_favorite;
-    return matchesSearch && matchesFavorite;
+    const matchesTag = !selectedTag || (r.tags && r.tags.includes(selectedTag));
+    return matchesSearch && matchesFavorite && matchesTag;
   });
 
   const handleRecord = (text: string) => {
@@ -265,7 +272,41 @@ export default function Library() {
               />
             </div>
 
+            {/* Tag Filters */}
+            {allTags.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-4 px-4 scrollbar-hide">
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5",
+                    selectedTag === null
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  )}
+                >
+                  All
+                </button>
+                {allTags.map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors flex items-center gap-1.5",
+                      selectedTag === tag
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground"
+                    )}
+                  >
+                    <Tag className="w-3 h-3" />
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loadingRecordings ? (
+              <div className="text-center text-muted-foreground py-8">Loading...</div>
+            ) : filteredRecordings.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">Loading...</div>
             ) : filteredRecordings.length === 0 ? (
               <div className="text-center py-12">
@@ -273,6 +314,8 @@ export default function Library() {
                 <p className="text-muted-foreground mb-4">
                   {recordings.length === 0
                     ? "No recordings yet. Start by recording your first affirmation!"
+                    : selectedTag
+                    ? `No recordings with tag "${selectedTag}"`
                     : showFavoritesOnly
                     ? "No favorite recordings yet"
                     : "No recordings found"}
