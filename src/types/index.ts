@@ -25,6 +25,7 @@ export interface Recording {
   audio_file_path: string;
   loop_mode: LoopMode;
   text?: string | null;
+  is_favorite?: boolean;
 }
 
 export interface Playlist {

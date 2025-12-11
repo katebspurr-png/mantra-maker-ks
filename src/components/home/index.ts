@@ -3,3 +3,4 @@ export { DailyProgressPreview } from "./DailyProgressPreview";
 export { PlaylistsPreview } from "./PlaylistsPreview";
 export { RecentRecordingsPreview } from "./RecentRecordingsPreview";
 export { TryTodayCard } from "./TryTodayCard";
+export { FavoritesPreview } from "./FavoritesPreview";
