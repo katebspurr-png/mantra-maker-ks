@@ -113,7 +113,10 @@ const Home = () => {
         {/* 1. Thought Transformer */}
         <ThoughtTransformerCard />
 
-        {/* 2. Record New Affirmation - Primary CTA */}
+        {/* 2. Try This Today */}
+        <TryTodayCard />
+
+        {/* 3. Record New Affirmation - Primary CTA */}
         <Button 
           size="lg"
           className="w-full h-14 text-lg font-semibold shadow-lg"
@@ -123,17 +126,14 @@ const Home = () => {
           Record New Affirmation
         </Button>
 
-        {/* 3. Your Practice (Playlists) */}
+        {/* 4. Your Practice (Playlists) */}
         <PlaylistsPreview />
 
-        {/* 4. Daily Progress */}
+        {/* 5. Daily Progress */}
         <DailyProgressPreview />
 
-        {/* 5. Recent Recordings */}
+        {/* 6. Recent Recordings */}
         <RecentRecordingsPreview recordings={recordings} />
-
-        {/* 6. Try This Today */}
-        <TryTodayCard />
       </div>
 
       <BottomNavigation />
