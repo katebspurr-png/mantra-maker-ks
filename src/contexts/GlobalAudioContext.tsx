@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_SETTINGS } from "@/types";
+import { PlaybackSpeed, PLAYBACK_SPEEDS } from "@/components/PlaybackSpeedControl";
 
 /**
  * Global Audio Context
@@ -11,6 +12,11 @@ import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_S
  * - Loop: Repeat continuously until stopped
  * - Repeat: Play exactly N times
  * - Duration: Play for a set amount of time
+ * 
+ * PLAYBACK SPEED:
+ * - Stored in this context as single source of truth
+ * - Applied to audio.playbackRate whenever speed changes or new track loads
+ * - Persisted for session via state (resets on page reload)
  * 
  * PWA COMPATIBILITY:
  * - Uses a single persistent audio element
@@ -47,6 +53,7 @@ interface GlobalAudioState {
   loopMode: LoopMode;
   playbackSettings: PlaybackSettings;
   playbackStatus: PlaybackStatus;
+  playbackSpeed: PlaybackSpeed;
   // Playlist-specific
   playlist: Recording[];
   playlistSettings: {
@@ -76,6 +83,7 @@ interface GlobalAudioContextType extends GlobalAudioState {
   seek: (time: number) => void;
   setLoopMode: (mode: LoopMode) => void;
   updatePlaybackSettings: (settings: PlaybackSettings) => void;
+  setPlaybackSpeed: (speed: PlaybackSpeed) => void;
 }
 
 const GlobalAudioContext = createContext<GlobalAudioContextType | null>(null);
@@ -103,6 +111,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     currentTrackNumber: 1,
     totalTracks: 1,
   });
+  // Playback speed - persisted for session, default 1x
+  const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
 
   // Refs for tracking
   const repetitionCountRef = useRef(0);
@@ -218,6 +228,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     const audio = audioRef.current;
     audio.src = audioUrl;
     audio.load();
+    // Apply current playback speed to new track
+    audio.playbackRate = playbackSpeed;
     
     try {
       await audio.play();
@@ -230,7 +242,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       console.error("Error playing audio:", error);
       return false;
     }
-  }, []);
+  }, [playbackSpeed]);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -536,6 +548,24 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     }));
   }, []);
 
+  /**
+   * Set playback speed - applies immediately to current audio
+   * Speed persists for the session but resets on page reload
+   */
+  const setPlaybackSpeed = useCallback((speed: PlaybackSpeed) => {
+    setPlaybackSpeedState(speed);
+    if (audioRef.current) {
+      try {
+        audioRef.current.playbackRate = speed;
+      } catch (error) {
+        // Fallback to 1x if speed not supported
+        console.warn("Playback speed not supported, falling back to 1x:", error);
+        setPlaybackSpeedState(1);
+        audioRef.current.playbackRate = 1;
+      }
+    }
+  }, []);
+
   const value: GlobalAudioContextType = {
     isPlaying,
     currentTime,
@@ -546,6 +576,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     loopMode,
     playbackSettings,
     playbackStatus,
+    playbackSpeed,
     playlist,
     playlistSettings,
     playSingleRecording,
@@ -557,6 +588,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     seek,
     setLoopMode,
     updatePlaybackSettings,
+    setPlaybackSpeed,
   };
 
   return (
