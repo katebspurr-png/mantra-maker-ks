@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,12 +6,14 @@ import { Play, Pause, Mic, ChevronRight } from "lucide-react";
 import { Recording } from "@/types";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useRecordingDurations } from "@/hooks/useAudioDuration";
+import { RecordingOptionsMenu } from "@/components/RecordingOptionsMenu";
 
 interface RecentRecordingsPreviewProps {
   recordings: Recording[];
+  onRecordingDeleted?: () => void;
 }
 
-export const RecentRecordingsPreview = ({ recordings }: RecentRecordingsPreviewProps) => {
+export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: RecentRecordingsPreviewProps) => {
   const navigate = useNavigate();
   const { currentTrack, isPlaying, source, playSingleRecording, togglePlayPause } = useGlobalAudio();
   
@@ -105,18 +108,26 @@ export const RecentRecordingsPreview = ({ recordings }: RecentRecordingsPreviewP
                     {duration > 0 ? formatDuration(duration) : "--:--"}
                   </p>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="shrink-0"
-                  onClick={(e) => handlePlayToggle(recording, e)}
-                >
-                  {playing ? (
-                    <Pause className="w-4 h-4 text-primary" fill="currentColor" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="shrink-0 h-8 w-8"
+                    onClick={(e) => handlePlayToggle(recording, e)}
+                  >
+                    {playing ? (
+                      <Pause className="w-4 h-4 text-primary" fill="currentColor" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <RecordingOptionsMenu 
+                      recording={recording}
+                      onDeleted={onRecordingDeleted}
+                    />
+                  </div>
+                </div>
               </div>
             );
           })}

@@ -155,7 +155,7 @@ const Home = () => {
         <DailyProgressPreview />
 
         {/* 7. Recent Recordings */}
-        <RecentRecordingsPreview recordings={recordings} />
+        <RecentRecordingsPreview recordings={recordings} onRecordingDeleted={fetchRecordings} />
       </div>
 
       <BottomNavigation />
