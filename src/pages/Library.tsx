@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, CheckSquare, X, FileText, Mic, Play, Pause, Heart, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { AffirmationCard } from "@/components/AffirmationCard";
+import { RecordingOptionsMenu } from "@/components/RecordingOptionsMenu";
 import { AFFIRMATIONS_LIBRARY } from "@/data/affirmations";
 import { AFFIRMATION_CATEGORIES, AffirmationCategory } from "@/types";
 import { cn } from "@/lib/utils";
@@ -46,28 +47,33 @@ export default function Library() {
   );
 
   // Fetch user recordings
-  useEffect(() => {
-    const fetchRecordings = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoadingRecordings(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("recordings")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (!error && data) {
-        setRecordings(data as Recording[]);
-      }
+  const fetchRecordings = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       setLoadingRecordings(false);
-    };
+      return;
+    }
 
-    fetchRecordings();
+    const { data, error } = await supabase
+      .from("recordings")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setRecordings(data as Recording[]);
+    }
+    setLoadingRecordings(false);
   }, []);
+
+  useEffect(() => {
+    fetchRecordings();
+  }, [fetchRecordings]);
+
+  const handleRecordingDeleted = () => {
+    // Refresh the recordings list after deletion
+    fetchRecordings();
+  };
 
   // Fetch favorite affirmations
   useEffect(() => {
@@ -374,6 +380,14 @@ export default function Library() {
                             <Play className="w-4 h-4" />
                           )}
                         </Button>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <RecordingOptionsMenu
+                            recording={recording}
+                            onDeleted={handleRecordingDeleted}
+                            showRename
+                            onRename={() => navigate(`/recording/${recording.id}`)}
+                          />
+                        </div>
                       </div>
                     </div>
                   );

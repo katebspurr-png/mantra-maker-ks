@@ -12,8 +12,10 @@ import { PlaybackStatus } from "@/components/PlaybackStatus";
 import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
 import { ToneAnalysis } from "@/components/ToneAnalysis";
 import { TagInput } from "@/components/TagInput";
+import { DeleteRecordingDialog } from "@/components/DeleteRecordingDialog";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
-import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag } from "lucide-react";
+import { useDeleteRecording } from "@/hooks/useDeleteRecording";
+import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -26,6 +28,14 @@ const RecordingDetail = () => {
   const [editedTitle, setEditedTitle] = useState("");
   const [isEditingTags, setIsEditingTags] = useState(false);
   const [editedTags, setEditedTags] = useState<string[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Delete recording hook
+  const { deleteRecording, isDeleting } = useDeleteRecording({
+    onSuccess: () => {
+      navigate("/home");
+    },
+  });
   
   // Playback settings with session persistence
   const { settings: playbackSettings, setSettings: setPlaybackSettings, saveAsDefault } = usePlaybackSettings();
@@ -376,8 +386,27 @@ const RecordingDetail = () => {
               affirmationText={recording.text || undefined}
             />
           </div>
+
+          {/* Delete Recording */}
+          <div className="pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Recording
+            </Button>
+          </div>
         </div>
       </div>
+
+      <DeleteRecordingDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={() => deleteRecording(recording.id, recording.audio_file_path)}
+        isDeleting={isDeleting}
+      />
 
       <BottomNavigation />
     </div>
