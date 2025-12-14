@@ -1,1 +1,10 @@
 project_id = "uwzjdosvirwzgbiouzcd"
+
+[functions.generate-recording-metadata]
+verify_jwt = false
+
+[functions.analyze-tone]
+verify_jwt = false
+
+[functions.rewrite-thought]
+verify_jwt = false
