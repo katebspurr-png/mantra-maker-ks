@@ -19,6 +19,7 @@ import { TeleprompterDisplay, TeleprompterDisplayRef } from "@/components/Telepr
 import { TeleprompterSettings } from "@/components/TeleprompterSettings";
 import { RecordingControls } from "@/components/RecordingControls";
 import { TextInputArea } from "@/components/TextInputArea";
+import { AudioPreviewPlayer } from "@/components/AudioPreviewPlayer";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { TagInput } from "@/components/TagInput";
 import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
@@ -48,6 +49,7 @@ const NewRecording = () => {
   const [duration, setDuration] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingKey, setRecordingKey] = useState(0); // Key to force RecordingControls remount
+  const [previewKey, setPreviewKey] = useState(0); // Key to force AudioPreviewPlayer remount
   
   // Save form state
   const [title, setTitle] = useState("");
@@ -207,6 +209,9 @@ const NewRecording = () => {
 
   // Try Again: clears recording, resets timer & karaoke, keeps text/settings/tags
   const handleTryAgain = () => {
+    // Force preview player to stop and cleanup (via key change)
+    setPreviewKey(prev => prev + 1);
+    
     // Release the recording blob
     setRecordingBlob(null);
     setDuration(0);
@@ -232,6 +237,9 @@ const NewRecording = () => {
   };
 
   const confirmDiscard = () => {
+    // Force preview player to stop and cleanup
+    setPreviewKey(prev => prev + 1);
+    
     setRecordingBlob(null);
     setDuration(0);
     setTitle("");
@@ -321,6 +329,15 @@ const NewRecording = () => {
           </div>
         ) : (
           <div className="space-y-6 animate-in">
+            {/* Audio Preview with Waveform */}
+            {recordingBlob && (
+              <AudioPreviewPlayer
+                key={previewKey}
+                audioBlob={recordingBlob}
+                duration={duration}
+              />
+            )}
+
             {/* Show affirmation text if present */}
             {affirmationText && (
               <div className="bg-card rounded-xl border border-border p-4">
@@ -329,14 +346,8 @@ const NewRecording = () => {
               </div>
             )}
 
+            {/* Metadata form */}
             <div className="bg-card rounded-2xl p-6 border border-border">
-              <div className="text-center space-y-2 mb-6">
-                <div className="text-3xl font-bold text-primary">
-                  {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, "0")}
-                </div>
-                <p className="text-sm text-muted-foreground">Duration</p>
-              </div>
-
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Title</Label>
