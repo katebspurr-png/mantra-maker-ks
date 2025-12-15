@@ -16,7 +16,7 @@ import { DeleteRecordingDialog } from "@/components/DeleteRecordingDialog";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useDeleteRecording } from "@/hooks/useDeleteRecording";
 import { usePremium } from "@/hooks/usePremium";
-import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star, Lock } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star, Lock, Layers } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -370,6 +370,17 @@ const RecordingDetail = () => {
             <div className="bg-secondary/50 rounded-xl p-4">
               <p className="text-sm text-muted-foreground mb-1">Affirmation:</p>
               <p className="text-base whitespace-pre-wrap">{recording.text}</p>
+              {recording.affirmation_id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 -ml-2 gap-1.5"
+                  onClick={() => navigate(`/affirmation/${recording.affirmation_id}`)}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  View all takes
+                </Button>
+              )}
             </div>
           )}
 
@@ -436,6 +447,7 @@ const RecordingDetail = () => {
           {/* Tone Analysis */}
           <div className="pt-4 border-t border-border">
             <ToneAnalysis
+              recordingId={recording.id}
               audioUrl={recording.audio_file_path}
               affirmationText={recording.text || undefined}
             />
