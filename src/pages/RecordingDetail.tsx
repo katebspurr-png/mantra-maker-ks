@@ -15,7 +15,8 @@ import { TagInput } from "@/components/TagInput";
 import { DeleteRecordingDialog } from "@/components/DeleteRecordingDialog";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useDeleteRecording } from "@/hooks/useDeleteRecording";
-import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star } from "lucide-react";
+import { usePremium } from "@/hooks/usePremium";
+import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star, Lock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -36,6 +37,9 @@ const RecordingDetail = () => {
       navigate("/home");
     },
   });
+  
+  // Premium status for gated features
+  const { isPremium } = usePremium();
   
   // Playback settings with session persistence
   const { settings: playbackSettings, setSettings: setPlaybackSettings, saveAsDefault } = usePlaybackSettings();
@@ -268,18 +272,33 @@ const RecordingDetail = () => {
                   </Button>
                 </div>
                 
-                {/* Best Take Toggle - subtle, user-controlled marker */}
-                <button
-                  onClick={handleToggleBestTake}
-                  className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
-                >
-                  <Star 
-                    className={`w-4 h-4 ${recording.is_best_take ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} 
-                  />
-                  <span className={recording.is_best_take ? "text-amber-600" : "text-muted-foreground"}>
-                    {recording.is_best_take ? "Best Take" : "Mark as Best Take"}
-                  </span>
-                </button>
+                {/* Best Take Toggle - premium feature, visible to all */}
+                {isPremium ? (
+                  <button
+                    onClick={handleToggleBestTake}
+                    className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
+                  >
+                    <Star 
+                      className={`w-4 h-4 ${recording.is_best_take ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} 
+                    />
+                    <span className={recording.is_best_take ? "text-amber-600" : "text-muted-foreground"}>
+                      {recording.is_best_take ? "Best Take" : "Mark as Best Take"}
+                    </span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Star 
+                      className={`w-4 h-4 ${recording.is_best_take ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} 
+                    />
+                    <span className={recording.is_best_take ? "text-amber-600" : "text-muted-foreground"}>
+                      {recording.is_best_take ? "Best Take" : "Best Take"}
+                    </span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 ml-1">
+                      <Lock className="w-3 h-3" />
+                      Available with Pro
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>
