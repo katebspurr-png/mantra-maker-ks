@@ -152,6 +152,7 @@ export type Database = {
           created_at: string | null
           duration_seconds: number
           id: string
+          is_best_take: boolean
           is_favorite: boolean | null
           loop_mode: Database["public"]["Enums"]["loop_mode"] | null
           tags: string[]
@@ -164,6 +165,7 @@ export type Database = {
           created_at?: string | null
           duration_seconds: number
           id?: string
+          is_best_take?: boolean
           is_favorite?: boolean | null
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
           tags?: string[]
@@ -176,6 +178,7 @@ export type Database = {
           created_at?: string | null
           duration_seconds?: number
           id?: string
+          is_best_take?: boolean
           is_favorite?: boolean | null
           loop_mode?: Database["public"]["Enums"]["loop_mode"] | null
           tags?: string[]

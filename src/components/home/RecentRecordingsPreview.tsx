@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Mic, ChevronRight } from "lucide-react";
+import { Play, Pause, Mic, ChevronRight, Star } from "lucide-react";
 import { Recording } from "@/types";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useRecordingDurations } from "@/hooks/useAudioDuration";
@@ -103,7 +103,12 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
                 onClick={() => navigate(`/recording/${recording.id}`)}
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{recording.title}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium truncate">{recording.title}</p>
+                    {recording.is_best_take && (
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {duration > 0 ? formatDuration(duration) : "--:--"}
                   </p>

@@ -15,7 +15,7 @@ import { TagInput } from "@/components/TagInput";
 import { DeleteRecordingDialog } from "@/components/DeleteRecordingDialog";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useDeleteRecording } from "@/hooks/useDeleteRecording";
-import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -121,6 +121,26 @@ const RecordingDetail = () => {
       toast.success("Tags updated");
     } catch (error: any) {
       toast.error(error.message || "Failed to update tags");
+    }
+  };
+
+  const handleToggleBestTake = async () => {
+    if (!recording) return;
+
+    const newValue = !recording.is_best_take;
+    
+    try {
+      const { error } = await supabase
+        .from("recordings")
+        .update({ is_best_take: newValue })
+        .eq("id", recording.id);
+
+      if (error) throw error;
+
+      setRecording({ ...recording, is_best_take: newValue });
+      toast.success(newValue ? "Marked as Best Take" : "Removed Best Take");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update");
     }
   };
 
@@ -231,20 +251,35 @@ const RecordingDetail = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <h2 className="text-2xl font-bold">{recording.title}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {format(new Date(recording.created_at), "MMMM d, yyyy 'at' h:mm a")}
-                  </p>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold">{recording.title}</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {format(new Date(recording.created_at), "MMMM d, yyyy 'at' h:mm a")}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsEditingTitle(true)}
+                
+                {/* Best Take Toggle - subtle, user-controlled marker */}
+                <button
+                  onClick={handleToggleBestTake}
+                  className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
                 >
-                  <Pencil className="w-4 h-4" />
-                </Button>
+                  <Star 
+                    className={`w-4 h-4 ${recording.is_best_take ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} 
+                  />
+                  <span className={recording.is_best_take ? "text-amber-600" : "text-muted-foreground"}>
+                    {recording.is_best_take ? "Best Take" : "Mark as Best Take"}
+                  </span>
+                </button>
               </div>
             )}
           </div>
