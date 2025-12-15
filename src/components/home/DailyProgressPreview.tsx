@@ -125,10 +125,10 @@ export const DailyProgressPreview = () => {
           variant="ghost" 
           size="sm" 
           className="w-full text-muted-foreground"
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/progress")}
         >
           <Calendar className="w-4 h-4 mr-2" />
-          View Calendar
+          View Progress
         </Button>
       </CardContent>
     </Card>
