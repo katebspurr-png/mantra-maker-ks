@@ -25,6 +25,7 @@ import { TagInput } from "@/components/TagInput";
 import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LoopMode } from "@/types";
+import { generateAffirmationId } from "@/hooks/useAffirmationId";
 
 /**
  * NewRecording Page
@@ -38,7 +39,12 @@ import { LoopMode } from "@/types";
 const NewRecording = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const prefilledText = (location.state as { prefilledText?: string })?.prefilledText || "";
+  const locationState = location.state as { 
+    prefilledText?: string; 
+    affirmationId?: string;
+  } | null;
+  const prefilledText = locationState?.prefilledText || "";
+  const existingAffirmationId = locationState?.affirmationId || null;
   
   // Text state
   const [affirmationText, setAffirmationText] = useState(prefilledText);
@@ -185,6 +191,10 @@ const NewRecording = () => {
 
       if (uploadError) throw uploadError;
 
+      // Determine affirmation_id: reuse existing or generate new if there's text
+      const affirmationIdToUse = existingAffirmationId 
+        || (affirmationText.trim() ? generateAffirmationId() : null);
+
       const { error: dbError } = await supabase.from("recordings").insert({
         user_id: user.id,
         title,
@@ -193,6 +203,7 @@ const NewRecording = () => {
         loop_mode: loopMode,
         text: affirmationText || null,
         tags: tags,
+        affirmation_id: affirmationIdToUse,
       });
 
       if (dbError) throw dbError;

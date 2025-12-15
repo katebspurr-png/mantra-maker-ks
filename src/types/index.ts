@@ -31,6 +31,24 @@ export interface Recording {
   is_best_take?: boolean;
   // Tags can later be used for filtering recordings or building smart playlists by theme
   tags?: string[];
+  // Groups recordings by affirmation/script - multiple takes of the same affirmation share this ID
+  affirmation_id?: string | null;
+}
+
+export interface ToneAnalysisSnapshot {
+  id: string;
+  user_id: string;
+  recording_id: string;
+  created_at: string;
+  sincerity_score: number;
+  conviction_score: number;
+  confidence_score?: number | null;
+  summary: string;
+  strengths?: string[] | null;
+  improvements?: string[] | null;
+  practice_exercise?: string | null;
+  model_version?: string | null;
+  signals?: Record<string, unknown> | null;
 }
 
 export interface Playlist {

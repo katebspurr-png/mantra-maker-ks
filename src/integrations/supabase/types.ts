@@ -148,6 +148,7 @@ export type Database = {
       }
       recordings: {
         Row: {
+          affirmation_id: string | null
           audio_file_path: string
           created_at: string | null
           duration_seconds: number
@@ -161,6 +162,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          affirmation_id?: string | null
           audio_file_path: string
           created_at?: string | null
           duration_seconds: number
@@ -174,6 +176,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          affirmation_id?: string | null
           audio_file_path?: string
           created_at?: string | null
           duration_seconds?: number
@@ -187,6 +190,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tone_analysis_snapshots: {
+        Row: {
+          confidence_score: number | null
+          conviction_score: number
+          created_at: string
+          id: string
+          improvements: string[] | null
+          model_version: string | null
+          practice_exercise: string | null
+          recording_id: string
+          signals: Json | null
+          sincerity_score: number
+          strengths: string[] | null
+          summary: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          conviction_score: number
+          created_at?: string
+          id?: string
+          improvements?: string[] | null
+          model_version?: string | null
+          practice_exercise?: string | null
+          recording_id: string
+          signals?: Json | null
+          sincerity_score: number
+          strengths?: string[] | null
+          summary: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          conviction_score?: number
+          created_at?: string
+          id?: string
+          improvements?: string[] | null
+          model_version?: string | null
+          practice_exercise?: string | null
+          recording_id?: string
+          signals?: Json | null
+          sincerity_score?: number
+          strengths?: string[] | null
+          summary?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tone_analysis_snapshots_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "recordings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

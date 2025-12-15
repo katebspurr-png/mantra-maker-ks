@@ -16,6 +16,8 @@ import ThoughtRewriter from "./pages/ThoughtRewriter";
 import Playlists from "./pages/Playlists";
 import PlaylistDetail from "./pages/PlaylistDetail";
 import Profile from "./pages/Profile";
+import AffirmationDetail from "./pages/AffirmationDetail";
+import AffirmationsList from "./pages/AffirmationsList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +41,8 @@ const App = () => (
             <Route path="/playlists" element={<Playlists />} />
             <Route path="/playlist/:id" element={<PlaylistDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/affirmation/:affirmationId" element={<AffirmationDetail />} />
+            <Route path="/affirmations" element={<AffirmationsList />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <MiniPlayer />
