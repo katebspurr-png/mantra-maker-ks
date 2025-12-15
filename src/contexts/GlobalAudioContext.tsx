@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_SETTINGS } from "@/types";
 import { PlaybackSpeed, PLAYBACK_SPEEDS } from "@/components/PlaybackSpeedControl";
 
+// Listening tracking constants
+const MINIMUM_LISTENING_THRESHOLD_SECONDS = 10;
+const PAUSE_TIMEOUT_MS = 3000; // Log after 3 seconds of pause
+
 /**
  * Global Audio Context
  * 
@@ -122,8 +126,104 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const playOrderRef = useRef<number[]>([]);
   
+  // Listening tracking refs
+  const listeningStartTimeRef = useRef<Date | null>(null);
+  const accumulatedSecondsRef = useRef(0);
+  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentRecordingIdRef = useRef<string | null>(null);
+  const currentPlaylistIdRef = useRef<string | null>(null);
+  
   // Single persistent audio element - PWA compatible
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Log listening event to database
+  const logListeningEvent = useCallback(async () => {
+    const totalSeconds = accumulatedSecondsRef.current;
+    
+    if (totalSeconds < MINIMUM_LISTENING_THRESHOLD_SECONDS) {
+      // Reset without logging
+      accumulatedSecondsRef.current = 0;
+      listeningStartTimeRef.current = null;
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await supabase.from("listening_events").insert({
+        user_id: session.user.id,
+        recording_id: currentRecordingIdRef.current,
+        playlist_id: currentPlaylistIdRef.current,
+        started_at: listeningStartTimeRef.current?.toISOString() || new Date().toISOString(),
+        seconds_listened: Math.floor(totalSeconds),
+      });
+    } catch (error) {
+      console.error("Error logging listening event:", error);
+    } finally {
+      // Reset tracking
+      accumulatedSecondsRef.current = 0;
+      listeningStartTimeRef.current = null;
+    }
+  }, []);
+
+  // Start tracking listening time
+  const startListeningTracking = useCallback((recordingId: string | null, playlistId: string | null) => {
+    if (!listeningStartTimeRef.current) {
+      listeningStartTimeRef.current = new Date();
+    }
+    currentRecordingIdRef.current = recordingId;
+    currentPlaylistIdRef.current = playlistId;
+    
+    // Clear any pending pause timeout
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+      pauseTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Pause tracking (accumulate time, schedule logging)
+  const pauseListeningTracking = useCallback(() => {
+    if (listeningStartTimeRef.current) {
+      const now = new Date();
+      const elapsed = (now.getTime() - listeningStartTimeRef.current.getTime()) / 1000;
+      accumulatedSecondsRef.current += elapsed;
+      listeningStartTimeRef.current = null;
+    }
+    
+    // Schedule logging after pause timeout
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+    pauseTimeoutRef.current = setTimeout(() => {
+      logListeningEvent();
+    }, PAUSE_TIMEOUT_MS);
+  }, [logListeningEvent]);
+
+  // Resume tracking (cancel scheduled logging, restart timer)
+  const resumeListeningTracking = useCallback(() => {
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+      pauseTimeoutRef.current = null;
+    }
+    listeningStartTimeRef.current = new Date();
+  }, []);
+
+  // Stop tracking and log immediately
+  const stopListeningTracking = useCallback(() => {
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+      pauseTimeoutRef.current = null;
+    }
+    
+    if (listeningStartTimeRef.current) {
+      const now = new Date();
+      const elapsed = (now.getTime() - listeningStartTimeRef.current.getTime()) / 1000;
+      accumulatedSecondsRef.current += elapsed;
+    }
+    
+    logListeningEvent();
+  }, [logListeningEvent]);
 
   // Initialize audio element once
   useEffect(() => {
@@ -218,7 +318,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     return indices;
   }, []);
 
-  const playTrackAtIndex = useCallback(async (recordings: Recording[], index: number): Promise<boolean> => {
+  const playTrackAtIndex = useCallback(async (recordings: Recording[], index: number, playlistId?: string | null): Promise<boolean> => {
     if (index < 0 || index >= recordings.length) return false;
     
     const recording = recordings[index];
@@ -237,14 +337,21 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       setCurrentTrackIndex(index);
       setDuration(recording.duration_seconds);
       setCurrentTime(0);
+      
+      // Start listening tracking for this track
+      startListeningTracking(recording.id, playlistId || null);
+      
       return true;
     } catch (error) {
       console.error("Error playing audio:", error);
       return false;
     }
-  }, [playbackSpeed]);
+  }, [playbackSpeed, startListeningTracking]);
 
   const stopPlayback = useCallback(() => {
+    // Log listening time before stopping
+    stopListeningTracking();
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -273,7 +380,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       currentTrackNumber: 1,
       totalTracks: 1,
     });
-  }, [playbackSettings.mode]);
+  }, [playbackSettings.mode, stopListeningTracking]);
 
   const handleTrackEnded = useCallback(() => {
     if (!source) return;
@@ -314,6 +421,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       // Playlist playback
       const currentOrderIndex = playOrderRef.current.indexOf(currentTrackIndex);
       const nextOrderIndex = currentOrderIndex + 1;
+      const playlistId = currentPlaylistIdRef.current;
       
       if (nextOrderIndex < playOrderRef.current.length) {
         // Play next track in playlist
@@ -325,10 +433,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
         
         if (playlistSettings.delaySeconds > 0) {
           delayTimeoutRef.current = setTimeout(() => {
-            playTrackAtIndex(playlist, nextIndex);
+            playTrackAtIndex(playlist, nextIndex, playlistId);
           }, playlistSettings.delaySeconds * 1000);
         } else {
-          playTrackAtIndex(playlist, nextIndex);
+          playTrackAtIndex(playlist, nextIndex, playlistId);
         }
       } else {
         // End of playlist - handle based on mode
@@ -349,10 +457,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
             const firstIndexLoop = playOrderRef.current[0];
             if (playlistSettings.delaySeconds > 0) {
               delayTimeoutRef.current = setTimeout(() => {
-                playTrackAtIndex(playlist, firstIndexLoop);
+                playTrackAtIndex(playlist, firstIndexLoop, playlistId);
               }, playlistSettings.delaySeconds * 1000);
             } else {
-              playTrackAtIndex(playlist, firstIndexLoop);
+              playTrackAtIndex(playlist, firstIndexLoop, playlistId);
             }
             break;
             
@@ -369,10 +477,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
               const firstIndexRepeat = playOrderRef.current[0];
               if (playlistSettings.delaySeconds > 0) {
                 delayTimeoutRef.current = setTimeout(() => {
-                  playTrackAtIndex(playlist, firstIndexRepeat);
+                  playTrackAtIndex(playlist, firstIndexRepeat, playlistId);
                 }, playlistSettings.delaySeconds * 1000);
               } else {
-                playTrackAtIndex(playlist, firstIndexRepeat);
+                playTrackAtIndex(playlist, firstIndexRepeat, playlistId);
               }
             }
             break;
@@ -387,10 +495,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
             const firstIndexDuration = playOrderRef.current[0];
             if (playlistSettings.delaySeconds > 0) {
               delayTimeoutRef.current = setTimeout(() => {
-                playTrackAtIndex(playlist, firstIndexDuration);
+                playTrackAtIndex(playlist, firstIndexDuration, playlistId);
               }, playlistSettings.delaySeconds * 1000);
             } else {
-              playTrackAtIndex(playlist, firstIndexDuration);
+              playTrackAtIndex(playlist, firstIndexDuration, playlistId);
             }
             break;
         }
@@ -409,6 +517,17 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     
     return () => audio.removeEventListener("ended", handler);
   }, [handleTrackEnded]);
+
+  // Log listening on page unload (best effort)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Trigger immediate logging
+      stopListeningTracking();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [stopListeningTracking]);
 
   /**
    * Play a single recording with specified playback settings.
@@ -442,7 +561,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       totalTracks: 1,
     });
     
-    await playTrackAtIndex([recording], 0);
+    await playTrackAtIndex([recording], 0, null);
   }, [playTrackAtIndex]);
 
   /**
@@ -472,6 +591,9 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       delaySeconds: settings.delaySeconds ?? 0,
     };
     
+    // Store playlist ID for tracking
+    currentPlaylistIdRef.current = settings.playlistId;
+    
     setSource({ type: "playlist", id: settings.playlistId, title: settings.playlistTitle });
     setPlaylist(recordings);
     setPlaylistSettings(newSettings);
@@ -497,22 +619,26 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     playOrderRef.current = generatePlayOrder(recordings.length, newSettings.shuffle);
     const startIndex = playOrderRef.current[0];
     
-    await playTrackAtIndex(recordings, startIndex);
+    await playTrackAtIndex(recordings, startIndex, settings.playlistId);
   }, [playTrackAtIndex, generatePlayOrder]);
 
   const play = useCallback(() => {
     if (playbackSettings.mode === "duration" && !durationStartTimeRef.current) {
       durationStartTimeRef.current = Date.now();
     }
+    // Resume listening tracking
+    resumeListeningTracking();
     audioRef.current?.play();
-  }, [playbackSettings.mode]);
+  }, [playbackSettings.mode, resumeListeningTracking]);
 
   const pause = useCallback(() => {
+    // Pause listening tracking (will log after timeout)
+    pauseListeningTracking();
     audioRef.current?.pause();
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
     }
-  }, []);
+  }, [pauseListeningTracking]);
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
