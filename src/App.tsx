@@ -8,6 +8,7 @@ import { MiniPlayer } from "@/components/MiniPlayer";
 import { SessionManager } from "@/components/SessionManager";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
 import NewRecording from "./pages/NewRecording";
 import RecordingDetail from "./pages/RecordingDetail";
@@ -34,6 +35,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/home" element={<Home />} />
             <Route path="/new-recording" element={<NewRecording />} />
             <Route path="/recording/:id" element={<RecordingDetail />} />
