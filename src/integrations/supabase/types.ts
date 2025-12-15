@@ -59,6 +59,51 @@ export type Database = {
         }
         Relationships: []
       }
+      listening_events: {
+        Row: {
+          created_at: string
+          id: string
+          playlist_id: string | null
+          recording_id: string | null
+          seconds_listened: number
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          playlist_id?: string | null
+          recording_id?: string | null
+          seconds_listened?: number
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          playlist_id?: string | null
+          recording_id?: string | null
+          seconds_listened?: number
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listening_events_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listening_events_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playlist_recordings: {
         Row: {
           created_at: string

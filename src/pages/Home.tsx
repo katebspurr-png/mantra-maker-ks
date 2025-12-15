@@ -15,6 +15,7 @@ import {
   RecentRecordingsPreview,
   TryTodayCard,
   FavoritesPreview,
+  ListeningStatsPreview,
 } from "@/components/home";
 
 const Home = () => {
@@ -151,10 +152,13 @@ const Home = () => {
         {/* 5. Your Practice (Playlists) */}
         <PlaylistsPreview />
 
-        {/* 6. Daily Progress */}
+        {/* 6. Listening Stats */}
+        <ListeningStatsPreview />
+
+        {/* 7. Daily Progress */}
         <DailyProgressPreview />
 
-        {/* 7. Recent Recordings */}
+        {/* 8. Recent Recordings */}
         <RecentRecordingsPreview recordings={recordings} onRecordingDeleted={fetchRecordings} />
       </div>
 

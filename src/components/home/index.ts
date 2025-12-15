@@ -4,3 +4,4 @@ export { PlaylistsPreview } from "./PlaylistsPreview";
 export { RecentRecordingsPreview } from "./RecentRecordingsPreview";
 export { TryTodayCard } from "./TryTodayCard";
 export { FavoritesPreview } from "./FavoritesPreview";
+export { ListeningStatsPreview } from "./ListeningStatsPreview";
