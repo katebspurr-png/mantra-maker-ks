@@ -5,13 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { TeleprompterDisplay, TeleprompterDisplayRef } from "@/components/TeleprompterDisplay";
 import { TeleprompterSettings } from "@/components/TeleprompterSettings";
 import { RecordingControls } from "@/components/RecordingControls";
 import { TextInputArea } from "@/components/TextInputArea";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { TagInput } from "@/components/TagInput";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { LoopMode } from "@/types";
 
@@ -37,6 +47,7 @@ const NewRecording = () => {
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingKey, setRecordingKey] = useState(0); // Key to force RecordingControls remount
   
   // Save form state
   const [title, setTitle] = useState("");
@@ -46,6 +57,9 @@ const NewRecording = () => {
   });
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  
+  // Discard dialog state
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
   // Teleprompter settings state
   const [teleprompterEnabled, setTeleprompterEnabled] = useState(true);
@@ -191,13 +205,45 @@ const NewRecording = () => {
     }
   };
 
+  // Try Again: clears recording, resets timer & karaoke, keeps text/settings/tags
+  const handleTryAgain = () => {
+    // Release the recording blob
+    setRecordingBlob(null);
+    setDuration(0);
+    setTitle("");
+    
+    // Reset karaoke highlighting to beginning
+    teleprompterRef.current?.resetHighlighting();
+    setTimeout(updateHighlightingState, 100);
+    
+    // Force RecordingControls to remount fresh (resets internal timer)
+    setRecordingKey(prev => prev + 1);
+    
+    // Keep: affirmationText, tags, teleprompter settings (they're preserved automatically)
+  };
+
+  // Discard: show confirmation, then navigate away
   const handleDiscard = () => {
     if (recordingBlob) {
-      if (confirm("Discard this recording?")) {
-        setRecordingBlob(null);
-        setDuration(0);
-        setTitle("");
-      }
+      setShowDiscardDialog(true);
+    } else {
+      navigate("/home");
+    }
+  };
+
+  const confirmDiscard = () => {
+    setRecordingBlob(null);
+    setDuration(0);
+    setTitle("");
+    setTags([]);
+    setShowDiscardDialog(false);
+    navigate("/home");
+  };
+
+  // Back button behavior
+  const handleBack = () => {
+    if (recordingBlob) {
+      setShowDiscardDialog(true);
     } else {
       navigate("/home");
     }
@@ -209,7 +255,7 @@ const NewRecording = () => {
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <button onClick={handleDiscard} className="p-2 -ml-2">
+            <button onClick={handleBack} className="p-2 -ml-2">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-xl font-semibold">New Recording</h1>
@@ -264,7 +310,8 @@ const NewRecording = () => {
             )}
 
             {/* Recording Controls - primary, at bottom */}
-            <RecordingControls 
+            <RecordingControls
+              key={recordingKey}
               onRecordingComplete={handleRecordingComplete}
               onRecordingStart={handleRecordingStart}
               onRecordingPause={handleRecordingPause}
@@ -337,21 +384,38 @@ const NewRecording = () => {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* Action buttons with clear hierarchy */}
+            <div className="space-y-3">
+              {/* Primary: Save */}
+              <Button
+                className="w-full touch-target"
+                onClick={handleSave}
+                disabled={saving || !title.trim()}
+                size="lg"
+              >
+                {saving ? "Saving..." : "Save Recording"}
+              </Button>
+              
+              {/* Secondary: Try Again */}
               <Button
                 variant="outline"
-                className="flex-1 touch-target"
+                className="w-full touch-target"
+                onClick={handleTryAgain}
+                disabled={saving}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Try Again
+              </Button>
+              
+              {/* Tertiary/Destructive: Discard */}
+              <Button
+                variant="ghost"
+                className="w-full touch-target text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={handleDiscard}
                 disabled={saving}
               >
+                <Trash2 className="w-4 h-4 mr-2" />
                 Discard
-              </Button>
-              <Button
-                className="flex-1 touch-target"
-                onClick={handleSave}
-                disabled={saving || !title.trim()}
-              >
-                {saving ? "Saving..." : "Save"}
               </Button>
             </div>
           </div>
@@ -359,6 +423,27 @@ const NewRecording = () => {
       </div>
 
       <BottomNavigation />
+
+      {/* Discard confirmation dialog */}
+      <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard recording?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This recording will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDiscard}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
