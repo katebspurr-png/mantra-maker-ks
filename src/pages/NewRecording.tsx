@@ -1,26 +1,44 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import AudioRecorder from "@/components/AudioRecorder";
-import { Teleprompter } from "@/components/Teleprompter";
+import { TeleprompterDisplay, TeleprompterDisplayRef } from "@/components/TeleprompterDisplay";
+import { TeleprompterSettings } from "@/components/TeleprompterSettings";
+import { RecordingControls } from "@/components/RecordingControls";
+import { TextInputArea } from "@/components/TextInputArea";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { TagInput } from "@/components/TagInput";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { LoopMode } from "@/types";
 
+/**
+ * NewRecording Page
+ * 
+ * Recording controls and teleprompter are INDEPENDENT:
+ * - Recording controls affect audio capture only
+ * - Teleprompter controls affect text display/highlighting only
+ * - Full text is always visible when teleprompter is enabled
+ */
+
 const NewRecording = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const prefilledText = (location.state as { prefilledText?: string })?.prefilledText || "";
   
-  const [teleprompterText, setTeleprompterText] = useState(prefilledText);
+  // Text state
+  const [affirmationText, setAffirmationText] = useState(prefilledText);
+  const [isEditMode, setIsEditMode] = useState(!prefilledText);
+  
+  // Recording state
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  
+  // Save form state
   const [title, setTitle] = useState("");
   const [loopMode, setLoopMode] = useState<LoopMode>(() => {
     const saved = localStorage.getItem("defaultLoopMode") as LoopMode;
@@ -28,7 +46,23 @@ const NewRecording = () => {
   });
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
+
+  // Teleprompter settings state
+  const [teleprompterEnabled, setTeleprompterEnabled] = useState(true);
+  const [karaokeEnabled, setKaraokeEnabled] = useState(true);
+  const [textSizeIndex, setTextSizeIndex] = useState(() => {
+    const saved = sessionStorage.getItem("teleprompterTextSize");
+    return saved ? parseInt(saved, 10) : 1;
+  });
+  const [paceIndex, setPaceIndex] = useState(() => {
+    const saved = sessionStorage.getItem("teleprompterPace");
+    return saved ? parseInt(saved, 10) : 1;
+  });
+  const [manualMode, setManualMode] = useState(false);
+  const [isHighlighting, setIsHighlighting] = useState(false);
+
+  // Ref to control teleprompter display
+  const teleprompterRef = useRef<TeleprompterDisplayRef>(null);
 
   useEffect(() => {
     // Clear location state after reading
@@ -37,6 +71,22 @@ const NewRecording = () => {
     }
   }, [prefilledText]);
 
+  // Persist teleprompter settings
+  useEffect(() => {
+    sessionStorage.setItem("teleprompterTextSize", textSizeIndex.toString());
+  }, [textSizeIndex]);
+
+  useEffect(() => {
+    sessionStorage.setItem("teleprompterPace", paceIndex.toString());
+  }, [paceIndex]);
+
+  // Sync highlighting state from teleprompter ref
+  const updateHighlightingState = useCallback(() => {
+    if (teleprompterRef.current) {
+      setIsHighlighting(teleprompterRef.current.isHighlighting());
+    }
+  }, []);
+
   const handleRecordingComplete = (blob: Blob, recordingDuration: number) => {
     setRecordingBlob(blob);
     setDuration(recordingDuration);
@@ -44,10 +94,62 @@ const NewRecording = () => {
     
     // Generate default title
     const now = new Date();
-    const defaultTitle = teleprompterText
-      ? teleprompterText.slice(0, 30) + (teleprompterText.length > 30 ? "..." : "")
+    const defaultTitle = affirmationText
+      ? affirmationText.slice(0, 30) + (affirmationText.length > 30 ? "..." : "")
       : `Affirmation – ${now.toLocaleDateString()}`;
     setTitle(defaultTitle);
+  };
+
+  // Recording lifecycle callbacks - sync with teleprompter as UX convenience
+  const handleRecordingStart = () => {
+    setIsRecording(true);
+    
+    // If teleprompter + karaoke enabled, auto-start highlighting
+    if (teleprompterEnabled && karaokeEnabled && affirmationText.trim()) {
+      teleprompterRef.current?.startHighlighting();
+      setTimeout(updateHighlightingState, 100);
+    }
+  };
+
+  const handleRecordingPause = () => {
+    // Also pause highlighting for nice UX sync
+    if (teleprompterEnabled && karaokeEnabled) {
+      teleprompterRef.current?.pauseHighlighting();
+      setTimeout(updateHighlightingState, 100);
+    }
+  };
+
+  const handleRecordingResume = () => {
+    // Also resume highlighting for nice UX sync
+    if (teleprompterEnabled && karaokeEnabled) {
+      teleprompterRef.current?.resumeHighlighting();
+      setTimeout(updateHighlightingState, 100);
+    }
+  };
+
+  const handleRecordingStop = () => {
+    setIsRecording(false);
+    // Stop highlighting when recording stops
+    if (teleprompterEnabled && karaokeEnabled) {
+      teleprompterRef.current?.stopHighlighting();
+      setTimeout(updateHighlightingState, 100);
+    }
+  };
+
+  // Independent teleprompter highlight controls
+  const handlePauseHighlight = () => {
+    teleprompterRef.current?.pauseHighlighting();
+    setTimeout(updateHighlightingState, 100);
+  };
+
+  const handleResumeHighlight = () => {
+    teleprompterRef.current?.resumeHighlighting();
+    setTimeout(updateHighlightingState, 100);
+  };
+
+  const handleResetHighlight = () => {
+    teleprompterRef.current?.resetHighlighting();
+    setTimeout(updateHighlightingState, 100);
   };
 
   const handleSave = async () => {
@@ -73,7 +175,7 @@ const NewRecording = () => {
         duration_seconds: duration,
         audio_file_path: fileName,
         loop_mode: loopMode,
-        text: teleprompterText || null,
+        text: affirmationText || null,
         tags: tags,
       });
 
@@ -101,10 +203,6 @@ const NewRecording = () => {
     }
   };
 
-  const handleRecordingStart = () => {
-    setIsRecording(true);
-  };
-
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -122,28 +220,65 @@ const NewRecording = () => {
       <div className="max-w-lg mx-auto px-4 py-6">
         {!recordingBlob ? (
           <div className="space-y-6">
-            {/* Teleprompter with auto-scroll, text size controls, and play/pause */}
-            <Teleprompter
-              value={teleprompterText}
-              onChange={setTeleprompterText}
-              disabled={isRecording}
-              placeholder="Type or paste your affirmation here to read while recording..."
-              isRecording={isRecording}
-            />
+            {/* Text Input or Teleprompter Display */}
+            {isEditMode ? (
+              <TextInputArea
+                value={affirmationText}
+                onChange={setAffirmationText}
+                disabled={isRecording}
+                placeholder="Type or paste your affirmation here to read while recording..."
+                onPreviewClick={affirmationText.trim() ? () => setIsEditMode(false) : undefined}
+              />
+            ) : (
+              <>
+                {/* Teleprompter Display - always shows full text */}
+                <TeleprompterDisplay
+                  ref={teleprompterRef}
+                  text={affirmationText}
+                  karaokeEnabled={teleprompterEnabled && karaokeEnabled}
+                  textSizeIndex={textSizeIndex}
+                  paceIndex={paceIndex}
+                  manualMode={manualMode}
+                  onEditClick={() => setIsEditMode(true)}
+                  isEditable={!isRecording}
+                />
 
-            {/* Recorder - works seamlessly with teleprompter in PWA and web */}
-            <AudioRecorder 
+                {/* Teleprompter Settings - independent controls */}
+                <TeleprompterSettings
+                  teleprompterEnabled={teleprompterEnabled}
+                  onTeleprompterEnabledChange={setTeleprompterEnabled}
+                  karaokeEnabled={karaokeEnabled}
+                  onKaraokeEnabledChange={setKaraokeEnabled}
+                  textSizeIndex={textSizeIndex}
+                  onTextSizeChange={setTextSizeIndex}
+                  paceIndex={paceIndex}
+                  onPaceChange={setPaceIndex}
+                  manualMode={manualMode}
+                  onManualModeChange={setManualMode}
+                  isHighlighting={isHighlighting}
+                  onPauseHighlight={handlePauseHighlight}
+                  onResumeHighlight={handleResumeHighlight}
+                  onResetHighlight={handleResetHighlight}
+                />
+              </>
+            )}
+
+            {/* Recording Controls - primary, at bottom */}
+            <RecordingControls 
               onRecordingComplete={handleRecordingComplete}
               onRecordingStart={handleRecordingStart}
+              onRecordingPause={handleRecordingPause}
+              onRecordingResume={handleRecordingResume}
+              onRecordingStop={handleRecordingStop}
             />
           </div>
         ) : (
           <div className="space-y-6 animate-in">
-            {/* Show teleprompter text if present */}
-            {teleprompterText && (
+            {/* Show affirmation text if present */}
+            {affirmationText && (
               <div className="bg-card rounded-xl border border-border p-4">
                 <p className="text-sm text-muted-foreground mb-1">Your affirmation:</p>
-                <p className="text-base">{teleprompterText}</p>
+                <p className="text-base">{affirmationText}</p>
               </div>
             )}
 
