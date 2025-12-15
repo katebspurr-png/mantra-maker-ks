@@ -26,6 +26,9 @@ export interface Recording {
   loop_mode: LoopMode;
   text?: string | null;
   is_favorite?: boolean;
+  // User-controlled marker indicating their preferred take of a recording
+  // Future use: could be used to prefer Best Takes when building playlists
+  is_best_take?: boolean;
   // Tags can later be used for filtering recordings or building smart playlists by theme
   tags?: string[];
 }
