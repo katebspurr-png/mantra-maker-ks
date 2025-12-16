@@ -8,6 +8,8 @@ import { MiniPlayer } from "@/components/MiniPlayer";
 import { SessionManager } from "@/components/SessionManager";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
 import NewRecording from "./pages/NewRecording";
@@ -35,6 +37,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/home" element={<Home />} />
             <Route path="/new-recording" element={<NewRecording />} />
