@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Mic, Sparkles, ChevronRight } from "lucide-react";
+ import { LogOut, Mic, Sparkles, ChevronRight, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -9,6 +9,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LoopMode, TimerMode } from "@/types";
+ import { NotificationSettings } from "@/components/NotificationSettings";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -200,6 +201,11 @@ export default function Profile() {
           </div>
         )}
 
+         {/* Notification Settings */}
+         <div className="mb-6">
+           <NotificationSettings />
+         </div>
+ 
         {/* Mic Info */}
         <div className="bg-card rounded-xl border border-border p-4 mb-6">
           <div className="flex items-start gap-3">
