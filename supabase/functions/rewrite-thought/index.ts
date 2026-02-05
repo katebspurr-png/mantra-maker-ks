@@ -1,9 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Input validation schema
+const inputSchema = z.object({
+  negativeThought: z.string()
+    .min(1, "Thought cannot be empty")
+    .max(2000, "Thought must be less than 2000 characters")
+    .trim()
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,11 +20,18 @@ serve(async (req) => {
   }
 
   try {
-    const { negativeThought } = await req.json();
+    const body = await req.json();
     
-    if (!negativeThought) {
-      throw new Error("No thought provided");
+    // Validate input
+    const parseResult = inputSchema.safeParse(body);
+    if (!parseResult.success) {
+      return new Response(
+        JSON.stringify({ error: "Invalid input", details: parseResult.error.flatten() }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    
+    const { negativeThought } = parseResult.data;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

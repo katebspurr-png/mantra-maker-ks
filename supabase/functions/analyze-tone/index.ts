@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const inputSchema = z.object({
+  audioUrl: z.string().url().max(2000, "Audio URL must be less than 2000 characters"),
+  transcript: z.string().max(10000, "Transcript must be less than 10000 characters").optional(),
+  affirmationText: z.string().max(1000, "Affirmation text must be less than 1000 characters").optional()
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,7 +19,18 @@ serve(async (req) => {
   }
 
   try {
-    const { audioUrl, transcript, affirmationText } = await req.json();
+    const body = await req.json();
+    
+    // Validate input
+    const parseResult = inputSchema.safeParse(body);
+    if (!parseResult.success) {
+      return new Response(
+        JSON.stringify({ error: "Invalid input", details: parseResult.error.flatten() }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const { audioUrl, transcript, affirmationText } = parseResult.data;
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {

@@ -1,9 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://esm.sh/zod@3.23.8";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Input validation schema
+const toneAnalysisSchema = z.object({
+  conviction_score: z.number().min(0).max(100).optional(),
+  sincerity_score: z.number().min(0).max(100).optional(),
+  analysis_summary: z.string().max(2000).optional(),
+  strengths: z.array(z.string().max(200)).max(10).optional(),
+  suggested_improvements: z.array(z.string().max(200)).max(10).optional(),
+  practice_exercise: z.string().max(500).optional()
+}).passthrough();
+
+const inputSchema = z.object({
+  transcript: z.string().max(10000, "Transcript must be less than 10000 characters").optional(),
+  toneAnalysis: toneAnalysisSchema.optional()
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,7 +27,18 @@ serve(async (req) => {
   }
 
   try {
-    const { transcript, toneAnalysis } = await req.json();
+    const body = await req.json();
+    
+    // Validate input
+    const parseResult = inputSchema.safeParse(body);
+    if (!parseResult.success) {
+      return new Response(
+        JSON.stringify({ error: "Invalid input", details: parseResult.error.flatten() }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    const { transcript, toneAnalysis } = parseResult.data;
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
