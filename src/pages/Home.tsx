@@ -6,6 +6,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
  import { AddToHomescreenPrompt } from "@/components/AddToHomescreenPrompt";
+ import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Button } from "@/components/ui/button";
 import { Mic } from "lucide-react";
 import { AFFIRMATIONS_LIBRARY } from "@/data/affirmations";
@@ -109,6 +110,7 @@ const Home = () => {
     <div className="min-h-screen bg-background pb-32">
       <WelcomeDialog />
        <AddToHomescreenPrompt />
+       <NotificationPrompt />
       
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
