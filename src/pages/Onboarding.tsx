@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Mic, Library, Home, MessageSquareHeart } from "lucide-react";
+import { Mic, Play, ListMusic, MessageSquareHeart, ChevronLeft } from "lucide-react";
 
 const ONBOARDING_COMPLETE_KEY = "onboarding_complete";
 
@@ -13,9 +13,51 @@ export const hasCompletedOnboarding = () => {
   return localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "true";
 };
 
+interface Step {
+  key: string;
+  icon: React.ReactNode;
+  heading: string;
+  body: string;
+}
+
+const steps: Step[] = [
+  {
+    key: "welcome",
+    icon: <div className="w-10 h-10 rounded-full bg-primary/20" />,
+    heading: "Welcome to Mantra Maker",
+    body: "A calm space to record affirmations in your own voice and listen on loop. No pressure, no streaks, no guilt — just gentle support for building positive beliefs.",
+  },
+  {
+    key: "record",
+    icon: <Mic className="w-8 h-8 text-primary" />,
+    heading: "Your voice, your words",
+    body: "Record affirmations in your own voice, or choose from our library of suggestions. Hearing yourself speak positive truths helps them stick.",
+  },
+  {
+    key: "listen",
+    icon: <Play className="w-8 h-8 text-primary" />,
+    heading: "Play on loop",
+    body: "Listen to your mantras on repeat while you work, rest, or move through your day. Repetition helps affirmations become internalized beliefs.",
+  },
+  {
+    key: "playlists",
+    icon: <ListMusic className="w-8 h-8 text-primary" />,
+    heading: "Create playlists",
+    body: "Group mantras by theme, mood, or intention. Build collections that support you in different moments.",
+  },
+  {
+    key: "feedback",
+    icon: <MessageSquareHeart className="w-8 h-8 text-primary" />,
+    heading: "We'd love your thoughts",
+    body: "You can share feedback anytime from Settings. Your input helps us make Mantra Maker better for everyone.",
+  },
+];
+
 const Onboarding = () => {
   const navigate = useNavigate();
-  const [currentScreen, setCurrentScreen] = useState(0);
+  const [current, setCurrent] = useState(0);
+
+  const isLast = current === steps.length - 1;
 
   const handleSkip = () => {
     markOnboardingComplete();
@@ -23,175 +65,69 @@ const Onboarding = () => {
   };
 
   const handleNext = () => {
-    if (currentScreen < 4) {
-      setCurrentScreen(currentScreen + 1);
+    if (isLast) {
+      markOnboardingComplete();
+      navigate("/home", { replace: true });
+    } else {
+      setCurrent(current + 1);
     }
   };
 
-  const handleAction = (path: string) => {
-    markOnboardingComplete();
-    navigate(path, { replace: true });
+  const handleBack = () => {
+    if (current > 0) setCurrent(current - 1);
   };
 
-  const screens = [
-    // Screen 1: Welcome
-    <div key="welcome" className="flex flex-col items-center justify-center min-h-screen px-8 text-center">
-      <div className="flex-1 flex flex-col items-center justify-center max-w-sm">
-        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-8">
-          <div className="w-10 h-10 rounded-full bg-primary/20" />
-        </div>
-        <h1 className="text-3xl font-semibold text-foreground mb-6">
-          Welcome to Loop
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          A quiet space to practice hearing your own voice — again and again — until it feels true.
-        </p>
-      </div>
-      <div className="w-full max-w-sm pb-12 space-y-3">
-        <Button onClick={handleNext} size="lg" className="w-full">
-          Get started
-        </Button>
-        <Button onClick={handleSkip} variant="ghost" size="sm" className="w-full text-muted-foreground">
-          Skip for now
-        </Button>
-      </div>
-    </div>,
-
-    // Screen 2: How it works
-    <div key="how-it-works" className="flex flex-col items-center justify-center min-h-screen px-8 text-center">
-      <div className="flex-1 flex flex-col items-center justify-center max-w-sm">
-        <h1 className="text-3xl font-semibold text-foreground mb-10">
-          How it works
-        </h1>
-        <div className="space-y-6 text-left w-full">
-          <div className="flex items-start gap-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-medium">
-              1
-            </div>
-            <p className="text-lg text-foreground pt-1">
-              Choose or write an affirmation
-            </p>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-medium">
-              2
-            </div>
-            <p className="text-lg text-foreground pt-1">
-              Record your voice (as many takes as you like)
-            </p>
-          </div>
-          <div className="flex items-start gap-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-medium">
-              3
-            </div>
-            <p className="text-lg text-foreground pt-1">
-              Listen on a loop — daily or anytime
-            </p>
-          </div>
-        </div>
-        <p className="text-sm text-muted-foreground mt-10 italic">
-          There's no right way to sound. Just show up.
-        </p>
-      </div>
-      <div className="w-full max-w-sm pb-12">
-        <Button onClick={handleNext} size="lg" className="w-full">
-          Continue
-        </Button>
-      </div>
-    </div>,
-
-    // Screen 3: Voice & privacy
-    <div key="privacy" className="flex flex-col items-center justify-center min-h-screen px-8 text-center">
-      <div className="flex-1 flex flex-col items-center justify-center max-w-sm">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-8">
-          <Mic className="w-8 h-8 text-primary" />
-        </div>
-        <h1 className="text-3xl font-semibold text-foreground mb-6">
-          Your voice, your pace
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          Loop uses your microphone so you can record affirmations in your own voice. You're always in control — nothing is shared.
-        </p>
-      </div>
-      <div className="w-full max-w-sm pb-12">
-        <Button onClick={handleNext} size="lg" className="w-full">
-          Continue
-        </Button>
-      </div>
-    </div>,
-
-    // Screen 4: Feedback invitation
-    <div key="feedback" className="flex flex-col items-center justify-center min-h-screen px-8 text-center">
-      <div className="flex-1 flex flex-col items-center justify-center max-w-sm">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-8">
-          <MessageSquareHeart className="w-8 h-8 text-primary" />
-        </div>
-        <h1 className="text-3xl font-semibold text-foreground mb-6">
-          We'd love your thoughts
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed">
-          You can share feedback anytime from Settings. Your input helps us make Mantra Maker better for everyone.
-        </p>
-      </div>
-      <div className="w-full max-w-sm pb-12">
-        <Button onClick={handleNext} size="lg" className="w-full">
-          Continue
-        </Button>
-      </div>
-    </div>,
-
-    // Screen 4: First action
-    <div key="first-action" className="flex flex-col items-center justify-center min-h-screen px-8 text-center">
-      <div className="flex-1 flex flex-col items-center justify-center max-w-sm">
-        <h1 className="text-3xl font-semibold text-foreground mb-6">
-          Let's try one together
-        </h1>
-        <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-          Choose how you'd like to begin.
-        </p>
-      </div>
-      <div className="w-full max-w-sm pb-12 space-y-3">
-        <Button 
-          onClick={() => handleAction("/new-recording")} 
-          size="lg" 
-          className="w-full gap-2"
-        >
-          <Mic className="w-4 h-4" />
-          Record your first affirmation
-        </Button>
-        <Button 
-          onClick={() => handleAction("/library")} 
-          variant="outline" 
-          size="lg" 
-          className="w-full gap-2"
-        >
-          <Library className="w-4 h-4" />
-          Browse example affirmations
-        </Button>
-        <Button 
-          onClick={() => handleAction("/home")} 
-          variant="ghost" 
-          size="lg" 
-          className="w-full gap-2 text-muted-foreground"
-        >
-          <Home className="w-4 h-4" />
-          Skip — explore on my own
-        </Button>
-      </div>
-    </div>,
-  ];
+  const step = steps[current];
 
   return (
-    <div className="bg-background">
-      {screens[currentScreen]}
-      
+    <div className="bg-background min-h-screen flex flex-col">
+      {/* Back button */}
+      <div className="p-4">
+        {current > 0 ? (
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1 text-muted-foreground text-sm hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </button>
+        ) : (
+          <div className="h-8" />
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center max-w-sm mx-auto">
+        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-8">
+          {step.icon}
+        </div>
+        <h1 className="text-3xl font-semibold text-foreground mb-6">
+          {step.heading}
+        </h1>
+        <p className="text-lg text-muted-foreground leading-relaxed">
+          {step.body}
+        </p>
+      </div>
+
+      {/* Bottom actions */}
+      <div className="w-full max-w-sm mx-auto px-8 pb-16 space-y-3">
+        <Button onClick={handleNext} size="lg" className="w-full">
+          {isLast ? "Get Started" : "Next"}
+        </Button>
+        {!isLast && (
+          <Button onClick={handleSkip} variant="ghost" size="sm" className="w-full text-muted-foreground">
+            Skip for now
+          </Button>
+        )}
+      </div>
+
       {/* Progress dots */}
       <div className="fixed bottom-4 left-0 right-0 flex justify-center gap-2">
-        {screens.map((_, index) => (
+        {steps.map((_, index) => (
           <div
             key={index}
             className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentScreen ? "bg-primary" : "bg-muted"
+              index === current ? "bg-primary" : "bg-muted"
             }`}
           />
         ))}
