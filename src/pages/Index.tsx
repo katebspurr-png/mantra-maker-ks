@@ -2,19 +2,18 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { hasCompletedOnboarding } from "./Onboarding";
+import Landing from "./Landing";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsAuthenticated(!!session);
       setLoading(false);
     };
-
     checkAuth();
   }, []);
 
@@ -26,17 +25,16 @@ const Index = () => {
     );
   }
 
-  // If not authenticated, go to auth
+  // Not authenticated — show landing page with demo CTA
   if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
+    return <Landing />;
   }
 
-  // If authenticated but hasn't completed onboarding, show onboarding
+  // Authenticated but hasn't completed onboarding
   if (!hasCompletedOnboarding()) {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Otherwise go to home
   return <Navigate to="/home" replace />;
 };
 
