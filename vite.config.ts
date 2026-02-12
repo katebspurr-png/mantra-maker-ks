@@ -49,6 +49,8 @@ export default defineConfig(({ mode }) => ({
           /^\/rest\//,
           /^\/storage\//,
           /supabase\.co/,
+          // OAuth redirect must always hit the network
+          /^\/~oauth/,
         ],
         runtimeCaching: [
           {
