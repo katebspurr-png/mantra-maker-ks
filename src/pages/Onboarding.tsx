@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Mic, Library, Home } from "lucide-react";
+import { Mic, Library, Home, MessageSquareHeart } from "lucide-react";
 
 const ONBOARDING_COMPLETE_KEY = "onboarding_complete";
 
@@ -23,7 +23,7 @@ const Onboarding = () => {
   };
 
   const handleNext = () => {
-    if (currentScreen < 3) {
+    if (currentScreen < 4) {
       setCurrentScreen(currentScreen + 1);
     }
   };
@@ -111,6 +111,26 @@ const Onboarding = () => {
         </h1>
         <p className="text-lg text-muted-foreground leading-relaxed">
           Loop uses your microphone so you can record affirmations in your own voice. You're always in control — nothing is shared.
+        </p>
+      </div>
+      <div className="w-full max-w-sm pb-12">
+        <Button onClick={handleNext} size="lg" className="w-full">
+          Continue
+        </Button>
+      </div>
+    </div>,
+
+    // Screen 4: Feedback invitation
+    <div key="feedback" className="flex flex-col items-center justify-center min-h-screen px-8 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center max-w-sm">
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-8">
+          <MessageSquareHeart className="w-8 h-8 text-primary" />
+        </div>
+        <h1 className="text-3xl font-semibold text-foreground mb-6">
+          We'd love your thoughts
+        </h1>
+        <p className="text-lg text-muted-foreground leading-relaxed">
+          You can share feedback anytime from Settings. Your input helps us make Mantra Maker better for everyone.
         </p>
       </div>
       <div className="w-full max-w-sm pb-12">
