@@ -5,11 +5,13 @@ import { Recording, Affirmation } from "@/types";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { WelcomeDialog } from "@/components/WelcomeDialog";
 import { InstallPromptBanner } from "@/components/InstallPromptBanner";
- import { AddToHomescreenPrompt } from "@/components/AddToHomescreenPrompt";
- import { NotificationPrompt } from "@/components/NotificationPrompt";
+import { AddToHomescreenPrompt } from "@/components/AddToHomescreenPrompt";
+import { NotificationPrompt } from "@/components/NotificationPrompt";
 import { Button } from "@/components/ui/button";
 import { Mic } from "lucide-react";
 import { AFFIRMATIONS_LIBRARY } from "@/data/affirmations";
+import { CollapsibleSection } from "@/components/home/CollapsibleSection";
+import { useCollapsedSections } from "@/hooks/useCollapsedSections";
 import {
   ThoughtTransformerCard,
   DailyProgressPreview,
@@ -26,6 +28,7 @@ const Home = () => {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [favoriteAffirmationIds, setFavoriteAffirmationIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const { isCollapsed, toggle } = useCollapsedSections();
 
   useEffect(() => {
     const init = async () => {
@@ -132,38 +135,54 @@ const Home = () => {
       {/* Main Content */}
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* 1. Thought Transformer */}
-        <ThoughtTransformerCard />
+        <CollapsibleSection id="thought-transformer" title="Thought Transformer" collapsed={isCollapsed("thought-transformer")} onToggle={() => toggle("thought-transformer")}>
+          <ThoughtTransformerCard />
+        </CollapsibleSection>
 
         {/* 2. Try This Today */}
-        <TryTodayCard />
+        <CollapsibleSection id="try-today" title="Try This Today" collapsed={isCollapsed("try-today")} onToggle={() => toggle("try-today")}>
+          <TryTodayCard />
+        </CollapsibleSection>
 
-        {/* 3. Record New Affirmation - Primary CTA */}
-        <Button 
-          size="lg"
-          className="w-full h-14 text-lg font-semibold shadow-lg"
-          onClick={() => navigate("/new-recording")}
-        >
-          <Mic className="w-5 h-5 mr-2" />
-          Record New Affirmation
-        </Button>
+        {/* 3. Record New Affirmation */}
+        <CollapsibleSection id="record-cta" title="Record" collapsed={isCollapsed("record-cta")} onToggle={() => toggle("record-cta")}>
+          <Button 
+            size="lg"
+            className="w-full h-14 text-lg font-semibold shadow-lg"
+            onClick={() => navigate("/new-recording")}
+          >
+            <Mic className="w-5 h-5 mr-2" />
+            Record New Affirmation
+          </Button>
+        </CollapsibleSection>
 
         {/* 4. Favorites */}
-        <FavoritesPreview 
-          favoriteRecordings={favoriteRecordings}
-          favoriteAffirmations={favoriteAffirmations}
-        />
+        <CollapsibleSection id="favorites" title="Favorites" collapsed={isCollapsed("favorites")} onToggle={() => toggle("favorites")}>
+          <FavoritesPreview 
+            favoriteRecordings={favoriteRecordings}
+            favoriteAffirmations={favoriteAffirmations}
+          />
+        </CollapsibleSection>
 
         {/* 5. Your Practice (Playlists) */}
-        <PlaylistsPreview />
+        <CollapsibleSection id="playlists" title="Your Practice" collapsed={isCollapsed("playlists")} onToggle={() => toggle("playlists")}>
+          <PlaylistsPreview />
+        </CollapsibleSection>
 
         {/* 6. Listening Stats */}
-        <ListeningStatsPreview />
+        <CollapsibleSection id="listening-stats" title="Listening Time" collapsed={isCollapsed("listening-stats")} onToggle={() => toggle("listening-stats")}>
+          <ListeningStatsPreview />
+        </CollapsibleSection>
 
         {/* 7. Daily Progress */}
-        <DailyProgressPreview />
+        <CollapsibleSection id="daily-progress" title="Daily Progress" collapsed={isCollapsed("daily-progress")} onToggle={() => toggle("daily-progress")}>
+          <DailyProgressPreview />
+        </CollapsibleSection>
 
         {/* 8. Recent Recordings */}
-        <RecentRecordingsPreview recordings={recordings} onRecordingDeleted={fetchRecordings} />
+        <CollapsibleSection id="recent-recordings" title="Recent Recordings" collapsed={isCollapsed("recent-recordings")} onToggle={() => toggle("recent-recordings")}>
+          <RecentRecordingsPreview recordings={recordings} onRecordingDeleted={fetchRecordings} />
+        </CollapsibleSection>
       </div>
 
       <BottomNavigation />
