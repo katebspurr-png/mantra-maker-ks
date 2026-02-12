@@ -145,16 +145,14 @@ const Home = () => {
         </CollapsibleSection>
 
         {/* 3. Record New Affirmation */}
-        <CollapsibleSection id="record-cta" title="Record" collapsed={isCollapsed("record-cta")} onToggle={() => toggle("record-cta")}>
-          <Button 
-            size="lg"
-            className="w-full h-14 text-lg font-semibold shadow-lg"
-            onClick={() => navigate("/new-recording")}
-          >
-            <Mic className="w-5 h-5 mr-2" />
-            Record New Affirmation
-          </Button>
-        </CollapsibleSection>
+        <Button 
+          size="lg"
+          className="w-full h-14 text-lg font-semibold shadow-lg"
+          onClick={() => navigate("/new-recording")}
+        >
+          <Mic className="w-5 h-5 mr-2" />
+          Record New Affirmation
+        </Button>
 
         {/* 4. Favorites */}
         <CollapsibleSection id="favorites" title="Favorites" collapsed={isCollapsed("favorites")} onToggle={() => toggle("favorites")}>
