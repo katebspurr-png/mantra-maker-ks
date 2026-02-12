@@ -9,7 +9,8 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LoopMode, TimerMode } from "@/types";
- import { NotificationSettings } from "@/components/NotificationSettings";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { FeedbackModal } from "@/components/FeedbackModal";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -128,6 +129,7 @@ export default function Profile() {
             <span className="flex-1 text-left">Thought Rewriter</span>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
+          <FeedbackModal />
         </div>
 
         {/* Settings */}
