@@ -1,9 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, RotateCcw } from "lucide-react";
 import { useDemoMode } from "@/contexts/DemoContext";
 
-export function DemoBanner() {
+interface DemoBannerProps {
+  onRestartTour?: () => void;
+}
+
+export function DemoBanner({ onRestartTour }: DemoBannerProps) {
   const { isDemoMode, exitDemo } = useDemoMode();
   const navigate = useNavigate();
 
@@ -16,9 +20,16 @@ export function DemoBanner() {
           <span className="text-xs font-medium bg-primary/20 text-primary px-2 py-0.5 rounded-full">
             Demo Mode
           </span>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
-            Exploring Mantra Maker
-          </span>
+          {onRestartTour && (
+            <button
+              onClick={onRestartTour}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Restart guided tour"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span className="hidden sm:inline">Tour</span>
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button

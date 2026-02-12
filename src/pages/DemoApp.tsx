@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDemoMode } from "@/contexts/DemoContext";
 import { DemoBanner } from "@/components/DemoBanner";
 import { DemoSignupPrompt } from "@/components/DemoSignupPrompt";
-import { BottomNavigation } from "@/components/BottomNavigation";
+import { DemoTour } from "@/components/DemoTour";
 import { Button } from "@/components/ui/button";
 import { AFFIRMATIONS_LIBRARY } from "@/data/affirmations";
 import { AFFIRMATION_CATEGORIES } from "@/types";
@@ -17,21 +17,30 @@ import {
   BookOpen,
   User,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 
 type DemoTab = "home" | "library" | "playlists" | "profile";
 
 export default function DemoApp() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { demoRecordings, demoPlaylists, showSignupPrompt, enterDemo } = useDemoMode();
   const [activeTab, setActiveTab] = useState<DemoTab>("home");
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [tourActive, setTourActive] = useState(false);
 
-  // Enter demo mode on mount
-  useState(() => {
+  // Enter demo mode on mount, start tour if param present
+  useEffect(() => {
     enterDemo();
-  });
+    const shouldTour = searchParams.get("tour") !== "false";
+    if (shouldTour) {
+      // Small delay so DOM is ready
+      const t = setTimeout(() => setTourActive(true), 500);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const togglePlay = (id: string) => {
     setPlayingId(playingId === id ? null : id);
@@ -47,10 +56,22 @@ export default function DemoApp() {
     ? AFFIRMATIONS_LIBRARY.filter((a) => a.category === selectedCategory)
     : AFFIRMATIONS_LIBRARY;
 
+  const handleRestartTour = () => {
+    setActiveTab("home");
+    setTimeout(() => setTourActive(true), 300);
+  };
+
+  const sampleAffirmation = AFFIRMATIONS_LIBRARY[0];
+
   return (
     <div className="min-h-screen bg-background pb-32 pt-12">
-      <DemoBanner />
+      <DemoBanner onRestartTour={handleRestartTour} />
       <DemoSignupPrompt />
+      <DemoTour
+        active={tourActive}
+        onComplete={() => setTourActive(false)}
+        onTabSwitch={(tab) => setActiveTab(tab as DemoTab)}
+      />
 
       {/* Tab content */}
       {activeTab === "home" && (
@@ -61,24 +82,56 @@ export default function DemoApp() {
             <p className="text-sm text-muted-foreground">Your daily affirmation practice</p>
           </div>
 
+          {/* Thought Transformer */}
+          <div data-tour="thought-transformer" className="p-4 bg-card rounded-xl border border-border">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h2 className="font-medium text-sm">Thought Transformer</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Turn a negative thought into a positive affirmation
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => showSignupPrompt("use the Thought Transformer")}
+            >
+              Try It
+            </Button>
+          </div>
+
+          {/* Try This Today */}
+          <div data-tour="try-today" className="p-4 bg-card rounded-xl border border-border">
+            <h2 className="font-medium text-sm mb-2">Try This Today</h2>
+            {sampleAffirmation && (
+              <p className="text-sm text-muted-foreground italic">
+                "{sampleAffirmation.text}"
+              </p>
+            )}
+          </div>
+
           {/* Record CTA */}
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg font-semibold shadow-lg gap-2"
-            onClick={() => showSignupPrompt("record your own mantras")}
-          >
-            <Mic className="w-5 h-5" />
-            Record New Affirmation
-          </Button>
+          <div data-tour="record-button">
+            <Button
+              size="lg"
+              className="w-full h-14 text-lg font-semibold shadow-lg gap-2"
+              onClick={() => showSignupPrompt("record your own mantras")}
+            >
+              <Mic className="w-5 h-5" />
+              Record New Affirmation
+            </Button>
+          </div>
 
           {/* Sample Mantras */}
           <div>
             <h2 className="font-medium mb-3">My Mantras</h2>
             <div className="space-y-2">
-              {demoRecordings.map((rec) => (
+              {demoRecordings.map((rec, i) => (
                 <div
                   key={rec.id}
                   className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border"
+                  {...(i === 0 ? { "data-tour": "sample-mantra" } : {})}
                 >
                   <button
                     onClick={() => togglePlay(rec.id)}
@@ -106,8 +159,8 @@ export default function DemoApp() {
           </div>
 
           {/* Sample Playlist */}
-          <div>
-            <h2 className="font-medium mb-3">Playlists</h2>
+          <div data-tour="playlists">
+            <h2 className="font-medium mb-3">Your Practice</h2>
             {demoPlaylists.map((pl) => (
               <button
                 key={pl.id}
@@ -196,7 +249,6 @@ export default function DemoApp() {
         <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
           <h1 className="text-2xl font-semibold">Playlists</h1>
 
-          {/* Existing demo playlist */}
           {demoPlaylists.map((pl) => (
             <div key={pl.id} className="bg-card rounded-xl border border-border p-4 space-y-3">
               <div className="flex items-center gap-3">
@@ -270,6 +322,7 @@ export default function DemoApp() {
 
           {/* Feedback preview */}
           <button
+            data-tour="feedback"
             onClick={() => showSignupPrompt("share feedback")}
             className="w-full flex items-center gap-3 p-4 bg-card rounded-xl border border-border"
           >
