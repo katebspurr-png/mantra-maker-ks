@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LoopMode, TimerMode } from "@/types";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { FeedbackModal } from "@/components/FeedbackModal";
+import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -130,6 +131,11 @@ export default function Profile() {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <FeedbackModal />
+        </div>
+
+        {/* Color Theme */}
+        <div className="mb-6">
+          <ColorThemeSelector />
         </div>
 
         {/* Settings */}
