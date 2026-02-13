@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +26,23 @@ import AffirmationsList from "./pages/AffirmationsList";
 import Progress from "./pages/Progress";
 import DemoApp from "./pages/DemoApp";
 import NotFound from "./pages/NotFound";
+import { themePresets, ThemeId } from "@/hooks/useColorTheme";
+
+// Apply saved theme immediately on load
+function ThemeInitializer() {
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem("loop-color-theme") as ThemeId) || "calm";
+    const preset = themePresets.find((t) => t.id === savedTheme);
+    if (preset) {
+      const isDark = document.documentElement.classList.contains("dark");
+      const vars = isDark ? preset.dark : preset.light;
+      Object.entries(vars).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(key, value);
+      });
+    }
+  }, []);
+  return null;
+}
 
 const queryClient = new QueryClient();
 
@@ -34,6 +52,7 @@ const App = () => (
       <GlobalAudioProvider>
         <DemoProvider>
           <SessionManager />
+          <ThemeInitializer />
           <Toaster />
           <Sonner />
           <BrowserRouter>
