@@ -2,6 +2,27 @@ import React, { createContext, useContext, useState, useRef, useCallback, useEff
 import { supabase } from "@/integrations/supabase/client";
 import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_SETTINGS } from "@/types";
 import { PlaybackSpeed, PLAYBACK_SPEEDS } from "@/components/PlaybackSpeedControl";
+import { ZEN_TRACKS, ZenTrack } from "@/data/zenTracks";
+
+const ZEN_STORAGE_KEY = "zen-music-settings";
+
+interface ZenMusicSettings {
+  enabled: boolean;
+  trackId: string;
+  volume: number;
+}
+
+function loadZenSettings(): ZenMusicSettings {
+  try {
+    const stored = localStorage.getItem(ZEN_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return { enabled: false, trackId: ZEN_TRACKS[0]?.id || "", volume: 0.3 };
+}
+
+function saveZenSettings(settings: ZenMusicSettings) {
+  localStorage.setItem(ZEN_STORAGE_KEY, JSON.stringify(settings));
+}
 
 // Listening tracking constants
 const MINIMUM_LISTENING_THRESHOLD_SECONDS = 10;
@@ -88,6 +109,16 @@ interface GlobalAudioContextType extends GlobalAudioState {
   setLoopMode: (mode: LoopMode) => void;
   updatePlaybackSettings: (settings: PlaybackSettings) => void;
   setPlaybackSpeed: (speed: PlaybackSpeed) => void;
+  
+  // Zen music controls
+  zenEnabled: boolean;
+  zenVolume: number;
+  zenTrackId: string;
+  zenTracks: ZenTrack[];
+  isZenPlaying: boolean;
+  setZenEnabled: (enabled: boolean) => void;
+  setZenVolume: (volume: number) => void;
+  setZenTrackId: (trackId: string) => void;
 }
 
 const GlobalAudioContext = createContext<GlobalAudioContextType | null>(null);
@@ -118,7 +149,99 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   // Playback speed - persisted for session, default 1x
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
 
-  // Refs for tracking
+  // Zen music state
+  const [zenSettings, setZenSettingsState] = useState<ZenMusicSettings>(loadZenSettings);
+  const [isZenPlaying, setIsZenPlaying] = useState(false);
+  const zenAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize zen audio element
+  useEffect(() => {
+    if (!zenAudioRef.current) {
+      const audio = new Audio();
+      audio.loop = true;
+      audio.volume = zenSettings.volume;
+      zenAudioRef.current = audio;
+      audio.addEventListener("play", () => setIsZenPlaying(true));
+      audio.addEventListener("pause", () => setIsZenPlaying(false));
+    }
+    return () => {
+      if (zenAudioRef.current) {
+        zenAudioRef.current.pause();
+        zenAudioRef.current.src = "";
+      }
+    };
+  }, []);
+
+  // Sync zen volume
+  useEffect(() => {
+    if (zenAudioRef.current) {
+      zenAudioRef.current.volume = zenSettings.volume;
+    }
+  }, [zenSettings.volume]);
+
+  const updateZenSettings = useCallback((updates: Partial<ZenMusicSettings>) => {
+    setZenSettingsState(prev => {
+      const next = { ...prev, ...updates };
+      saveZenSettings(next);
+      return next;
+    });
+  }, []);
+
+  const startZenMusic = useCallback(() => {
+    if (!zenSettings.enabled || !zenAudioRef.current) return;
+    const track = ZEN_TRACKS.find(t => t.id === zenSettings.trackId) || ZEN_TRACKS[0];
+    if (!track) return;
+    const audio = zenAudioRef.current;
+    if (audio.src !== track.url) {
+      audio.src = track.url;
+      audio.load();
+    }
+    audio.play().catch(err => console.warn("Zen music play failed:", err));
+  }, [zenSettings.enabled, zenSettings.trackId]);
+
+  const pauseZenMusic = useCallback(() => {
+    zenAudioRef.current?.pause();
+  }, []);
+
+  const stopZenMusic = useCallback(() => {
+    if (zenAudioRef.current) {
+      zenAudioRef.current.pause();
+      zenAudioRef.current.currentTime = 0;
+    }
+  }, []);
+
+  const setZenEnabled = useCallback((enabled: boolean) => {
+    updateZenSettings({ enabled });
+    if (!enabled) {
+      stopZenMusic();
+    } else if (isPlaying) {
+      // If main audio already playing, start zen immediately
+      setTimeout(() => {
+        const track = ZEN_TRACKS.find(t => t.id === zenSettings.trackId) || ZEN_TRACKS[0];
+        if (track && zenAudioRef.current) {
+          zenAudioRef.current.src = track.url;
+          zenAudioRef.current.load();
+          zenAudioRef.current.play().catch(() => {});
+        }
+      }, 0);
+    }
+  }, [updateZenSettings, stopZenMusic, isPlaying, zenSettings.trackId]);
+
+  const setZenVolume = useCallback((volume: number) => {
+    updateZenSettings({ volume: Math.max(0, Math.min(1, volume)) });
+  }, [updateZenSettings]);
+
+  const setZenTrackId = useCallback((trackId: string) => {
+    updateZenSettings({ trackId });
+    if (zenAudioRef.current && isZenPlaying) {
+      const track = ZEN_TRACKS.find(t => t.id === trackId);
+      if (track) {
+        zenAudioRef.current.src = track.url;
+        zenAudioRef.current.load();
+        zenAudioRef.current.play().catch(() => {});
+      }
+    }
+  }, [updateZenSettings, isZenPlaying]);
   const repetitionCountRef = useRef(0);
   const playlistRepetitionRef = useRef(0);
   const durationStartTimeRef = useRef<number | null>(null);
@@ -340,6 +463,9 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       
       // Start listening tracking for this track
       startListeningTracking(recording.id, playlistId || null);
+      
+      // Start zen background music
+      startZenMusic();
       
       return true;
     } catch (error) {
@@ -629,16 +755,19 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     // Resume listening tracking
     resumeListeningTracking();
     audioRef.current?.play();
-  }, [playbackSettings.mode, resumeListeningTracking]);
+    // Start zen music alongside
+    startZenMusic();
+  }, [playbackSettings.mode, resumeListeningTracking, startZenMusic]);
 
   const pause = useCallback(() => {
     // Pause listening tracking (will log after timeout)
     pauseListeningTracking();
     audioRef.current?.pause();
+    pauseZenMusic();
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
     }
-  }, [pauseListeningTracking]);
+  }, [pauseListeningTracking, pauseZenMusic]);
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -649,8 +778,9 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   }, [isPlaying, play, pause]);
 
   const stop = useCallback(() => {
+    stopZenMusic();
     stopPlayback();
-  }, [stopPlayback]);
+  }, [stopPlayback, stopZenMusic]);
 
   const seek = useCallback((time: number) => {
     if (audioRef.current) {
@@ -715,6 +845,15 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     setLoopMode,
     updatePlaybackSettings,
     setPlaybackSpeed,
+    // Zen music
+    zenEnabled: zenSettings.enabled,
+    zenVolume: zenSettings.volume,
+    zenTrackId: zenSettings.trackId,
+    zenTracks: ZEN_TRACKS,
+    isZenPlaying,
+    setZenEnabled,
+    setZenVolume,
+    setZenTrackId,
   };
 
   return (
