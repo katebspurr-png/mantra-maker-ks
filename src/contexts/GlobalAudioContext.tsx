@@ -153,6 +153,58 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const [zenSettings, setZenSettingsState] = useState<ZenMusicSettings>(loadZenSettings);
   const [isZenPlaying, setIsZenPlaying] = useState(false);
   const zenAudioRef = useRef<HTMLAudioElement | null>(null);
+  const zenFadeAnimRef = useRef<number | null>(null);
+  const zenIsDuckedRef = useRef(false);
+
+  // Smooth volume fade for zen audio using requestAnimationFrame
+  const fadeZenVolume = useCallback((targetVolume: number, durationMs: number) => {
+    if (!zenAudioRef.current) return;
+    // Cancel any ongoing fade
+    if (zenFadeAnimRef.current) {
+      cancelAnimationFrame(zenFadeAnimRef.current);
+      zenFadeAnimRef.current = null;
+    }
+    const audio = zenAudioRef.current;
+    const startVolume = audio.volume;
+    const startTime = performance.now();
+    const delta = targetVolume - startVolume;
+
+    if (Math.abs(delta) < 0.001) {
+      audio.volume = targetVolume;
+      return;
+    }
+
+    const step = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / durationMs, 1);
+      // Ease-in-out for smooth feel
+      const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      audio.volume = Math.max(0, Math.min(1, startVolume + delta * eased));
+      if (progress < 1) {
+        zenFadeAnimRef.current = requestAnimationFrame(step);
+      } else {
+        zenFadeAnimRef.current = null;
+      }
+    };
+    zenFadeAnimRef.current = requestAnimationFrame(step);
+  }, []);
+
+  // Duck zen volume down (voice playing)
+  const duckZenVolume = useCallback(() => {
+    if (!zenAudioRef.current || !zenSettings.enabled) return;
+    zenIsDuckedRef.current = true;
+    const duckedVolume = zenSettings.volume * 0.17; // ~17% of user volume
+    fadeZenVolume(duckedVolume, 500); // 0.5s fade down
+  }, [zenSettings.enabled, zenSettings.volume, fadeZenVolume]);
+
+  // Unduck zen volume (voice paused/ended/between loops)
+  const unduckZenVolume = useCallback(() => {
+    if (!zenAudioRef.current || !zenSettings.enabled) return;
+    zenIsDuckedRef.current = false;
+    fadeZenVolume(zenSettings.volume, 1000); // 1s fade up
+  }, [zenSettings.enabled, zenSettings.volume, fadeZenVolume]);
 
   // Initialize zen audio element
   useEffect(() => {
@@ -165,6 +217,9 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       audio.addEventListener("pause", () => setIsZenPlaying(false));
     }
     return () => {
+      if (zenFadeAnimRef.current) {
+        cancelAnimationFrame(zenFadeAnimRef.current);
+      }
       if (zenAudioRef.current) {
         zenAudioRef.current.pause();
         zenAudioRef.current.src = "";
@@ -172,10 +227,13 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     };
   }, []);
 
-  // Sync zen volume
+  // Sync zen volume - only apply immediately if NOT currently ducked
   useEffect(() => {
-    if (zenAudioRef.current) {
+    if (zenAudioRef.current && !zenIsDuckedRef.current) {
       zenAudioRef.current.volume = zenSettings.volume;
+    } else if (zenAudioRef.current && zenIsDuckedRef.current) {
+      // Update ducked volume proportionally
+      zenAudioRef.current.volume = zenSettings.volume * 0.17;
     }
   }, [zenSettings.volume]);
 
@@ -196,8 +254,12 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       audio.src = track.url;
       audio.load();
     }
+    // Start at ducked volume since voice is about to play
+    const duckedVol = zenSettings.volume * 0.17;
+    audio.volume = duckedVol;
+    zenIsDuckedRef.current = true;
     audio.play().catch(err => console.warn("Zen music play failed:", err));
-  }, [zenSettings.enabled, zenSettings.trackId]);
+  }, [zenSettings.enabled, zenSettings.trackId, zenSettings.volume]);
 
   const pauseZenMusic = useCallback(() => {
     zenAudioRef.current?.pause();
@@ -213,19 +275,23 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const setZenEnabled = useCallback((enabled: boolean) => {
     updateZenSettings({ enabled });
     if (!enabled) {
+      zenIsDuckedRef.current = false;
       stopZenMusic();
     } else if (isPlaying) {
-      // If main audio already playing, start zen immediately
+      // If main audio already playing, start zen immediately at ducked volume
       setTimeout(() => {
         const track = ZEN_TRACKS.find(t => t.id === zenSettings.trackId) || ZEN_TRACKS[0];
         if (track && zenAudioRef.current) {
+          const duckedVol = zenSettings.volume * 0.17;
+          zenAudioRef.current.volume = duckedVol;
+          zenIsDuckedRef.current = true;
           zenAudioRef.current.src = track.url;
           zenAudioRef.current.load();
           zenAudioRef.current.play().catch(() => {});
         }
       }, 0);
     }
-  }, [updateZenSettings, stopZenMusic, isPlaying, zenSettings.trackId]);
+  }, [updateZenSettings, stopZenMusic, isPlaying, zenSettings.trackId, zenSettings.volume]);
 
   const setZenVolume = useCallback((volume: number) => {
     updateZenSettings({ volume: Math.max(0, Math.min(1, volume)) });
@@ -464,8 +530,9 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       // Start listening tracking for this track
       startListeningTracking(recording.id, playlistId || null);
       
-      // Start zen background music
+      // Start zen background music (starts ducked) and duck if already playing
       startZenMusic();
+      duckZenVolume();
       
       return true;
     } catch (error) {
@@ -511,6 +578,9 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const handleTrackEnded = useCallback(() => {
     if (!source) return;
     
+    // Unduck zen music when voice stops (swell up between loops/tracks)
+    unduckZenVolume();
+    
     const settings = playbackSettings;
     
     if (source.type === "single") {
@@ -523,7 +593,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
           break;
           
         case "loop":
-          audioRef.current?.play();
+          // Brief gap for zen to swell, then duck again when voice resumes
+          audioRef.current?.play().then(() => duckZenVolume());
           break;
           
         case "repeat":
@@ -534,13 +605,13 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
               ...prev,
               currentRepetition: repetitionCountRef.current + 1,
             }));
-            audioRef.current?.play();
+            audioRef.current?.play().then(() => duckZenVolume());
           }
           break;
           
         case "duration":
           // Duration mode continues until time runs out
-          audioRef.current?.play();
+          audioRef.current?.play().then(() => duckZenVolume());
           break;
       }
     } else {
@@ -630,7 +701,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
         }
       }
     }
-  }, [source, playbackSettings, currentTrackIndex, playlist, playlistSettings, playTrackAtIndex, generatePlayOrder, stopPlayback]);
+  }, [source, playbackSettings, currentTrackIndex, playlist, playlistSettings, playTrackAtIndex, generatePlayOrder, stopPlayback, duckZenVolume, unduckZenVolume]);
 
   // Update ended handler when dependencies change
   useEffect(() => {
@@ -755,19 +826,25 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     // Resume listening tracking
     resumeListeningTracking();
     audioRef.current?.play();
-    // Start zen music alongside
+    // Start zen music alongside (starts ducked) and duck if already playing
     startZenMusic();
-  }, [playbackSettings.mode, resumeListeningTracking, startZenMusic]);
+    duckZenVolume();
+  }, [playbackSettings.mode, resumeListeningTracking, startZenMusic, duckZenVolume]);
 
   const pause = useCallback(() => {
     // Pause listening tracking (will log after timeout)
     pauseListeningTracking();
     audioRef.current?.pause();
-    pauseZenMusic();
+    // Unduck zen music back to full volume when voice pauses, then pause it
+    unduckZenVolume();
+    // Delay pausing zen slightly so the unduck fade is audible briefly
+    setTimeout(() => {
+      pauseZenMusic();
+    }, 200);
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
     }
-  }, [pauseListeningTracking, pauseZenMusic]);
+  }, [pauseListeningTracking, pauseZenMusic, unduckZenVolume]);
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -778,6 +855,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   }, [isPlaying, play, pause]);
 
   const stop = useCallback(() => {
+    zenIsDuckedRef.current = false;
     stopZenMusic();
     stopPlayback();
   }, [stopPlayback, stopZenMusic]);
