@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Play, Pause, X } from "lucide-react";
+import { Play, Pause, X, Music } from "lucide-react";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { Progress } from "@/components/ui/progress";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
@@ -24,6 +24,8 @@ export function MiniPlayer() {
     source,
     playbackStatus,
     playbackSpeed,
+    zenEnabled,
+    setZenEnabled,
     togglePlayPause,
     stop,
     setPlaybackSpeed,
@@ -86,7 +88,22 @@ export function MiniPlayer() {
           </div>
           
           {/* Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Zen music toggle */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setZenEnabled(!zenEnabled);
+              }}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                zenEnabled
+                  ? "bg-primary/20 text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              title={zenEnabled ? "Zen music on" : "Zen music off"}
+            >
+              <Music className="w-3.5 h-3.5" />
+            </button>
             {/* Speed control */}
             <PlaybackSpeedControl
               speed={playbackSpeed}

@@ -12,6 +12,7 @@ import { PlaybackStatus } from "@/components/PlaybackStatus";
 import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
 import { ToneAnalysis } from "@/components/ToneAnalysis";
 import { TagInput } from "@/components/TagInput";
+import { ZenMusicControl } from "@/components/ZenMusicControl";
 import { DeleteRecordingDialog } from "@/components/DeleteRecordingDialog";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useDeleteRecording } from "@/hooks/useDeleteRecording";
@@ -425,6 +426,11 @@ const RecordingDetail = () => {
                 isPlaying={displayIsPlaying}
               />
             )}
+          </div>
+
+          {/* Zen Background Music */}
+          <div className="pt-4 border-t border-border">
+            <ZenMusicControl />
           </div>
 
           {/* Playback Speed */}
