@@ -20,7 +20,7 @@ export const ZEN_TRACKS: ZenTrack[] = [
     id: "mantra",
     title: "Mantra",
     artist: "Alex-Productions",
-    url: "https://www.chosic.com/wp-content/uploads/2022/08/MANTRON(chosic.com).mp3",
+    url: "https://uwzjdosvirwzgbiouzcd.supabase.co/storage/v1/object/public/zen-tracks/mantra.mp3",
     durationSeconds: 517,
     license: "CC BY 3.0",
     attribution: "MANTRA by Alex-Productions | https://onsound.eu/ | Music promoted by https://www.chosic.com/free-music/all/ | Creative Commons CC BY 3.0",
