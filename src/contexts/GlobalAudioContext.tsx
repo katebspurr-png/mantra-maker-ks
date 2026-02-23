@@ -10,6 +10,7 @@ interface ZenMusicSettings {
   enabled: boolean;
   trackId: string;
   volume: number;
+  duckingIntensity: number; // 0-1, how much to reduce volume during voice (0 = no ducking, 1 = full mute)
 }
 
 function loadZenSettings(): ZenMusicSettings {
@@ -17,7 +18,7 @@ function loadZenSettings(): ZenMusicSettings {
     const stored = localStorage.getItem(ZEN_STORAGE_KEY);
     if (stored) return JSON.parse(stored);
   } catch {}
-  return { enabled: false, trackId: ZEN_TRACKS[0]?.id || "", volume: 0.3 };
+  return { enabled: false, trackId: ZEN_TRACKS[0]?.id || "", volume: 0.3, duckingIntensity: 0.83 };
 }
 
 function saveZenSettings(settings: ZenMusicSettings) {
@@ -114,11 +115,13 @@ interface GlobalAudioContextType extends GlobalAudioState {
   zenEnabled: boolean;
   zenVolume: number;
   zenTrackId: string;
+  zenDuckingIntensity: number;
   zenTracks: ZenTrack[];
   isZenPlaying: boolean;
   setZenEnabled: (enabled: boolean) => void;
   setZenVolume: (volume: number) => void;
   setZenTrackId: (trackId: string) => void;
+  setZenDuckingIntensity: (intensity: number) => void;
 }
 
 const GlobalAudioContext = createContext<GlobalAudioContextType | null>(null);
@@ -195,9 +198,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const duckZenVolume = useCallback(() => {
     if (!zenAudioRef.current || !zenSettings.enabled) return;
     zenIsDuckedRef.current = true;
-    const duckedVolume = zenSettings.volume * 0.17; // ~17% of user volume
+    const duckFactor = 1 - zenSettings.duckingIntensity; // e.g. 0.83 intensity → 0.17 of volume
+    const duckedVolume = zenSettings.volume * duckFactor;
     fadeZenVolume(duckedVolume, 500); // 0.5s fade down
-  }, [zenSettings.enabled, zenSettings.volume, fadeZenVolume]);
+  }, [zenSettings.enabled, zenSettings.volume, zenSettings.duckingIntensity, fadeZenVolume]);
 
   // Unduck zen volume (voice paused/ended/between loops)
   const unduckZenVolume = useCallback(() => {
@@ -233,9 +237,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       zenAudioRef.current.volume = zenSettings.volume;
     } else if (zenAudioRef.current && zenIsDuckedRef.current) {
       // Update ducked volume proportionally
-      zenAudioRef.current.volume = zenSettings.volume * 0.17;
+      const duckFactor = 1 - zenSettings.duckingIntensity;
+      zenAudioRef.current.volume = zenSettings.volume * duckFactor;
     }
-  }, [zenSettings.volume]);
+  }, [zenSettings.volume, zenSettings.duckingIntensity]);
 
   const updateZenSettings = useCallback((updates: Partial<ZenMusicSettings>) => {
     setZenSettingsState(prev => {
@@ -255,7 +260,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       audio.load();
     }
     // Start at ducked volume since voice is about to play
-    const duckedVol = zenSettings.volume * 0.17;
+    const duckedVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
     audio.volume = duckedVol;
     zenIsDuckedRef.current = true;
     audio.play().catch(err => console.warn("Zen music play failed:", err));
@@ -282,7 +287,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       setTimeout(() => {
         const track = ZEN_TRACKS.find(t => t.id === zenSettings.trackId) || ZEN_TRACKS[0];
         if (track && zenAudioRef.current) {
-          const duckedVol = zenSettings.volume * 0.17;
+          const duckedVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
           zenAudioRef.current.volume = duckedVol;
           zenIsDuckedRef.current = true;
           zenAudioRef.current.src = track.url;
@@ -295,6 +300,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
 
   const setZenVolume = useCallback((volume: number) => {
     updateZenSettings({ volume: Math.max(0, Math.min(1, volume)) });
+  }, [updateZenSettings]);
+
+  const setZenDuckingIntensity = useCallback((intensity: number) => {
+    updateZenSettings({ duckingIntensity: Math.max(0, Math.min(1, intensity)) });
   }, [updateZenSettings]);
 
   const setZenTrackId = useCallback((trackId: string) => {
@@ -927,11 +936,13 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     zenEnabled: zenSettings.enabled,
     zenVolume: zenSettings.volume,
     zenTrackId: zenSettings.trackId,
+    zenDuckingIntensity: zenSettings.duckingIntensity,
     zenTracks: ZEN_TRACKS,
     isZenPlaying,
     setZenEnabled,
     setZenVolume,
     setZenTrackId,
+    setZenDuckingIntensity,
   };
 
   return (
