@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
- import { LogOut, Mic, Sparkles, ChevronRight, Bell } from "lucide-react";
+ import { LogOut, Mic, Sparkles, ChevronRight, Bell, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -12,6 +12,7 @@ import { LoopMode, TimerMode } from "@/types";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
+import { Switch } from "@/components/ui/switch";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -21,7 +22,9 @@ export default function Profile() {
   const [defaultLoopMode, setDefaultLoopMode] = useState<LoopMode>("infinite");
   const [timerMode, setTimerMode] = useState<TimerMode>("none");
   const [customMinutes, setCustomMinutes] = useState("");
-
+  const [zenAutoSave, setZenAutoSave] = useState(() => {
+    return localStorage.getItem("zen-auto-save-enabled") !== "false";
+  });
   useEffect(() => {
     fetchProfile();
     // Load default loop mode from localStorage
@@ -213,7 +216,32 @@ export default function Profile() {
          <div className="mb-6">
            <NotificationSettings />
          </div>
- 
+
+         {/* Background Sounds Settings */}
+         <div className="bg-card rounded-xl border border-border p-4 mb-6">
+           <div className="flex items-start gap-3">
+             <Volume2 className="w-5 h-5 text-muted-foreground mt-0.5" />
+             <div className="flex-1">
+               <div className="flex items-center justify-between">
+                 <h3 className="font-medium text-sm">Auto-save sound preferences</h3>
+                 <Switch
+                   checked={zenAutoSave}
+                   onCheckedChange={(checked) => {
+                     setZenAutoSave(checked);
+                     localStorage.setItem("zen-auto-save-enabled", String(checked));
+                     if (!checked) {
+                       localStorage.removeItem("zen-default-settings");
+                     }
+                   }}
+                 />
+               </div>
+               <p className="text-sm text-muted-foreground mt-1">
+                 Automatically save your background sound choices as the default for new mantras
+               </p>
+             </div>
+           </div>
+         </div>
+
         {/* Mic Info */}
         <div className="bg-card rounded-xl border border-border p-4 mb-6">
           <div className="flex items-start gap-3">
