@@ -8,4 +8,8 @@ export interface Recording {
   duration_seconds: number;
   audio_file_path: string;
   loop_mode: LoopMode;
+  zen_enabled?: boolean;
+  zen_track_id?: string | null;
+  zen_volume?: number;
+  zen_ducking_intensity?: number;
 }

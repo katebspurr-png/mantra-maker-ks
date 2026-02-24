@@ -4,7 +4,12 @@ import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_S
 import { PlaybackSpeed, PLAYBACK_SPEEDS } from "@/components/PlaybackSpeedControl";
 import { ZEN_TRACKS, ZenTrack } from "@/data/zenTracks";
 
-const ZEN_STORAGE_KEY = "zen-music-settings";
+const DEFAULT_ZEN_SETTINGS: ZenMusicSettings = {
+  enabled: false,
+  trackId: ZEN_TRACKS[0]?.id || "",
+  volume: 0.3,
+  duckingIntensity: 0.83,
+};
 
 interface ZenMusicSettings {
   enabled: boolean;
@@ -13,16 +18,15 @@ interface ZenMusicSettings {
   duckingIntensity: number; // 0-1, how much to reduce volume during voice (0 = no ducking, 1 = full mute)
 }
 
-function loadZenSettings(): ZenMusicSettings {
-  try {
-    const stored = localStorage.getItem(ZEN_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return { enabled: false, trackId: ZEN_TRACKS[0]?.id || "", volume: 0.3, duckingIntensity: 0.83 };
-}
-
-function saveZenSettings(settings: ZenMusicSettings) {
-  localStorage.setItem(ZEN_STORAGE_KEY, JSON.stringify(settings));
+/** Build zen settings from a recording's saved preferences */
+function zenSettingsFromRecording(recording: Recording | null): ZenMusicSettings {
+  if (!recording) return DEFAULT_ZEN_SETTINGS;
+  return {
+    enabled: recording.zen_enabled ?? false,
+    trackId: recording.zen_track_id || ZEN_TRACKS[0]?.id || "",
+    volume: recording.zen_volume ?? 0.3,
+    duckingIntensity: recording.zen_ducking_intensity ?? 0.83,
+  };
 }
 
 // Listening tracking constants
@@ -153,7 +157,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const [playbackSpeed, setPlaybackSpeedState] = useState<PlaybackSpeed>(1);
 
   // Zen music state
-  const [zenSettings, setZenSettingsState] = useState<ZenMusicSettings>(loadZenSettings);
+  const [zenSettings, setZenSettingsState] = useState<ZenMusicSettings>(DEFAULT_ZEN_SETTINGS);
   const [isZenPlaying, setIsZenPlaying] = useState(false);
   const zenAudioRef = useRef<HTMLAudioElement | null>(null);
   const zenFadeAnimRef = useRef<number | null>(null);
@@ -242,29 +246,28 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     }
   }, [zenSettings.volume, zenSettings.duckingIntensity]);
 
+  /** Save zen settings to DB for the current recording */
+  const saveZenSettingsToDb = useCallback(async (updates: Partial<ZenMusicSettings>, recordingId?: string) => {
+    const id = recordingId || currentTrack?.id;
+    if (!id) return;
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.enabled !== undefined) dbUpdates.zen_enabled = updates.enabled;
+    if (updates.trackId !== undefined) dbUpdates.zen_track_id = updates.trackId;
+    if (updates.volume !== undefined) dbUpdates.zen_volume = updates.volume;
+    if (updates.duckingIntensity !== undefined) dbUpdates.zen_ducking_intensity = updates.duckingIntensity;
+    await supabase.from("recordings").update(dbUpdates).eq("id", id);
+  }, [currentTrack?.id]);
+
   const updateZenSettings = useCallback((updates: Partial<ZenMusicSettings>) => {
     setZenSettingsState(prev => {
       const next = { ...prev, ...updates };
-      saveZenSettings(next);
       return next;
     });
-  }, []);
+    // Persist to DB (fire and forget)
+    saveZenSettingsToDb(updates);
+  }, [saveZenSettingsToDb]);
 
-  const startZenMusic = useCallback(() => {
-    if (!zenSettings.enabled || !zenAudioRef.current) return;
-    const track = ZEN_TRACKS.find(t => t.id === zenSettings.trackId) || ZEN_TRACKS[0];
-    if (!track) return;
-    const audio = zenAudioRef.current;
-    if (audio.src !== track.url) {
-      audio.src = track.url;
-      audio.load();
-    }
-    // Start at ducked volume since voice is about to play
-    const duckedVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
-    audio.volume = duckedVol;
-    zenIsDuckedRef.current = true;
-    audio.play().catch(err => console.warn("Zen music play failed:", err));
-  }, [zenSettings.enabled, zenSettings.trackId, zenSettings.volume]);
+  // startZenMusic is now handled inline in playTrackAtIndex per-recording
 
   const pauseZenMusic = useCallback(() => {
     zenAudioRef.current?.pause();
@@ -279,6 +282,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
 
   const setZenEnabled = useCallback((enabled: boolean) => {
     updateZenSettings({ enabled });
+    // Update the in-memory recording too
+    if (currentTrack) {
+      setCurrentTrack(prev => prev ? { ...prev, zen_enabled: enabled } : prev);
+    }
     if (!enabled) {
       zenIsDuckedRef.current = false;
       stopZenMusic();
@@ -296,7 +303,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
         }
       }, 0);
     }
-  }, [updateZenSettings, stopZenMusic, isPlaying, zenSettings.trackId, zenSettings.volume]);
+  }, [updateZenSettings, stopZenMusic, isPlaying, zenSettings.trackId, zenSettings.volume, zenSettings.duckingIntensity, currentTrack]);
 
   const setZenVolume = useCallback((volume: number) => {
     updateZenSettings({ volume: Math.max(0, Math.min(1, volume)) });
@@ -529,6 +536,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     // Apply current playback speed to new track
     audio.playbackRate = playbackSpeed;
     
+    // Load this recording's zen preferences
+    const recordingZen = zenSettingsFromRecording(recording);
+    setZenSettingsState(recordingZen);
+    
     try {
       await audio.play();
       setCurrentTrack(recording);
@@ -539,9 +550,31 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       // Start listening tracking for this track
       startListeningTracking(recording.id, playlistId || null);
       
-      // Start zen background music (starts ducked) and duck if already playing
-      startZenMusic();
-      duckZenVolume();
+      // Start zen background music if this recording has it enabled
+      if (recordingZen.enabled) {
+        // Start zen with recording's settings
+        if (zenAudioRef.current) {
+          const track = ZEN_TRACKS.find(t => t.id === recordingZen.trackId) || ZEN_TRACKS[0];
+          if (track) {
+            const za = zenAudioRef.current;
+            if (za.src !== track.url) {
+              za.src = track.url;
+              za.load();
+            }
+            const duckedVol = recordingZen.volume * (1 - recordingZen.duckingIntensity);
+            za.volume = duckedVol;
+            zenIsDuckedRef.current = true;
+            za.play().catch(err => console.warn("Zen music play failed:", err));
+          }
+        }
+      } else {
+        // This recording has zen off - stop any playing zen
+        if (zenAudioRef.current) {
+          zenAudioRef.current.pause();
+          zenAudioRef.current.currentTime = 0;
+        }
+        zenIsDuckedRef.current = false;
+      }
       
       return true;
     } catch (error) {
@@ -835,10 +868,12 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     // Resume listening tracking
     resumeListeningTracking();
     audioRef.current?.play();
-    // Start zen music alongside (starts ducked) and duck if already playing
-    startZenMusic();
-    duckZenVolume();
-  }, [playbackSettings.mode, resumeListeningTracking, startZenMusic, duckZenVolume]);
+    // Resume zen music if enabled for this recording
+    if (zenSettings.enabled && zenAudioRef.current) {
+      duckZenVolume();
+      zenAudioRef.current.play().catch(() => {});
+    }
+  }, [playbackSettings.mode, resumeListeningTracking, zenSettings.enabled, duckZenVolume]);
 
   const pause = useCallback(() => {
     // Pause listening tracking (will log after timeout)
