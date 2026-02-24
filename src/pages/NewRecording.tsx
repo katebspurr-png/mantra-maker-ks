@@ -195,6 +195,14 @@ const NewRecording = () => {
       const affirmationIdToUse = existingAffirmationId 
         || (affirmationText.trim() ? generateAffirmationId() : null);
 
+      // Load saved zen defaults for new recordings
+      const zenDefaults = (() => {
+        try {
+          const raw = localStorage.getItem("zen-default-settings");
+          return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+      })();
+
       const { error: dbError } = await supabase.from("recordings").insert({
         user_id: user.id,
         title,
@@ -204,6 +212,12 @@ const NewRecording = () => {
         text: affirmationText || null,
         tags: tags,
         affirmation_id: affirmationIdToUse,
+        ...(zenDefaults ? {
+          zen_enabled: zenDefaults.enabled,
+          zen_track_id: zenDefaults.trackId,
+          zen_volume: zenDefaults.volume,
+          zen_ducking_intensity: zenDefaults.duckingIntensity,
+        } : {}),
       });
 
       if (dbError) throw dbError;
