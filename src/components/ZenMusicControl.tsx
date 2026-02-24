@@ -1,25 +1,26 @@
-import { Music, Volume2, AudioLines } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Volume2, AudioLines, Play, Square, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { ZEN_TRACKS, NONE_TRACK_ID } from "@/data/zenTracks";
+import { cn } from "@/lib/utils";
 
 interface ZenMusicControlProps {
-  /** Compact mode for MiniPlayer - just shows a toggle icon */
   compact?: boolean;
 }
 
 /**
- * ZenMusicControl - Toggle and configure zen background music.
- * 
- * Full mode: shows toggle, track selector, volume slider, and ducking intensity.
- * Compact mode: just a toggleable icon button.
+ * ZenMusicControl — renamed "Background Sounds"
+ *
+ * Shows a sound picker grid with preview buttons, volume slider,
+ * ducking slider, and dynamic Creative Commons attribution.
  */
 export function ZenMusicControl({ compact }: ZenMusicControlProps) {
   const {
     zenEnabled, zenVolume, zenTrackId, zenDuckingIntensity,
-    zenTracks, setZenEnabled, setZenVolume, setZenTrackId, setZenDuckingIntensity,
+    setZenEnabled, setZenVolume, setZenTrackId, setZenDuckingIntensity,
   } = useGlobalAudio();
 
   if (compact) {
@@ -29,55 +30,71 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
           e.stopPropagation();
           setZenEnabled(!zenEnabled);
         }}
-        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-          zenEnabled 
-            ? "bg-primary/20 text-primary" 
+        className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
+          zenEnabled
+            ? "bg-primary/20 text-primary"
             : "text-muted-foreground hover:text-foreground"
-        }`}
-        title={zenEnabled ? "Zen music on" : "Zen music off"}
+        )}
+        title={zenEnabled ? "Background sounds on" : "Background sounds off"}
       >
-        <Music className="w-4 h-4" />
+        <Volume2 className="w-4 h-4" />
       </button>
     );
   }
 
-  const currentTrack = zenTracks.find(t => t.id === zenTrackId);
+  const effectiveTrackId = zenEnabled ? zenTrackId : NONE_TRACK_ID;
+  const currentTrack = ZEN_TRACKS.find(t => t.id === effectiveTrackId);
+
+  const handleSelectTrack = (trackId: string) => {
+    if (trackId === NONE_TRACK_ID) {
+      setZenEnabled(false);
+    } else {
+      if (!zenEnabled) setZenEnabled(true);
+      setZenTrackId(trackId);
+    }
+  };
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Music className="w-4 h-4 text-muted-foreground" />
-          <Label htmlFor="zen-toggle" className="font-medium">Zen Background Music</Label>
+          <Volume2 className="w-4 h-4 text-muted-foreground" />
+          <Label className="font-medium">Background Sounds</Label>
         </div>
         <Switch
-          id="zen-toggle"
           checked={zenEnabled}
           onCheckedChange={setZenEnabled}
         />
       </div>
 
-      {zenEnabled && (
-        <div className="space-y-3 pl-6">
-          {/* Track selector */}
-          {zenTracks.length > 1 && (
-            <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground">Track</Label>
-              <Select value={zenTrackId} onValueChange={setZenTrackId}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {zenTracks.map(track => (
-                    <SelectItem key={track.id} value={track.id}>
-                      {track.title} — {track.artist}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+      {/* Sound picker grid */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* None / Silence option */}
+        <SoundOption
+          id={NONE_TRACK_ID}
+          title="None"
+          icon="🔇"
+          isSelected={!zenEnabled || effectiveTrackId === NONE_TRACK_ID}
+          onSelect={() => handleSelectTrack(NONE_TRACK_ID)}
+        />
+        {ZEN_TRACKS.map(track => (
+          <SoundOption
+            key={track.id}
+            id={track.id}
+            title={track.title}
+            icon={track.icon}
+            previewUrl={track.previewUrl || track.url}
+            isSelected={zenEnabled && zenTrackId === track.id}
+            onSelect={() => handleSelectTrack(track.id)}
+          />
+        ))}
+      </div>
 
+      {/* Volume & ducking — only when a sound is selected */}
+      {zenEnabled && (
+        <div className="space-y-3 animate-in fade-in">
           {/* Volume slider */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
@@ -118,7 +135,7 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
             </p>
           </div>
 
-          {/* Attribution */}
+          {/* Dynamic attribution */}
           {currentTrack && (
             <p className="text-[10px] text-muted-foreground/60 leading-tight">
               {currentTrack.title} by {currentTrack.artist} • {currentTrack.license}
@@ -127,5 +144,105 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
         </div>
       )}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  SoundOption — A single tile in the picker grid                    */
+/* ------------------------------------------------------------------ */
+
+interface SoundOptionProps {
+  id: string;
+  title: string;
+  icon: string;
+  previewUrl?: string;
+  isSelected: boolean;
+  onSelect: () => void;
+}
+
+function SoundOption({ id, title, icon, previewUrl, isSelected, onSelect }: SoundOptionProps) {
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopPreview = useCallback(() => {
+    if (previewTimerRef.current) {
+      clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current.currentTime = 0;
+    }
+    setIsPreviewing(false);
+  }, []);
+
+  const togglePreview = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!previewUrl) return;
+
+    if (isPreviewing) {
+      stopPreview();
+      return;
+    }
+
+    if (!previewAudioRef.current) {
+      previewAudioRef.current = new Audio();
+    }
+    const audio = previewAudioRef.current;
+    audio.src = previewUrl;
+    audio.volume = 0.5;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    setIsPreviewing(true);
+
+    // Auto-stop after 10s
+    previewTimerRef.current = setTimeout(() => {
+      stopPreview();
+    }, 10000);
+
+    audio.onended = () => stopPreview();
+  }, [previewUrl, isPreviewing, stopPreview]);
+
+  return (
+    <button
+      onClick={onSelect}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-1 rounded-xl border p-3 transition-all min-h-[76px]",
+        isSelected
+          ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/30"
+          : "border-border bg-card hover:bg-accent/50 text-foreground"
+      )}
+    >
+      {/* Selected check */}
+      {isSelected && (
+        <div className="absolute top-1.5 right-1.5">
+          <Check className="w-3 h-3 text-primary" />
+        </div>
+      )}
+
+      <span className="text-xl leading-none">{icon}</span>
+      <span className="text-xs font-medium leading-tight text-center">{title}</span>
+
+      {/* Preview/audition button */}
+      {previewUrl && (
+        <button
+          onClick={togglePreview}
+          className={cn(
+            "mt-0.5 w-6 h-6 rounded-full flex items-center justify-center transition-colors",
+            isPreviewing
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+          title={isPreviewing ? "Stop preview" : "Preview 10s"}
+        >
+          {isPreviewing ? (
+            <Square className="w-2.5 h-2.5" />
+          ) : (
+            <Play className="w-2.5 h-2.5 ml-0.5" />
+          )}
+        </button>
+      )}
+    </button>
   );
 }
