@@ -1,5 +1,8 @@
 project_id = "uwzjdosvirwzgbiouzcd"
 
+[functions.upload-zen-track]
+verify_jwt = false
+
 [functions.generate-recording-metadata]
 verify_jwt = true
 
