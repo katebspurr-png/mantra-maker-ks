@@ -196,7 +196,7 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
           {/* Save as Default */}
           <button
             onClick={handleSaveDefault}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors pt-1"
+            className="flex items-center justify-center gap-1.5 text-xs font-medium w-full py-2 px-3 rounded-lg border border-border bg-card hover:bg-accent/50 text-foreground transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             Save as Default
