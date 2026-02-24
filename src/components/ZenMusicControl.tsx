@@ -35,6 +35,7 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
   } = useGlobalAudio();
 
   const [musicExpanded, setMusicExpanded] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(() => localStorage.getItem("zen-auto-save-enabled") !== "false");
 
   // Auto-save preferences whenever they change
   const hasMounted = useRef(false);
@@ -43,7 +44,6 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
       hasMounted.current = true;
       return;
     }
-    const autoSaveEnabled = localStorage.getItem("zen-auto-save-enabled") !== "false";
     if (autoSaveEnabled) {
       const settings: ZenDefaultSettings = {
         trackId: zenTrackId,
@@ -53,7 +53,7 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
       };
       localStorage.setItem(LS_KEY, JSON.stringify(settings));
     }
-  }, [zenEnabled, zenTrackId, zenVolume, zenDuckingIntensity]);
+  }, [zenEnabled, zenTrackId, zenVolume, zenDuckingIntensity, autoSaveEnabled]);
 
   if (compact) {
     return (
@@ -201,6 +201,22 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
               {currentTrack.title} by {currentTrack.artist} • {currentTrack.license}
             </p>
           )}
+
+          {/* Auto-save toggle */}
+          <div className="flex items-center justify-between pt-1">
+            <Label className="text-xs text-muted-foreground">Auto-save as default</Label>
+            <Switch
+              checked={autoSaveEnabled}
+              onCheckedChange={(checked) => {
+                setAutoSaveEnabled(checked);
+                localStorage.setItem("zen-auto-save-enabled", String(checked));
+                if (!checked) {
+                  localStorage.removeItem(LS_KEY);
+                }
+              }}
+              className="scale-75 origin-right"
+            />
+          </div>
 
         </div>
       )}
