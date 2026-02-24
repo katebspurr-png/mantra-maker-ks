@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from "react";
-import { Volume2, AudioLines, Play, Square, Check, ChevronDown, Music, Save } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Volume2, AudioLines, Play, Square, Check, ChevronDown, Music } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,25 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
   } = useGlobalAudio();
 
   const [musicExpanded, setMusicExpanded] = useState(false);
+
+  // Auto-save preferences whenever they change
+  const hasMounted = useRef(false);
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+    const autoSaveEnabled = localStorage.getItem("zen-auto-save-enabled") !== "false";
+    if (autoSaveEnabled) {
+      const settings: ZenDefaultSettings = {
+        trackId: zenTrackId,
+        volume: zenVolume,
+        duckingIntensity: zenDuckingIntensity,
+        enabled: zenEnabled,
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(settings));
+    }
+  }, [zenEnabled, zenTrackId, zenVolume, zenDuckingIntensity]);
 
   if (compact) {
     return (
@@ -76,16 +95,6 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
     setMusicExpanded(prev => !prev);
   };
 
-  const handleSaveDefault = () => {
-    const settings: ZenDefaultSettings = {
-      trackId: zenTrackId,
-      volume: zenVolume,
-      duckingIntensity: zenDuckingIntensity,
-      enabled: zenEnabled,
-    };
-    localStorage.setItem(LS_KEY, JSON.stringify(settings));
-    toast.success("Default saved!");
-  };
 
   return (
     <div className="space-y-4">
@@ -193,14 +202,6 @@ export function ZenMusicControl({ compact }: ZenMusicControlProps) {
             </p>
           )}
 
-          {/* Save as Default */}
-          <button
-            onClick={handleSaveDefault}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium w-full py-2 px-3 rounded-lg border border-border bg-card hover:bg-accent/50 text-foreground transition-colors"
-          >
-            <Save className="w-3.5 h-3.5" />
-            Save as Default
-          </button>
         </div>
       )}
     </div>
