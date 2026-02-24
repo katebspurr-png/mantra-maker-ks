@@ -205,6 +205,10 @@ export type Database = {
           text: string | null
           title: string
           user_id: string
+          zen_ducking_intensity: number
+          zen_enabled: boolean
+          zen_track_id: string | null
+          zen_volume: number
         }
         Insert: {
           affirmation_id?: string | null
@@ -219,6 +223,10 @@ export type Database = {
           text?: string | null
           title: string
           user_id: string
+          zen_ducking_intensity?: number
+          zen_enabled?: boolean
+          zen_track_id?: string | null
+          zen_volume?: number
         }
         Update: {
           affirmation_id?: string | null
@@ -233,6 +241,10 @@ export type Database = {
           text?: string | null
           title?: string
           user_id?: string
+          zen_ducking_intensity?: number
+          zen_enabled?: boolean
+          zen_track_id?: string | null
+          zen_volume?: number
         }
         Relationships: []
       }

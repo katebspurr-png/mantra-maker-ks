@@ -26,13 +26,14 @@ export interface Recording {
   loop_mode: LoopMode;
   text?: string | null;
   is_favorite?: boolean;
-  // User-controlled marker indicating their preferred take of a recording
-  // Future use: could be used to prefer Best Takes when building playlists
   is_best_take?: boolean;
-  // Tags can later be used for filtering recordings or building smart playlists by theme
   tags?: string[];
-  // Groups recordings by affirmation/script - multiple takes of the same affirmation share this ID
   affirmation_id?: string | null;
+  // Per-recording zen background music preferences
+  zen_enabled?: boolean;
+  zen_track_id?: string | null;
+  zen_volume?: number;
+  zen_ducking_intensity?: number;
 }
 
 export interface ToneAnalysisSnapshot {
