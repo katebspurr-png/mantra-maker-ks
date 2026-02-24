@@ -60,6 +60,11 @@ export interface Playlist {
   shuffle: boolean;
   delay_seconds: number;
   loop_playlist: boolean;
+  // Per-playlist zen background music preferences
+  zen_enabled: boolean;
+  zen_track_id?: string | null;
+  zen_volume: number;
+  zen_ducking_intensity: number;
 }
 
 export interface PlaylistRecording {

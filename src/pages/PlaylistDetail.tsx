@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Play, Pause, Plus, GripVertical, Trash2, Shuffle, Volume2 } from "lucide-react";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
@@ -9,6 +9,7 @@ import { BottomNavigation } from "@/components/BottomNavigation";
 import { PlaybackSettings, usePlaybackSettings } from "@/components/PlaybackSettings";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
 import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
+import { ZenMusicControl } from "@/components/ZenMusicControl";
 import {
   Dialog,
   DialogContent,
@@ -133,11 +134,55 @@ export default function PlaylistDetail() {
     togglePlayPause,
     updatePlaybackSettings,
     setPlaybackSpeed,
+    zenEnabled,
+    zenTrackId,
+    zenVolume,
+    zenDuckingIntensity,
+    setZenEnabled,
+    setZenTrackId,
+    setZenVolume,
+    setZenDuckingIntensity,
   } = useGlobalAudio();
 
   // Check if this playlist is currently playing in global player
   const isThisPlaylistPlaying = source?.type === "playlist" && source?.id === id;
   const currentTrackId = isThisPlaylistPlaying ? currentTrack?.id : null;
+
+  // Load playlist zen settings into global context when visiting this page (if not currently playing)
+  useEffect(() => {
+    if (playlist && !isThisPlaylistPlaying) {
+      setZenEnabled(playlist.zen_enabled);
+      setZenTrackId(playlist.zen_track_id || "");
+      setZenVolume(playlist.zen_volume);
+      setZenDuckingIntensity(playlist.zen_ducking_intensity);
+    }
+  }, [playlist?.id]); // Only on playlist load, not on every zen change
+
+  // Save zen settings to playlist DB when changed (and not during playback, which handles its own saving)
+  const zenSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoadedZenRef = useRef(false);
+  useEffect(() => {
+    if (!playlist || !id) return;
+    // Skip the initial load
+    if (!hasLoadedZenRef.current) {
+      hasLoadedZenRef.current = true;
+      return;
+    }
+    // Debounce saves
+    if (zenSaveTimeoutRef.current) clearTimeout(zenSaveTimeoutRef.current);
+    zenSaveTimeoutRef.current = setTimeout(() => {
+      supabase.from("playlists").update({
+        zen_enabled: zenEnabled,
+        zen_track_id: zenTrackId,
+        zen_volume: zenVolume,
+        zen_ducking_intensity: zenDuckingIntensity,
+      }).eq("id", id).then(() => {
+        // Update local state
+        setPlaylist(prev => prev ? { ...prev, zen_enabled: zenEnabled, zen_track_id: zenTrackId, zen_volume: zenVolume, zen_ducking_intensity: zenDuckingIntensity } : prev);
+      });
+    }, 500);
+    return () => { if (zenSaveTimeoutRef.current) clearTimeout(zenSaveTimeoutRef.current); };
+  }, [zenEnabled, zenTrackId, zenVolume, zenDuckingIntensity, id, playlist]);
 
   useEffect(() => {
     if (id) {
@@ -332,6 +377,12 @@ export default function PlaylistDetail() {
         playlistId: playlist.id,
         playlistTitle: playlist.title,
         playbackSettings: playbackSettings,
+        zenSettings: {
+          enabled: playlist.zen_enabled,
+          trackId: playlist.zen_track_id ?? null,
+          volume: playlist.zen_volume,
+          duckingIntensity: playlist.zen_ducking_intensity,
+        },
       });
     }
   };
@@ -452,6 +503,11 @@ export default function PlaylistDetail() {
               step={1}
             />
           </div>
+        </div>
+
+        {/* Background Sounds */}
+        <div className="bg-card rounded-xl border border-border p-4 mb-4">
+          <ZenMusicControl />
         </div>
 
         {/* Recordings */}

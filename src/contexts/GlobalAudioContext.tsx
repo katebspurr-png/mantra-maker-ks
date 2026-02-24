@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_SETTINGS } from "@/types";
+import { Recording, LoopMode, PlaybackSettings, PlaybackMode, DEFAULT_PLAYBACK_SETTINGS, Playlist } from "@/types";
 import { PlaybackSpeed, PLAYBACK_SPEEDS } from "@/components/PlaybackSpeedControl";
 import { ZEN_TRACKS, ZenTrack } from "@/data/zenTracks";
 
@@ -103,6 +103,7 @@ interface GlobalAudioContextType extends GlobalAudioState {
     playlistId: string;
     playlistTitle: string;
     playbackSettings: PlaybackSettings;
+    zenSettings?: { enabled: boolean; trackId: string | null; volume: number; duckingIntensity: number };
   }) => Promise<void>;
   
   // Common controls
@@ -246,17 +247,23 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     }
   }, [zenSettings.volume, zenSettings.duckingIntensity]);
 
-  /** Save zen settings to DB for the current recording */
+  /** Save zen settings to DB for the current recording or playlist */
   const saveZenSettingsToDb = useCallback(async (updates: Partial<ZenMusicSettings>, recordingId?: string) => {
-    const id = recordingId || currentTrack?.id;
-    if (!id) return;
     const dbUpdates: Record<string, unknown> = {};
     if (updates.enabled !== undefined) dbUpdates.zen_enabled = updates.enabled;
     if (updates.trackId !== undefined) dbUpdates.zen_track_id = updates.trackId;
     if (updates.volume !== undefined) dbUpdates.zen_volume = updates.volume;
     if (updates.duckingIntensity !== undefined) dbUpdates.zen_ducking_intensity = updates.duckingIntensity;
-    await supabase.from("recordings").update(dbUpdates).eq("id", id);
-  }, [currentTrack?.id]);
+
+    // If currently playing a playlist, save to playlist instead of recording
+    if (source?.type === "playlist") {
+      await supabase.from("playlists").update(dbUpdates).eq("id", source.id);
+    } else {
+      const id = recordingId || currentTrack?.id;
+      if (!id) return;
+      await supabase.from("recordings").update(dbUpdates).eq("id", id);
+    }
+  }, [currentTrack?.id, source]);
 
   const updateZenSettings = useCallback((updates: Partial<ZenMusicSettings>) => {
     setZenSettingsState(prev => {
@@ -523,7 +530,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     return indices;
   }, []);
 
-  const playTrackAtIndex = useCallback(async (recordings: Recording[], index: number, playlistId?: string | null): Promise<boolean> => {
+  const playTrackAtIndex = useCallback(async (recordings: Recording[], index: number, playlistId?: string | null, skipZenLoad?: boolean): Promise<boolean> => {
     if (index < 0 || index >= recordings.length) return false;
     
     const recording = recordings[index];
@@ -536,9 +543,14 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     // Apply current playback speed to new track
     audio.playbackRate = playbackSpeed;
     
-    // Load this recording's zen preferences
-    const recordingZen = zenSettingsFromRecording(recording);
-    setZenSettingsState(recordingZen);
+    // Load this recording's zen preferences ONLY for single recording mode
+    // For playlists, zen is managed at the playlist level
+    if (!skipZenLoad) {
+      const recordingZen = zenSettingsFromRecording(recording);
+      setZenSettingsState(recordingZen);
+    }
+    
+    const activeZen = skipZenLoad ? zenSettings : zenSettingsFromRecording(recording);
     
     try {
       await audio.play();
@@ -550,25 +562,24 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       // Start listening tracking for this track
       startListeningTracking(recording.id, playlistId || null);
       
-      // Start zen background music if this recording has it enabled
-      if (recordingZen.enabled) {
-        // Start zen with recording's settings
+      // Start zen background music if enabled
+      if (activeZen.enabled) {
         if (zenAudioRef.current) {
-          const track = ZEN_TRACKS.find(t => t.id === recordingZen.trackId) || ZEN_TRACKS[0];
+          const track = ZEN_TRACKS.find(t => t.id === activeZen.trackId) || ZEN_TRACKS[0];
           if (track) {
             const za = zenAudioRef.current;
             if (za.src !== track.url) {
               za.src = track.url;
               za.load();
             }
-            const duckedVol = recordingZen.volume * (1 - recordingZen.duckingIntensity);
+            const duckedVol = activeZen.volume * (1 - activeZen.duckingIntensity);
             za.volume = duckedVol;
             zenIsDuckedRef.current = true;
             za.play().catch(err => console.warn("Zen music play failed:", err));
           }
         }
-      } else {
-        // This recording has zen off - stop any playing zen
+      } else if (!skipZenLoad) {
+        // Only stop zen if we're in single mode and this recording has zen off
         if (zenAudioRef.current) {
           zenAudioRef.current.pause();
           zenAudioRef.current.currentTime = 0;
@@ -581,7 +592,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       console.error("Error playing audio:", error);
       return false;
     }
-  }, [playbackSpeed, startListeningTracking]);
+  }, [playbackSpeed, startListeningTracking, zenSettings]);
 
   const stopPlayback = useCallback(() => {
     // Log listening time before stopping
@@ -672,10 +683,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
         
         if (playlistSettings.delaySeconds > 0) {
           delayTimeoutRef.current = setTimeout(() => {
-            playTrackAtIndex(playlist, nextIndex, playlistId);
+            playTrackAtIndex(playlist, nextIndex, playlistId, true);
           }, playlistSettings.delaySeconds * 1000);
         } else {
-          playTrackAtIndex(playlist, nextIndex, playlistId);
+          playTrackAtIndex(playlist, nextIndex, playlistId, true);
         }
       } else {
         // End of playlist - handle based on mode
@@ -696,10 +707,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
             const firstIndexLoop = playOrderRef.current[0];
             if (playlistSettings.delaySeconds > 0) {
               delayTimeoutRef.current = setTimeout(() => {
-                playTrackAtIndex(playlist, firstIndexLoop, playlistId);
+                playTrackAtIndex(playlist, firstIndexLoop, playlistId, true);
               }, playlistSettings.delaySeconds * 1000);
             } else {
-              playTrackAtIndex(playlist, firstIndexLoop, playlistId);
+              playTrackAtIndex(playlist, firstIndexLoop, playlistId, true);
             }
             break;
             
@@ -716,10 +727,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
               const firstIndexRepeat = playOrderRef.current[0];
               if (playlistSettings.delaySeconds > 0) {
                 delayTimeoutRef.current = setTimeout(() => {
-                  playTrackAtIndex(playlist, firstIndexRepeat, playlistId);
+                  playTrackAtIndex(playlist, firstIndexRepeat, playlistId, true);
                 }, playlistSettings.delaySeconds * 1000);
               } else {
-                playTrackAtIndex(playlist, firstIndexRepeat, playlistId);
+                playTrackAtIndex(playlist, firstIndexRepeat, playlistId, true);
               }
             }
             break;
@@ -734,10 +745,10 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
             const firstIndexDuration = playOrderRef.current[0];
             if (playlistSettings.delaySeconds > 0) {
               delayTimeoutRef.current = setTimeout(() => {
-                playTrackAtIndex(playlist, firstIndexDuration, playlistId);
+                playTrackAtIndex(playlist, firstIndexDuration, playlistId, true);
               }, playlistSettings.delaySeconds * 1000);
             } else {
-              playTrackAtIndex(playlist, firstIndexDuration, playlistId);
+              playTrackAtIndex(playlist, firstIndexDuration, playlistId, true);
             }
             break;
         }
@@ -814,6 +825,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       playlistId: string;
       playlistTitle: string;
       playbackSettings: PlaybackSettings;
+      zenSettings?: { enabled: boolean; trackId: string | null; volume: number; duckingIntensity: number };
     }
   ) => {
     if (recordings.length === 0) return;
@@ -839,6 +851,16 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     setPlaybackSettings(settings.playbackSettings);
     playlistRepetitionRef.current = 0;
     
+    // Apply playlist-level zen settings
+    if (settings.zenSettings) {
+      setZenSettingsState({
+        enabled: settings.zenSettings.enabled,
+        trackId: settings.zenSettings.trackId || ZEN_TRACKS[0]?.id || "",
+        volume: settings.zenSettings.volume,
+        duckingIntensity: settings.zenSettings.duckingIntensity,
+      });
+    }
+    
     // Initialize duration tracking
     if (settings.playbackSettings.mode === "duration") {
       durationStartTimeRef.current = Date.now();
@@ -858,7 +880,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     playOrderRef.current = generatePlayOrder(recordings.length, newSettings.shuffle);
     const startIndex = playOrderRef.current[0];
     
-    await playTrackAtIndex(recordings, startIndex, settings.playlistId);
+    // skipZenLoad=true: use playlist-level zen, don't load per-recording zen
+    await playTrackAtIndex(recordings, startIndex, settings.playlistId, true);
   }, [playTrackAtIndex, generatePlayOrder]);
 
   const play = useCallback(() => {

@@ -152,6 +152,10 @@ export type Database = {
           shuffle: boolean | null
           title: string
           user_id: string
+          zen_ducking_intensity: number
+          zen_enabled: boolean
+          zen_track_id: string | null
+          zen_volume: number
         }
         Insert: {
           created_at?: string
@@ -161,6 +165,10 @@ export type Database = {
           shuffle?: boolean | null
           title: string
           user_id: string
+          zen_ducking_intensity?: number
+          zen_enabled?: boolean
+          zen_track_id?: string | null
+          zen_volume?: number
         }
         Update: {
           created_at?: string
@@ -170,6 +178,10 @@ export type Database = {
           shuffle?: boolean | null
           title?: string
           user_id?: string
+          zen_ducking_intensity?: number
+          zen_enabled?: boolean
+          zen_track_id?: string | null
+          zen_volume?: number
         }
         Relationships: []
       }
