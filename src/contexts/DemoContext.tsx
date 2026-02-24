@@ -85,6 +85,9 @@ const DEMO_PLAYLISTS: (Playlist & { recordingIds: string[] })[] = [
     shuffle: false,
     delay_seconds: 2,
     loop_playlist: true,
+    zen_enabled: false,
+    zen_volume: 0.3,
+    zen_ducking_intensity: 0.83,
     recordingIds: ["demo-1", "demo-3", "demo-4"],
   },
 ];
