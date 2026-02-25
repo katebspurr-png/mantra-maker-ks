@@ -27,14 +27,7 @@ import { toast } from "sonner";
 import { LoopMode } from "@/types";
 import { generateAffirmationId } from "@/hooks/useAffirmationId";
 
-/**
- * NewRecording Page
- * 
- * Recording controls and teleprompter are INDEPENDENT:
- * - Recording controls affect audio capture only
- * - Teleprompter controls affect text display/highlighting only
- * - Full text is always visible when teleprompter is enabled
- */
+const DEFAULT_WPM = 120;
 
 const NewRecording = () => {
   const navigate = useNavigate();
@@ -54,8 +47,8 @@ const NewRecording = () => {
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingKey, setRecordingKey] = useState(0); // Key to force RecordingControls remount
-  const [previewKey, setPreviewKey] = useState(0); // Key to force AudioPreviewPlayer remount
+  const [recordingKey, setRecordingKey] = useState(0);
+  const [previewKey, setPreviewKey] = useState(0);
   
   // Save form state
   const [title, setTitle] = useState("");
@@ -76,18 +69,25 @@ const NewRecording = () => {
     const saved = sessionStorage.getItem("teleprompterTextSize");
     return saved ? parseInt(saved, 10) : 1;
   });
-  const [paceIndex, setPaceIndex] = useState(() => {
-    const saved = sessionStorage.getItem("teleprompterPace");
-    return saved ? parseInt(saved, 10) : 1;
+  const [manualMode] = useState(false);
+
+  // WPM-based pace
+  const [calibratedWpm] = useState<number | null>(() => {
+    const saved = localStorage.getItem("teleprompter_calibrated_wpm");
+    return saved ? parseInt(saved, 10) : null;
   });
-  const [manualMode, setManualMode] = useState(false);
-  const [isHighlighting, setIsHighlighting] = useState(false);
+  const [wpm, setWpm] = useState(() => {
+    const savedWpm = sessionStorage.getItem("teleprompter_wpm");
+    if (savedWpm) return parseInt(savedWpm, 10);
+    const cal = localStorage.getItem("teleprompter_calibrated_wpm");
+    return cal ? parseInt(cal, 10) : DEFAULT_WPM;
+  });
+  const [currentCalibratedWpm, setCurrentCalibratedWpm] = useState(calibratedWpm);
 
   // Ref to control teleprompter display
   const teleprompterRef = useRef<TeleprompterDisplayRef>(null);
 
   useEffect(() => {
-    // Clear location state after reading
     if (prefilledText) {
       window.history.replaceState({}, document.title);
     }
@@ -99,22 +99,14 @@ const NewRecording = () => {
   }, [textSizeIndex]);
 
   useEffect(() => {
-    sessionStorage.setItem("teleprompterPace", paceIndex.toString());
-  }, [paceIndex]);
-
-  // Sync highlighting state from teleprompter ref
-  const updateHighlightingState = useCallback(() => {
-    if (teleprompterRef.current) {
-      setIsHighlighting(teleprompterRef.current.isHighlighting());
-    }
-  }, []);
+    sessionStorage.setItem("teleprompter_wpm", wpm.toString());
+  }, [wpm]);
 
   const handleRecordingComplete = (blob: Blob, recordingDuration: number) => {
     setRecordingBlob(blob);
     setDuration(recordingDuration);
     setIsRecording(false);
     
-    // Generate default title
     const now = new Date();
     const defaultTitle = affirmationText
       ? affirmationText.slice(0, 30) + (affirmationText.length > 30 ? "..." : "")
@@ -122,56 +114,41 @@ const NewRecording = () => {
     setTitle(defaultTitle);
   };
 
-  // Recording lifecycle callbacks - sync with teleprompter as UX convenience
+  // Recording lifecycle — sync with teleprompter
   const handleRecordingStart = () => {
     setIsRecording(true);
-    
-    // If teleprompter + karaoke enabled, auto-start highlighting
     if (teleprompterEnabled && karaokeEnabled && affirmationText.trim()) {
       teleprompterRef.current?.startHighlighting();
-      setTimeout(updateHighlightingState, 100);
     }
   };
 
   const handleRecordingPause = () => {
-    // Also pause highlighting for nice UX sync
     if (teleprompterEnabled && karaokeEnabled) {
       teleprompterRef.current?.pauseHighlighting();
-      setTimeout(updateHighlightingState, 100);
     }
   };
 
+  // Auto-resume highlighting when recording resumes (if karaoke ON)
   const handleRecordingResume = () => {
-    // Also resume highlighting for nice UX sync
     if (teleprompterEnabled && karaokeEnabled) {
       teleprompterRef.current?.resumeHighlighting();
-      setTimeout(updateHighlightingState, 100);
     }
   };
 
   const handleRecordingStop = () => {
     setIsRecording(false);
-    // Stop highlighting when recording stops
     if (teleprompterEnabled && karaokeEnabled) {
       teleprompterRef.current?.stopHighlighting();
-      setTimeout(updateHighlightingState, 100);
     }
-  };
-
-  // Independent teleprompter highlight controls
-  const handlePauseHighlight = () => {
-    teleprompterRef.current?.pauseHighlighting();
-    setTimeout(updateHighlightingState, 100);
-  };
-
-  const handleResumeHighlight = () => {
-    teleprompterRef.current?.resumeHighlighting();
-    setTimeout(updateHighlightingState, 100);
   };
 
   const handleResetHighlight = () => {
     teleprompterRef.current?.resetHighlighting();
-    setTimeout(updateHighlightingState, 100);
+  };
+
+  const handleCalibrated = (newWpm: number) => {
+    setCurrentCalibratedWpm(newWpm);
+    setWpm(newWpm);
   };
 
   const handleSave = async () => {
@@ -191,11 +168,9 @@ const NewRecording = () => {
 
       if (uploadError) throw uploadError;
 
-      // Determine affirmation_id: reuse existing or generate new if there's text
       const affirmationIdToUse = existingAffirmationId 
         || (affirmationText.trim() ? generateAffirmationId() : null);
 
-      // Load saved zen defaults for new recordings
       const zenDefaults = (() => {
         try {
           const raw = localStorage.getItem("zen-default-settings");
@@ -232,27 +207,15 @@ const NewRecording = () => {
     }
   };
 
-  // Try Again: clears recording, resets timer & karaoke, keeps text/settings/tags
   const handleTryAgain = () => {
-    // Force preview player to stop and cleanup (via key change)
     setPreviewKey(prev => prev + 1);
-    
-    // Release the recording blob
     setRecordingBlob(null);
     setDuration(0);
     setTitle("");
-    
-    // Reset karaoke highlighting to beginning
     teleprompterRef.current?.resetHighlighting();
-    setTimeout(updateHighlightingState, 100);
-    
-    // Force RecordingControls to remount fresh (resets internal timer)
     setRecordingKey(prev => prev + 1);
-    
-    // Keep: affirmationText, tags, teleprompter settings (they're preserved automatically)
   };
 
-  // Discard: show confirmation, then navigate away
   const handleDiscard = () => {
     if (recordingBlob) {
       setShowDiscardDialog(true);
@@ -262,9 +225,7 @@ const NewRecording = () => {
   };
 
   const confirmDiscard = () => {
-    // Force preview player to stop and cleanup
     setPreviewKey(prev => prev + 1);
-    
     setRecordingBlob(null);
     setDuration(0);
     setTitle("");
@@ -273,7 +234,6 @@ const NewRecording = () => {
     navigate("/home");
   };
 
-  // Back button behavior
   const handleBack = () => {
     if (recordingBlob) {
       setShowDiscardDialog(true);
@@ -310,19 +270,17 @@ const NewRecording = () => {
               />
             ) : (
               <>
-                {/* Teleprompter Display - always shows full text */}
                 <TeleprompterDisplay
                   ref={teleprompterRef}
                   text={affirmationText}
                   karaokeEnabled={teleprompterEnabled && karaokeEnabled}
                   textSizeIndex={textSizeIndex}
-                  paceIndex={paceIndex}
+                  wpm={wpm}
                   manualMode={manualMode}
                   onEditClick={() => setIsEditMode(true)}
                   isEditable={!isRecording}
                 />
 
-                {/* Teleprompter Settings - independent controls */}
                 <TeleprompterSettings
                   teleprompterEnabled={teleprompterEnabled}
                   onTeleprompterEnabledChange={setTeleprompterEnabled}
@@ -330,19 +288,15 @@ const NewRecording = () => {
                   onKaraokeEnabledChange={setKaraokeEnabled}
                   textSizeIndex={textSizeIndex}
                   onTextSizeChange={setTextSizeIndex}
-                  paceIndex={paceIndex}
-                  onPaceChange={setPaceIndex}
-                  manualMode={manualMode}
-                  onManualModeChange={setManualMode}
-                  isHighlighting={isHighlighting}
-                  onPauseHighlight={handlePauseHighlight}
-                  onResumeHighlight={handleResumeHighlight}
-                  onResetHighlight={handleResetHighlight}
+                  wpm={wpm}
+                  onWpmChange={setWpm}
+                  calibratedWpm={currentCalibratedWpm}
+                  onCalibrated={handleCalibrated}
                 />
               </>
             )}
 
-            {/* Recording Controls - primary, at bottom */}
+            {/* Recording Controls */}
             <RecordingControls
               key={recordingKey}
               onRecordingComplete={handleRecordingComplete}
@@ -354,7 +308,6 @@ const NewRecording = () => {
           </div>
         ) : (
           <div className="space-y-6 animate-in">
-            {/* Audio Preview with Waveform */}
             {recordingBlob && (
               <AudioPreviewPlayer
                 key={previewKey}
@@ -363,7 +316,6 @@ const NewRecording = () => {
               />
             )}
 
-            {/* Show affirmation text if present */}
             {affirmationText && (
               <div className="bg-card rounded-xl border border-border p-4">
                 <p className="text-sm text-muted-foreground mb-1">Your affirmation:</p>
@@ -371,7 +323,6 @@ const NewRecording = () => {
               </div>
             )}
 
-            {/* Metadata form */}
             <div className="bg-card rounded-2xl p-6 border border-border">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -384,7 +335,6 @@ const NewRecording = () => {
                   />
                 </div>
 
-                {/* Tags Input */}
                 <div className="space-y-2">
                   <Label>Tags (optional)</Label>
                   <TagInput
@@ -420,9 +370,7 @@ const NewRecording = () => {
               </div>
             </div>
 
-            {/* Action buttons with clear hierarchy */}
             <div className="space-y-3">
-              {/* Primary: Save */}
               <Button
                 className="w-full touch-target"
                 onClick={handleSave}
@@ -432,7 +380,6 @@ const NewRecording = () => {
                 {saving ? "Saving..." : "Save Recording"}
               </Button>
               
-              {/* Secondary: Try Again */}
               <Button
                 variant="outline"
                 className="w-full touch-target"
@@ -443,7 +390,6 @@ const NewRecording = () => {
                 Try Again
               </Button>
               
-              {/* Tertiary/Destructive: Discard */}
               <Button
                 variant="ghost"
                 className="w-full touch-target text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -460,7 +406,6 @@ const NewRecording = () => {
 
       <BottomNavigation />
 
-      {/* Discard confirmation dialog */}
       <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
