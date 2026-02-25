@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
- import { LogOut, Mic, Sparkles, ChevronRight, Bell, Volume2 } from "lucide-react";
+import { LogOut, Mic, Sparkles, ChevronRight, Bell, Volume2, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,6 +13,8 @@ import { NotificationSettings } from "@/components/NotificationSettings";
 import { FeedbackModal } from "@/components/FeedbackModal";
 import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { Switch } from "@/components/ui/switch";
+import { CalibrationDialog } from "@/components/CalibrationDialog";
+import { format } from "date-fns";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -24,6 +26,14 @@ export default function Profile() {
   const [customMinutes, setCustomMinutes] = useState("");
   const [zenAutoSave, setZenAutoSave] = useState(() => {
     return localStorage.getItem("zen-auto-save-enabled") !== "false";
+  });
+  const [showCalibration, setShowCalibration] = useState(false);
+  const [calibratedWpm] = useState<number | null>(() => {
+    const saved = localStorage.getItem("teleprompter_calibrated_wpm");
+    return saved ? parseInt(saved, 10) : null;
+  });
+  const [calibratedAt] = useState<string | null>(() => {
+    return localStorage.getItem("teleprompter_calibrated_at");
   });
   useEffect(() => {
     fetchProfile();
@@ -242,6 +252,55 @@ export default function Profile() {
            </div>
          </div>
 
+         {/* Teleprompter Speed */}
+         <div className="bg-card rounded-xl border border-border p-4 mb-6">
+           <div className="flex items-start gap-3">
+             <Gauge className="w-5 h-5 text-muted-foreground mt-0.5" />
+             <div className="flex-1">
+               <h3 className="font-medium text-sm">Teleprompter Speed</h3>
+               {calibratedWpm ? (
+                 <div className="mt-2 space-y-1.5">
+                   <div className="flex items-center gap-2">
+                     <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                       Calibrated
+                     </span>
+                     <span className="text-sm text-foreground font-medium">{calibratedWpm} WPM</span>
+                   </div>
+                   {calibratedAt && (
+                     <p className="text-xs text-muted-foreground">
+                       Last calibrated: {format(new Date(calibratedAt), "MMM d, yyyy")}
+                     </p>
+                   )}
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     className="mt-2 gap-2"
+                     onClick={() => setShowCalibration(true)}
+                   >
+                     <Mic className="w-3.5 h-3.5" />
+                     Recalibrate
+                   </Button>
+                 </div>
+               ) : (
+                 <div className="mt-2 space-y-2">
+                   <p className="text-sm text-muted-foreground">
+                     Not yet calibrated. Calibrate to match the teleprompter to your natural reading pace.
+                   </p>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     className="gap-2"
+                     onClick={() => setShowCalibration(true)}
+                   >
+                     <Mic className="w-3.5 h-3.5" />
+                     Calibrate
+                   </Button>
+                 </div>
+               )}
+             </div>
+           </div>
+         </div>
+
         {/* Mic Info */}
         <div className="bg-card rounded-xl border border-border p-4 mb-6">
           <div className="flex items-start gap-3">
@@ -266,6 +325,15 @@ export default function Profile() {
           Sign Out
         </Button>
       </div>
+
+      <CalibrationDialog
+        open={showCalibration}
+        onOpenChange={setShowCalibration}
+        onCalibrated={() => {
+          // Force page to reflect new calibration
+          window.location.reload();
+        }}
+      />
 
       <BottomNavigation />
     </div>
