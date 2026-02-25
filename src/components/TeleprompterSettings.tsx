@@ -13,13 +13,6 @@ const DEFAULT_WPM = 120;
 const MIN_WPM = 40;
 const MAX_WPM = 240;
 
-/**
- * TeleprompterSettings – Refactored for simplicity.
- *
- * Always visible: Teleprompter toggle, Pace slider, Calibrate button
- * Collapsed: Highlight toggle, text size, reset speed
- */
-
 interface TeleprompterSettingsProps {
   teleprompterEnabled: boolean;
   onTeleprompterEnabledChange: (enabled: boolean) => void;
@@ -58,14 +51,34 @@ export function TeleprompterSettings({
     onWpmChange(calibratedWpm ?? DEFAULT_WPM);
   };
 
+  const isCustomSpeed = calibratedWpm != null && wpm !== calibratedWpm;
+
+  // Build pace caption
+  const paceCaption = (() => {
+    if (!calibratedWpm) {
+      return "Tap Calibrate to match your natural speaking pace";
+    }
+    if (isCustomSpeed) {
+      return `Custom speed (calibrated: ${calibratedWpm} WPM)`;
+    }
+    return `Using your calibrated speed (${calibratedWpm} WPM)`;
+  })();
+
   return (
     <>
       <div className="bg-card rounded-xl border border-border p-4 space-y-5">
-        {/* Teleprompter toggle — always visible */}
+        {/* Teleprompter toggle */}
         <div className="flex items-center justify-between">
-          <Label htmlFor="teleprompter-toggle" className="text-sm font-medium">
-            Teleprompter
-          </Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="teleprompter-toggle" className="text-sm font-medium">
+              Teleprompter
+            </Label>
+            {calibratedWpm && (
+              <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                Calibrated
+              </span>
+            )}
+          </div>
           <Switch
             id="teleprompter-toggle"
             checked={teleprompterEnabled}
@@ -76,7 +89,7 @@ export function TeleprompterSettings({
 
         {teleprompterEnabled && (
           <>
-            {/* Pace slider — always visible */}
+            {/* Pace slider */}
             <div className="space-y-2 pt-1">
               <div className="flex-1">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
@@ -94,14 +107,12 @@ export function TeleprompterSettings({
                   disabled={disabled}
                 />
                 <p className="text-xs text-muted-foreground mt-1.5 text-center">
-                  {calibratedWpm
-                    ? `Using your calibrated speed (${calibratedWpm} WPM)`
-                    : "Tap Calibrate to match your natural speaking pace"}
+                  {paceCaption}
                 </p>
               </div>
             </div>
 
-            {/* Calibrate button — always visible */}
+            {/* Calibrate button */}
             <Button
               variant="outline"
               size="sm"
@@ -113,7 +124,7 @@ export function TeleprompterSettings({
               {calibratedWpm ? `Recalibrate (${calibratedWpm} WPM)` : "🎙 Calibrate"}
             </Button>
 
-            {/* Advanced section — collapsed by default */}
+            {/* Advanced section */}
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
               <CollapsibleTrigger asChild>
                 <button
@@ -169,24 +180,39 @@ export function TeleprompterSettings({
                   </div>
                 </div>
 
-                {/* Reset to default speed */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full gap-2 text-muted-foreground"
-                  onClick={handleResetSpeed}
-                  disabled={disabled}
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Reset to {calibratedWpm ? "calibrated" : "default"} speed
-                </Button>
+                {/* Reset to calibrated speed — only if user has adjusted away */}
+                {isCustomSpeed && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full gap-2 text-primary"
+                    onClick={handleResetSpeed}
+                    disabled={disabled}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset to calibrated speed ({calibratedWpm} WPM)
+                  </Button>
+                )}
+
+                {/* Reset to default — only if not calibrated */}
+                {!calibratedWpm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full gap-2 text-muted-foreground"
+                    onClick={() => onWpmChange(DEFAULT_WPM)}
+                    disabled={disabled}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset to default speed
+                  </Button>
+                )}
               </CollapsibleContent>
             </Collapsible>
           </>
         )}
       </div>
 
-      {/* Calibration dialog */}
       <CalibrationDialog
         open={showCalibration}
         onOpenChange={setShowCalibration}
