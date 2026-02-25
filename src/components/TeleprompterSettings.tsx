@@ -95,7 +95,7 @@ export function TeleprompterSettings({
                 />
                 <p className="text-xs text-muted-foreground mt-1.5 text-center">
                   {calibratedWpm
-                    ? "Using your calibrated speed"
+                    ? `Using your calibrated speed (${calibratedWpm} WPM)`
                     : "Tap Calibrate to match your natural speaking pace"}
                 </p>
               </div>
