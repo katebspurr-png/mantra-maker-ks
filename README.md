@@ -73,6 +73,24 @@ To connect a domain, navigate to Project > Settings > Domains and click Connect 
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
 
+## GitHub Integration Troubleshooting
+
+If you've connected a GitHub integration (such as Claude, Lovable, or another tool) but can't see this repository, check the following:
+
+### Repository Visibility
+
+This repository must either be **public**, or the GitHub App must have explicit access to it.
+
+- **To make the repo public**: Go to the repo on GitHub → Settings → Danger Zone → Change visibility → Public.
+- **To grant app access to a private repo**: Go to [GitHub App installations](https://github.com/settings/installations) → find and configure the relevant app → under Repository access, add this repository.
+
+### Verify App Permissions
+
+1. Go to **https://github.com/settings/installations**
+2. Click **Configure** next to the integration's GitHub App
+3. Ensure it has access to `mantra-maker-ks` (either via "All repositories" or by selecting it specifically)
+4. Ensure the app has at least **Read** access to repository contents
+
 ## PWA Testing Guide
 
 ### Testing PWA Installation
