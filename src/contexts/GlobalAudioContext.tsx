@@ -322,15 +322,19 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
 
   const setZenTrackId = useCallback((trackId: string) => {
     updateZenSettings({ trackId });
-    if (zenAudioRef.current && isZenPlaying) {
+    // Always start playback if zen is enabled (or about to be) and main audio is playing
+    if (zenAudioRef.current) {
       const track = ZEN_TRACKS.find(t => t.id === trackId);
-      if (track) {
+      if (track && (isZenPlaying || (zenSettings.enabled && isPlaying))) {
+        const duckedVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
+        zenAudioRef.current.volume = isPlaying ? duckedVol : zenSettings.volume;
+        zenIsDuckedRef.current = isPlaying;
         zenAudioRef.current.src = track.url;
         zenAudioRef.current.load();
         zenAudioRef.current.play().catch(() => {});
       }
     }
-  }, [updateZenSettings, isZenPlaying]);
+  }, [updateZenSettings, isZenPlaying, isPlaying, zenSettings.enabled, zenSettings.volume, zenSettings.duckingIntensity]);
   const repetitionCountRef = useRef(0);
   const playlistRepetitionRef = useRef(0);
   const durationStartTimeRef = useRef<number | null>(null);
