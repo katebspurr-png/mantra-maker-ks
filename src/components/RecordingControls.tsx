@@ -3,13 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Circle, Square, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 
-/**
- * RecordingControls Component
- * 
- * Handles audio recording only. Completely independent from teleprompter.
- * Provides: Record, Pause/Resume, Stop functionality.
- */
-
 interface RecordingControlsProps {
   onRecordingComplete: (blob: Blob, duration: number) => void;
   onRecordingStart?: () => void;
@@ -18,7 +11,7 @@ interface RecordingControlsProps {
   onRecordingStop?: () => void;
 }
 
-const MAX_RECORDING_TIME = 600; // 10 minutes in seconds
+const MAX_RECORDING_TIME = 600;
 
 export function RecordingControls({ 
   onRecordingComplete, 
@@ -74,7 +67,6 @@ export function RecordingControls({
         const blob = new Blob(chunksRef.current, { type: mediaRecorder.mimeType });
         onRecordingComplete(blob, recordingTimeRef.current);
         
-        // Cleanup
         if (streamRef.current) {
           streamRef.current.getTracks().forEach(track => track.stop());
           streamRef.current = null;
@@ -87,7 +79,6 @@ export function RecordingControls({
       recordingTimeRef.current = 0;
       onRecordingStart?.();
 
-      // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime((prev) => {
           const newTime = prev + 1;
@@ -111,12 +102,10 @@ export function RecordingControls({
 
   const pauseRecording = () => {
     if (mediaRecorderRef.current && recordingState === "recording") {
-      // MediaRecorder pause is supported in most browsers
       if (typeof mediaRecorderRef.current.pause === "function") {
         mediaRecorderRef.current.pause();
         setRecordingState("paused");
         
-        // Pause timer
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
@@ -124,7 +113,6 @@ export function RecordingControls({
         
         onRecordingPause?.();
       } else {
-        // Fallback: just inform user pause is not supported
         toast.info("Pause not supported in this browser. Use Stop to end recording.");
       }
     }
@@ -136,7 +124,6 @@ export function RecordingControls({
         mediaRecorderRef.current.resume();
         setRecordingState("recording");
         
-        // Resume timer
         timerRef.current = setInterval(() => {
           setRecordingTime((prev) => {
             const newTime = prev + 1;
@@ -170,15 +157,15 @@ export function RecordingControls({
 
   if (permissionDenied) {
     return (
-      <div className="text-center py-8 px-4">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+      <div className="text-center py-12 px-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-5">
           <Circle className="w-8 h-8 text-destructive" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">Microphone Access Required</h3>
-        <p className="text-muted-foreground text-sm mb-4">
-          Please enable microphone permissions in your browser settings to record audio.
+        <h3 className="text-lg font-medium mb-2">Microphone Access Required</h3>
+        <p className="text-muted-foreground text-sm mb-6 max-w-[260px] mx-auto">
+          Please enable microphone permissions in your browser settings to record.
         </p>
-        <Button onClick={() => setPermissionDenied(false)} variant="outline">
+        <Button onClick={() => setPermissionDenied(false)} variant="outline" className="rounded-xl">
           Try Again
         </Button>
       </div>
@@ -186,80 +173,72 @@ export function RecordingControls({
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border p-6">
+    <div className="py-4">
       <div className="flex flex-col items-center justify-center space-y-6">
         {/* Recording status */}
         {recordingState !== "idle" && (
           <div className="text-center space-y-2 animate-in fade-in">
             <div className="flex items-center justify-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${recordingState === "recording" ? "bg-destructive animate-pulse" : "bg-amber-500"}`} />
-              <span className="text-sm font-medium">
+              <div className={`w-2.5 h-2.5 rounded-full ${recordingState === "recording" ? "bg-destructive animate-pulse" : "bg-amber-500"}`} />
+              <span className="text-sm font-medium text-muted-foreground">
                 {recordingState === "recording" ? "Recording" : "Paused"}
               </span>
             </div>
-            <div className="text-4xl font-bold text-primary tabular-nums">
+            <div className="text-5xl font-light text-foreground tabular-nums tracking-tight">
               {formatTime(recordingTime)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Max: 10:00
-            </p>
           </div>
         )}
 
         {/* Primary recording button */}
         <div className="relative">
           {recordingState === "idle" ? (
-            <Button
-              size="icon"
-              className="w-24 h-24 rounded-full bg-primary hover:bg-primary/90 transition-all"
+            <button
+              className="w-28 h-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[var(--shadow-medium)] hover:shadow-[var(--shadow-lg)] active:scale-95 transition-all duration-200"
               onClick={startRecording}
             >
-              <Circle className="w-10 h-10" fill="currentColor" />
-            </Button>
+              <Circle className="w-11 h-11" fill="currentColor" />
+            </button>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               {/* Pause/Resume button */}
-              <Button
-                size="icon"
-                variant="outline"
-                className="w-16 h-16 rounded-full"
+              <button
+                className="w-16 h-16 rounded-full border border-border/60 bg-card flex items-center justify-center shadow-[var(--shadow-soft)] hover:bg-muted/50 active:scale-95 transition-all"
                 onClick={recordingState === "recording" ? pauseRecording : resumeRecording}
               >
                 {recordingState === "recording" ? (
-                  <Pause className="w-7 h-7" />
+                  <Pause className="w-6 h-6 text-foreground/80" />
                 ) : (
-                  <Play className="w-7 h-7" />
+                  <Play className="w-6 h-6 text-foreground/80" />
                 )}
-              </Button>
+              </button>
               
               {/* Stop button */}
-              <Button
-                size="icon"
-                className="w-20 h-20 rounded-full bg-destructive hover:bg-destructive/90"
+              <button
+                className="w-22 h-22 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-[var(--shadow-medium)] hover:bg-destructive/90 active:scale-95 transition-all"
+                style={{ width: '5.5rem', height: '5.5rem' }}
                 onClick={stopRecording}
               >
                 <Square className="w-8 h-8" fill="currentColor" />
-              </Button>
+              </button>
             </div>
           )}
         </div>
 
-        {/* Idle state hint */}
+        {/* Subtle hints */}
         {recordingState === "idle" && (
-          <p className="text-muted-foreground text-center text-sm">
-            Tap to start recording
+          <p className="text-muted-foreground/60 text-center text-sm">
+            Tap to begin
           </p>
         )}
-
-        {/* Recording state hints */}
         {recordingState === "recording" && (
-          <p className="text-muted-foreground text-center text-xs">
-            Pause to take a break, Stop when finished
+          <p className="text-muted-foreground/50 text-center text-xs">
+            Pause or stop when you're ready
           </p>
         )}
         {recordingState === "paused" && (
-          <p className="text-muted-foreground text-center text-xs">
-            Resume to continue, Stop to finish
+          <p className="text-muted-foreground/50 text-center text-xs">
+            Resume or stop to finish
           </p>
         )}
       </div>
