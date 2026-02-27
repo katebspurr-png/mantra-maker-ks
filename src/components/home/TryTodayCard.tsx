@@ -37,12 +37,12 @@ export const TryTodayCard = () => {
   if (!affirmation) return null;
 
   return (
-    <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200/50 dark:border-amber-800/30">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-            <span className="font-semibold">Try This Today</span>
+            <Lightbulb className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-[17px]">Try This Today</span>
           </div>
           <Button 
             variant="ghost" 
@@ -54,12 +54,12 @@ export const TryTodayCard = () => {
           </Button>
         </div>
         
-        <p className="text-base italic mb-3 leading-relaxed">
+        <p className="text-[17px] italic mb-4 leading-[1.6]">
           "{affirmation.text}"
         </p>
         
         <div className="flex items-center justify-between">
-          <span className="text-xs px-2 py-1 rounded-full bg-amber-200/50 dark:bg-amber-800/30 text-amber-800 dark:text-amber-200">
+          <span className="text-[13px] px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
             {categoryLabels[affirmation.category] || affirmation.category}
           </span>
           <Button 

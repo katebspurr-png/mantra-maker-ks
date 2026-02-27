@@ -78,12 +78,12 @@ export const PlaylistsPreview = () => {
   if (playlists.length === 0) {
     return (
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 mb-4">
             <ListMusic className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Your Practice</span>
+            <span className="font-semibold text-[17px]">Your Practice</span>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">
+          <p className="text-[15px] text-muted-foreground mb-4 leading-relaxed">
             Create playlists to organize your affirmations into daily routines.
           </p>
           <Button 
@@ -102,19 +102,19 @@ export const PlaylistsPreview = () => {
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ListMusic className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Your Practice</span>
+            <span className="font-semibold text-[17px]">Your Practice</span>
           </div>
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {playlists.map((playlist) => (
             <div 
               key={playlist.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+              className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
               onClick={() => navigate(`/playlist/${playlist.id}`)}
             >
               <span className="font-medium truncate flex-1">{playlist.title}</span>

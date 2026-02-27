@@ -116,24 +116,24 @@ const Home = () => {
        <NotificationPrompt />
       
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-lg mx-auto px-4 py-4">
-          <h1 className="text-2xl font-semibold">
-            Hi, {profile?.first_name || "there"}! 👋
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+        <div className="max-w-lg mx-auto px-5 pt-6 pb-4">
+          <h1 className="text-[30px] font-semibold tracking-tight leading-tight">
+            Hi, {profile?.first_name || "there"}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[15px] text-muted-foreground mt-1">
             Your daily affirmation practice
           </p>
         </div>
       </div>
 
       {/* Install Banner */}
-      <div className="max-w-lg mx-auto px-4 pt-4">
+      <div className="max-w-lg mx-auto px-5 pt-2">
         <InstallPromptBanner />
       </div>
 
       {/* Main Content */}
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-lg mx-auto px-5 py-6 space-y-7">
         {/* 1. Thought Transformer */}
         <CollapsibleSection id="thought-transformer" title="Thought Transformer" collapsed={isCollapsed("thought-transformer")} onToggle={() => toggle("thought-transformer")}>
           <ThoughtTransformerCard />
@@ -147,7 +147,7 @@ const Home = () => {
         {/* 3. Record New Affirmation */}
         <Button 
           size="lg"
-          className="w-full h-14 text-lg font-semibold shadow-lg"
+          className="w-full h-[52px] text-[17px] font-semibold rounded-2xl"
           onClick={() => navigate("/new-recording")}
         >
           <Mic className="w-5 h-5 mr-2" />

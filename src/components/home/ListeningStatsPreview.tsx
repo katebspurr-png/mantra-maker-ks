@@ -22,23 +22,23 @@ export const ListeningStatsPreview = () => {
   }
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Headphones className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Listening Time</span>
+            <span className="font-semibold text-[17px]">Listening Time</span>
           </div>
         </div>
 
-        <div className="flex items-baseline gap-1 mb-1">
-          <span className="text-3xl font-bold text-primary">{todayMinutes}</span>
-          <span className="text-muted-foreground">min today</span>
+        <div className="flex items-baseline gap-1.5 mb-1">
+          <span className="text-[32px] font-semibold text-foreground">{todayMinutes}</span>
+          <span className="text-[15px] text-muted-foreground">min today</span>
         </div>
 
-        <div className="flex gap-4 text-sm text-muted-foreground mb-3">
+        <div className="flex gap-4 text-[13px] text-muted-foreground mb-4">
           <span>{weeklyMinutes} min this week</span>
-          <span>•</span>
+          <span>·</span>
           <span>{lifetimeMinutes.toLocaleString()} min total</span>
         </div>
 

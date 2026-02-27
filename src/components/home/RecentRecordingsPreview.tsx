@@ -61,12 +61,12 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
   if (recentRecordings.length === 0) {
     return (
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-2 mb-4">
             <Mic className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Recent Recordings</span>
+            <span className="font-semibold text-[17px]">Recent Recordings</span>
           </div>
-          <p className="text-sm text-muted-foreground mb-3">
+          <p className="text-[15px] text-muted-foreground mb-4 leading-relaxed">
             You haven't recorded any affirmations yet. Start by recording your first one!
           </p>
           <Button 
@@ -83,15 +83,15 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Mic className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Recent Recordings</span>
+            <span className="font-semibold text-[17px]">Recent Recordings</span>
           </div>
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {recentRecordings.map((recording) => {
             const duration = getDuration(recording);
             const playing = isRecordingPlaying(recording.id);
@@ -99,7 +99,7 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
             return (
               <div 
                 key={recording.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
                 onClick={() => navigate(`/recording/${recording.id}`)}
               >
                 <div className="flex-1 min-w-0">

@@ -47,11 +47,11 @@ export const FavoritesPreview = ({
 
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
-            <span className="font-semibold">Favorites</span>
+            <span className="font-semibold text-[17px]">Favorites</span>
           </div>
         </div>
 
