@@ -4,6 +4,7 @@ import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { ZEN_TRACKS } from "@/data/zenTracks";
 import { Slider } from "@/components/ui/slider";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 const CONTROLS_TIMEOUT = 3000;
 const LOOP_STORAGE_KEY = "immersive-loop-listened-";
@@ -254,69 +255,59 @@ export function ImmersivePlayer() {
         </p>
       </div>
 
-      {/* C) Ambient Sound Bottom Sheet — fixed to viewport bottom */}
-      {showAmbientSheet && (
-        <div
-          className="fixed inset-0 z-[101]"
-          onClick={(e) => { e.stopPropagation(); setShowAmbientSheet(false); }}
-          style={{ background: "hsl(0 0% 0% / 0.4)" }}
+      {/* C) iOS-style Bottom Sheet via vaul Drawer */}
+      <Drawer
+        open={showAmbientSheet}
+        onOpenChange={setShowAmbientSheet}
+        shouldScaleBackground={false}
+      >
+        <DrawerContent
+          className="border-0 focus:outline-none"
+          style={{
+            background: "hsl(160 6% 14% / 0.98)",
+            backdropFilter: "blur(24px)",
+            paddingBottom: "env(safe-area-inset-bottom, 20px)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
         >
-          <div
-            className="absolute bottom-0 left-0 right-0 overflow-y-auto"
-            style={{
-              maxHeight: "70vh",
-              paddingBottom: "env(safe-area-inset-bottom, 20px)",
-              background: "hsl(160 6% 14% / 0.98)",
-              backdropFilter: "blur(24px)",
-              borderRadius: "20px 20px 0 0",
-              animation: "immersive-sheet-up 220ms ease-out",
-            }}
-            onClick={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >
-            {/* Drag indicator */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-white/20" />
+          <div className="px-5 pb-6 pt-2">
+            <p className="text-[13px] text-white/40 mb-4 tracking-wide">Background Sound</p>
+
+            <div className="space-y-1">
+              {AMBIENT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id ?? "none"}
+                  onClick={() => selectAmbientTrack(opt.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
+                    currentAmbientId === opt.id
+                      ? "text-white/90 bg-white/[0.08]"
+                      : "text-white/50 hover:text-white/70"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
 
-            <div className="px-5 pb-6">
-              <p className="text-[13px] text-white/40 mb-4 tracking-wide">Background Sound</p>
-
-              <div className="space-y-1">
-                {AMBIENT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id ?? "none"}
-                    onClick={() => selectAmbientTrack(opt.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
-                      currentAmbientId === opt.id
-                        ? "text-white/90 bg-white/[0.08]"
-                        : "text-white/50 hover:text-white/70"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {/* Volume slider */}
+            {currentAmbientId && (
+              <div className="mt-5 px-1">
+                <p className="text-[12px] text-white/30 mb-2">Volume</p>
+                <Slider
+                  value={[zenVolume]}
+                  onValueChange={handleVolumeChange}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  className="[&_[role=slider]]:bg-white/60 [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_.bg-primary]:bg-white/30 [&_[data-orientation=horizontal]]:bg-white/10"
+                />
               </div>
-
-              {/* Volume slider */}
-              {currentAmbientId && (
-                <div className="mt-5 px-1">
-                  <p className="text-[12px] text-white/30 mb-2">Volume</p>
-                  <Slider
-                    value={[zenVolume]}
-                    onValueChange={handleVolumeChange}
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    className="[&_[role=slider]]:bg-white/60 [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_.bg-primary]:bg-white/30 [&_[data-orientation=horizontal]]:bg-white/10"
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
 
       {/* Controls */}
       <div
