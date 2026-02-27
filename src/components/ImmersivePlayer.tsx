@@ -9,6 +9,9 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 const CONTROLS_TIMEOUT = 3000;
 const LOOP_STORAGE_KEY = "immersive-loop-listened-";
 const AMBIENT_PREF_KEY = "immersive-ambient-pref";
+const DISPLAY_MODE_KEY = "immersive-display-mode";
+
+type DisplayMode = "title_only" | "title_plus_text";
 
 interface AmbientPref {
   trackId: string | null;
@@ -54,8 +57,14 @@ export function ImmersivePlayer() {
   const [showControls, setShowControls] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showAmbientSheet, setShowAmbientSheet] = useState(false);
-  // A) Visibility-driven text fade: reset to 0 on each open, then set to 1 after a tick
   const [textOpacity, setTextOpacity] = useState(0);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(() => {
+    try {
+      const stored = localStorage.getItem(DISPLAY_MODE_KEY);
+      if (stored === "title_only" || stored === "title_plus_text") return stored;
+    } catch {}
+    return "title_plus_text";
+  });
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const touchStartY = useRef<number | null>(null);
 
@@ -172,6 +181,11 @@ export function ImmersivePlayer() {
     }
   };
 
+  const handleDisplayMode = (mode: DisplayMode) => {
+    setDisplayMode(mode);
+    localStorage.setItem(DISPLAY_MODE_KEY, mode);
+  };
+
   const handleVolumeChange = (value: number[]) => {
     const vol = value[0];
     setZenVolume(vol);
@@ -237,22 +251,49 @@ export function ImmersivePlayer() {
         </button>
       </div>
 
-      {/* A) Affirmation text — visibility-driven fade */}
-      <div className="flex-1 flex items-center justify-center px-8">
-        <p
-          className="text-center font-serif leading-[1.8] max-w-md"
-          style={{
-            fontSize: "clamp(24px, 6vw, 32px)",
-            color: "hsl(0 0% 95%)",
-            letterSpacing: "-0.01em",
-            opacity: textOpacity,
-            transition: "opacity 900ms ease-out",
-          }}
-        >
-          {recording?.text
-            ? `"${recording.text}"`
-            : recording?.title || ""}
-        </p>
+      {/* Affirmation text — visibility-driven fade */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8"
+        style={{ opacity: textOpacity, transition: "opacity 900ms ease-out" }}
+      >
+        {displayMode === "title_plus_text" && recording?.text ? (
+          <>
+            {/* Title — small, subtle, above */}
+            <p
+              className="text-center font-serif max-w-md mb-6"
+              style={{
+                fontSize: "clamp(13px, 3vw, 15px)",
+                color: "hsl(0 0% 95% / 0.4)",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {recording.title}
+            </p>
+            {/* Affirmation text — primary focus */}
+            <p
+              className="text-center font-serif leading-[1.9] max-w-md"
+              style={{
+                fontSize: "clamp(22px, 5.5vw, 30px)",
+                color: "hsl(0 0% 95%)",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              "{recording.text}"
+            </p>
+          </>
+        ) : (
+          /* Title only */
+          <p
+            className="text-center font-serif leading-[1.8] max-w-md"
+            style={{
+              fontSize: "clamp(24px, 6vw, 32px)",
+              color: "hsl(0 0% 95%)",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {recording?.title || ""}
+          </p>
+        )}
       </div>
 
       {/* C) iOS-style Bottom Sheet via vaul Drawer */}
@@ -305,6 +346,39 @@ export function ImmersivePlayer() {
                 />
               </div>
             )}
+
+            {/* Display preference */}
+            <div className="mt-6 pt-4" style={{ borderTop: "1px solid hsl(0 0% 100% / 0.06)" }}>
+              <p className="text-[13px] text-white/40 mb-3 tracking-wide">Show words while listening</p>
+              <div className="space-y-1">
+                {([
+                  { value: "title_plus_text" as DisplayMode, label: "Title + affirmation text" },
+                  { value: "title_only" as DisplayMode, label: "Title only" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleDisplayMode(opt.value)}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-[15px] transition-colors flex items-center gap-3 ${
+                      displayMode === opt.value
+                        ? "text-white/90 bg-white/[0.08]"
+                        : "text-white/50 hover:text-white/70"
+                    }`}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center"
+                      style={{
+                        borderColor: displayMode === opt.value ? "hsl(0 0% 95% / 0.6)" : "hsl(0 0% 95% / 0.2)",
+                      }}
+                    >
+                      {displayMode === opt.value && (
+                        <span className="w-2 h-2 rounded-full" style={{ background: "hsl(0 0% 95% / 0.8)" }} />
+                      )}
+                    </span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
