@@ -1,10 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Mic, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { themePresets, ThemeId } from "@/hooks/useColorTheme";
 
+/* ─── Constants ─── */
 const ONBOARDING_COMPLETE_KEY = "onboarding_complete";
 
 export const markOnboardingComplete = () => {
@@ -15,7 +16,6 @@ export const hasCompletedOnboarding = () => {
   return localStorage.getItem(ONBOARDING_COMPLETE_KEY) === "true";
 };
 
-/* ─── Calibration constants ─── */
 const CALIBRATION_SCRIPT =
   "I am worthy of love, kindness, and respect. Every day I grow stronger and more confident in who I am. " +
   "I trust the journey of my life, even when the path is unclear. I release what no longer serves me and welcome " +
@@ -24,26 +24,94 @@ const CALIBRATION_SCRIPT =
 const SCRIPT_WORD_COUNT = CALIBRATION_SCRIPT.trim().split(/\s+/).length;
 const MIN_DURATION = 10;
 
-/* ─── Step wrapper with fade/slide animation ─── */
-function StepContainer({ children, stepKey }: { children: React.ReactNode; stepKey: string }) {
+const TOTAL_STEPS = 5;
+
+/* ─── Option data ─── */
+const INTENTION_OPTIONS = [
+  { value: "confidence", label: "Build Confidence", emoji: "🌱" },
+  { value: "calm", label: "Find Calm", emoji: "🌊" },
+  { value: "self-love", label: "Practice Self-Love", emoji: "💛" },
+  { value: "focus", label: "Sharpen Focus", emoji: "🎯" },
+  { value: "healing", label: "Support Healing", emoji: "🦋" },
+  { value: "general", label: "Just Exploring", emoji: "✨" },
+];
+
+const EXPERIENCE_OPTIONS = [
+  { value: "new", label: "I'm brand new to this", description: "We'll guide you gently" },
+  { value: "some", label: "I've tried affirmations before", description: "Let's deepen your practice" },
+  { value: "regular", label: "I practice regularly", description: "Welcome — let's personalize" },
+];
+
+const TIME_OPTIONS = [
+  { value: "morning", label: "Mornings", emoji: "🌅" },
+  { value: "evening", label: "Evenings", emoji: "🌙" },
+  { value: "anytime", label: "Anytime", emoji: "☁️" },
+  { value: "commute", label: "On the Go", emoji: "🚶" },
+];
+
+/* ─── Animated step wrapper ─── */
+function StepShell({ stepKey, children }: { stepKey: string; children: React.ReactNode }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
+
   return (
     <div
       key={stepKey}
-      className="flex-1 flex flex-col items-center justify-center px-8 text-center max-w-md mx-auto w-full animate-fade-in"
+      className={cn(
+        "flex-1 flex flex-col items-center justify-center px-8 text-center max-w-md mx-auto w-full",
+        "transition-all duration-700 ease-out",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+      )}
     >
       {children}
     </div>
   );
 }
 
+/* ─── Selectable pill ─── */
+function OptionPill({
+  selected,
+  onClick,
+  children,
+  className,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full text-left rounded-2xl p-5 transition-all duration-300",
+        selected
+          ? "bg-primary/8 shadow-[0_2px_12px_hsl(var(--primary)/0.12)]"
+          : "bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-md)]",
+        className
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ─── Main component ─── */
 const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
-  /* ─── Theme state ─── */
+  /* Answers */
+  const [intention, setIntention] = useState<string | null>(null);
+  const [experience, setExperience] = useState<string | null>(null);
+  const [usageTime, setUsageTime] = useState<string | null>(null);
   const [selectedTheme, setSelectedTheme] = useState<ThemeId>("calm");
 
-  /* ─── Calibration state ─── */
+  /* Calibration */
   const [calPhase, setCalPhase] = useState<"idle" | "recording" | "done">("idle");
   const [calElapsed, setCalElapsed] = useState(0);
   const [calWpm, setCalWpm] = useState(0);
@@ -59,10 +127,9 @@ const Onboarding = () => {
     };
   }, []);
 
-  /* ─── Theme selection ─── */
-  const handleSelectTheme = (id: ThemeId) => {
+  /* ─── Theme application ─── */
+  const applyTheme = (id: ThemeId) => {
     setSelectedTheme(id);
-    // Apply immediately
     const preset = themePresets.find(t => t.id === id);
     if (preset) {
       const isDark = document.documentElement.classList.contains("dark");
@@ -94,7 +161,6 @@ const Onboarding = () => {
         setCalWpm(clamped);
         setCalPhase("done");
 
-        // Save
         localStorage.setItem("teleprompter_calibrated_wpm", String(clamped));
         localStorage.setItem("teleprompter_wpm", String(clamped));
         localStorage.setItem("teleprompter_calibrated_at", new Date().toISOString());
@@ -109,7 +175,7 @@ const Onboarding = () => {
         setCalElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 500);
     } catch {
-      // Mic denied — allow skip
+      // Mic denied — skip gracefully
     }
   }, []);
 
@@ -120,12 +186,20 @@ const Onboarding = () => {
   }, []);
 
   /* ─── Navigation ─── */
-  const next = () => {
+  const goNext = () => {
+    // Save on step transitions
+    if (step === 0 && intention) {
+      localStorage.setItem("intention_focus", intention);
+    }
     if (step === 1) {
-      // Save theme
+      if (experience) localStorage.setItem("experience_level", experience);
+      if (usageTime) localStorage.setItem("usage_time", usageTime);
+    }
+    if (step === 2) {
       localStorage.setItem("loop-color-theme", selectedTheme);
     }
-    if (step === 3) {
+
+    if (step === TOTAL_STEPS - 1) {
       finish();
       return;
     }
@@ -139,190 +213,335 @@ const Onboarding = () => {
 
   const formatTimer = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  const totalSteps = 4;
+  /* ─── Can proceed? ─── */
+  const canProceed = (() => {
+    if (step === 0) return !!intention;
+    if (step === 1) return !!experience; // usage_time is optional
+    return true;
+  })();
 
   return (
-    <div className="bg-background min-h-screen flex flex-col">
-      {/* Progress bar — thin, subtle */}
-      <div className="px-8 pt-6">
-        <div className="h-0.5 bg-muted/40 rounded-full overflow-hidden max-w-md mx-auto">
+    <div className="bg-background min-h-screen flex flex-col selection:bg-primary/20">
+      {/* Progress dots — minimal */}
+      <div className="flex justify-center gap-2.5 pt-10 pb-2">
+        {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
-            className="h-full bg-primary/60 transition-all duration-500 ease-out"
-            style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+            key={i}
+            className={cn(
+              "rounded-full transition-all duration-500",
+              i === step
+                ? "w-6 h-1.5 bg-primary/70"
+                : i < step
+                  ? "w-1.5 h-1.5 bg-primary/30"
+                  : "w-1.5 h-1.5 bg-muted-foreground/15"
+            )}
           />
-        </div>
+        ))}
       </div>
 
-      {/* ─── STEP 0: Identity Framing ─── */}
+      {/* ═══════════════════════════════════════════
+          STEP 0 — Intention (What brings you here?)
+          ═══════════════════════════════════════════ */}
       {step === 0 && (
-        <StepContainer stepKey="identity">
-          <div className="mb-10">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-8">
-              <Sparkles className="w-7 h-7 text-primary" />
+        <StepShell stepKey="intention">
+          <div className="w-full space-y-10">
+            <div>
+              <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
+                What brings you here?
+              </h1>
+              <p className="text-base text-muted-foreground/70 leading-relaxed">
+                There's no wrong answer. This helps us shape your experience.
+              </p>
             </div>
-            <h1 className="text-3xl font-semibold text-foreground leading-tight mb-5">
-              This Is Where Your<br />New Story Begins.
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-xs mx-auto">
-              The words you repeat shape the life you live. Let's set up your space.
-            </p>
+
+            <div className="space-y-3">
+              {INTENTION_OPTIONS.map((opt) => (
+                <OptionPill
+                  key={opt.value}
+                  selected={intention === opt.value}
+                  onClick={() => setIntention(opt.value)}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl">{opt.emoji}</span>
+                    <span className={cn(
+                      "text-[15px] transition-colors duration-300",
+                      intention === opt.value ? "text-foreground font-medium" : "text-foreground/70"
+                    )}>
+                      {opt.label}
+                    </span>
+                    {intention === opt.value && (
+                      <Check className="w-4 h-4 text-primary ml-auto" />
+                    )}
+                  </div>
+                </OptionPill>
+              ))}
+            </div>
           </div>
-        </StepContainer>
+        </StepShell>
       )}
 
-      {/* ─── STEP 1: Choose Your Atmosphere ─── */}
+      {/* ═══════════════════════════════════════════
+          STEP 1 — Experience + Timing
+          ═══════════════════════════════════════════ */}
       {step === 1 && (
-        <StepContainer stepKey="theme">
-          <div className="w-full mb-8">
-            <h1 className="text-2xl font-semibold text-foreground leading-tight mb-3">
-              Choose the Energy of<br />Your Practice
-            </h1>
-            <p className="text-base text-muted-foreground leading-relaxed mb-8">
-              Pick the tone that feels aligned with who you're becoming.
-            </p>
+        <StepShell stepKey="experience">
+          <div className="w-full space-y-10">
+            <div>
+              <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
+                How familiar are you with affirmations?
+              </h1>
+            </div>
 
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="space-y-3">
+              {EXPERIENCE_OPTIONS.map((opt) => (
+                <OptionPill
+                  key={opt.value}
+                  selected={experience === opt.value}
+                  onClick={() => setExperience(opt.value)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <p className={cn(
+                        "text-[15px] transition-colors duration-300",
+                        experience === opt.value ? "text-foreground font-medium" : "text-foreground/70"
+                      )}>
+                        {opt.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground/50 mt-0.5">{opt.description}</p>
+                    </div>
+                    {experience === opt.value && (
+                      <Check className="w-4 h-4 text-primary shrink-0 ml-3" />
+                    )}
+                  </div>
+                </OptionPill>
+              ))}
+            </div>
+
+            {/* Optional: When do you practice? */}
+            {experience && (
+              <div className="space-y-4 pt-2">
+                <p className="text-sm text-muted-foreground/60">
+                  When do you imagine practicing?
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {TIME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setUsageTime(usageTime === opt.value ? null : opt.value)}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-xl px-4 py-3.5 transition-all duration-300 text-left",
+                        usageTime === opt.value
+                          ? "bg-primary/8 shadow-[0_2px_12px_hsl(var(--primary)/0.1)]"
+                          : "bg-card shadow-[var(--shadow-soft)]"
+                      )}
+                    >
+                      <span className="text-lg">{opt.emoji}</span>
+                      <span className={cn(
+                        "text-sm transition-colors",
+                        usageTime === opt.value ? "text-foreground font-medium" : "text-foreground/60"
+                      )}>
+                        {opt.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </StepShell>
+      )}
+
+      {/* ═══════════════════════════════════════════
+          STEP 2 — Choose Your Atmosphere
+          ═══════════════════════════════════════════ */}
+      {step === 2 && (
+        <StepShell stepKey="theme">
+          <div className="w-full space-y-8">
+            <div>
+              <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
+                Choose the energy of your practice
+              </h1>
+              <p className="text-base text-muted-foreground/70 leading-relaxed">
+                Pick the tone that feels aligned with who you're becoming.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               {themePresets.map((preset) => {
                 const isActive = selectedTheme === preset.id;
                 return (
                   <button
                     key={preset.id}
-                    onClick={() => handleSelectTheme(preset.id)}
+                    onClick={() => applyTheme(preset.id)}
                     className={cn(
-                      "relative flex flex-col items-center gap-3 rounded-2xl p-5 transition-all duration-300",
-                      "shadow-[var(--shadow-soft)]",
+                      "relative flex flex-col items-center gap-3.5 rounded-2xl p-5 transition-all duration-400",
                       isActive
-                        ? "scale-[1.02] ring-2 ring-primary/40 bg-card"
-                        : "bg-card hover:bg-card/80"
+                        ? "scale-[1.02] bg-card shadow-[0_4px_20px_hsl(var(--primary)/0.15)]"
+                        : "bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-md)]"
                     )}
                   >
-                    {/* Color swatch */}
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-full shadow-sm transition-all duration-300 flex items-center justify-center",
-                        isActive && "shadow-[0_0_16px_var(--shadow-glow,rgba(0,0,0,0.1))]"
+                        "w-12 h-12 rounded-full transition-all duration-400 flex items-center justify-center",
+                        isActive && "shadow-[0_0_20px_hsl(var(--primary)/0.25)]"
                       )}
                       style={{ backgroundColor: preset.preview }}
                     >
                       {isActive && <Check className="w-5 h-5 text-white" />}
                     </div>
-                    {/* Sample button preview */}
                     <div
-                      className="w-full h-8 rounded-lg opacity-80"
-                      style={{ backgroundColor: preset.preview }}
+                      className="w-full h-7 rounded-lg transition-opacity duration-300"
+                      style={{ backgroundColor: preset.preview, opacity: isActive ? 0.9 : 0.5 }}
                     />
-                    <span className="text-sm font-medium">{preset.name}</span>
-                    <span className="text-xs text-muted-foreground/60">{preset.description}</span>
+                    <div>
+                      <p className="text-sm font-medium">{preset.name}</p>
+                      <p className="text-[11px] text-muted-foreground/50 mt-0.5">{preset.description}</p>
+                    </div>
                   </button>
                 );
               })}
             </div>
           </div>
-        </StepContainer>
+        </StepShell>
       )}
 
-      {/* ─── STEP 2: Calibration ─── */}
-      {step === 2 && (
-        <StepContainer stepKey="calibrate">
-          <div className="w-full mb-6">
-            <h1 className="text-2xl font-semibold text-foreground leading-tight mb-3">
-              Let's Match Your<br />Natural Rhythm
-            </h1>
-            <p className="text-base text-muted-foreground leading-relaxed mb-8">
-              Read this short passage so your teleprompter moves at your pace.
-            </p>
+      {/* ═══════════════════════════════════════════
+          STEP 3 — Calibration
+          ═══════════════════════════════════════════ */}
+      {step === 3 && (
+        <StepShell stepKey="calibrate">
+          <div className="w-full space-y-8">
+            <div>
+              <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
+                Let's match your natural rhythm
+              </h1>
+              <p className="text-base text-muted-foreground/70 leading-relaxed">
+                Read this short passage aloud so your teleprompter moves at your pace.
+              </p>
+            </div>
 
             {calPhase !== "done" && (
-              <div className="bg-muted/30 rounded-2xl p-6 text-left text-[15px] leading-[1.8] text-foreground/80 mb-6 max-h-[200px] overflow-y-auto">
+              <div className="bg-muted/20 rounded-2xl p-6 text-left text-[15px] leading-[1.85] text-foreground/75 max-h-[200px] overflow-y-auto">
                 {CALIBRATION_SCRIPT}
               </div>
             )}
 
             {calPhase === "idle" && (
-              <Button onClick={startCalibration} className="w-full h-13 text-base rounded-2xl shadow-[var(--shadow-medium)]" size="lg">
+              <Button
+                onClick={startCalibration}
+                className="w-full h-14 text-base rounded-2xl shadow-[var(--shadow-medium)] gap-2.5"
+                size="lg"
+              >
+                <Mic className="w-5 h-5" />
                 Start Calibration
               </Button>
             )}
 
             {calPhase === "recording" && (
-              <div className="space-y-5">
-                <div className="flex flex-col items-center gap-2">
+              <div className="space-y-6">
+                <div className="flex flex-col items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse" />
-                    <span className="text-sm text-muted-foreground">Recording</span>
+                    <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                    <span className="text-sm text-muted-foreground/70">Listening…</span>
                   </div>
-                  <span className="text-5xl font-light tabular-nums tracking-tight text-foreground">
+                  <span className="text-6xl font-extralight tabular-nums tracking-tight text-foreground">
                     {formatTimer(calElapsed)}
                   </span>
                   {calElapsed < MIN_DURATION && (
-                    <p className="text-xs text-muted-foreground/60">
-                      {MIN_DURATION - calElapsed}s minimum remaining
+                    <p className="text-xs text-muted-foreground/40">
+                      {MIN_DURATION - calElapsed}s more
                     </p>
                   )}
                 </div>
                 <Button
                   onClick={stopCalibration}
                   disabled={calElapsed < MIN_DURATION}
-                  className="w-full h-13 text-base rounded-2xl"
+                  variant="outline"
+                  className="w-full h-14 text-base rounded-2xl gap-2"
                   size="lg"
                 >
-                  Stop Recording
+                  <Square className="w-4 h-4" />
+                  Done Reading
                 </Button>
               </div>
             )}
 
             {calPhase === "done" && (
-              <div className="space-y-6">
-                <div className="rounded-2xl bg-primary/8 p-8 space-y-2">
-                  <p className="text-5xl font-light text-primary">{calWpm}</p>
-                  <p className="text-sm text-primary/70">words per minute</p>
+              <div className="space-y-8">
+                <div className="rounded-2xl bg-primary/6 p-10 space-y-3">
+                  <p className="text-6xl font-extralight text-primary tracking-tight">{calWpm}</p>
+                  <p className="text-sm text-primary/60">words per minute</p>
                 </div>
-                <p className="text-base text-muted-foreground leading-relaxed">
+                <p className="text-base text-muted-foreground/70 leading-relaxed">
                   Your practice now moves at your speed.
                 </p>
               </div>
             )}
           </div>
-        </StepContainer>
+        </StepShell>
       )}
 
-      {/* ─── STEP 3: Activation ─── */}
-      {step === 3 && (
-        <StepContainer stepKey="activate">
-          <div className="mb-10">
-            {/* Subtle celebratory glow */}
-            <div className="relative w-20 h-20 mx-auto mb-10">
-              <div className="absolute inset-0 rounded-full bg-primary/10 animate-[pulse_3s_ease-in-out_infinite]" />
-              <div className="absolute inset-2 rounded-full bg-primary/15 animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
-              <div className="relative w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-8 h-8 text-primary" />
+      {/* ═══════════════════════════════════════════
+          STEP 4 — Activation
+          ═══════════════════════════════════════════ */}
+      {step === 4 && (
+        <StepShell stepKey="activate">
+          <div className="space-y-12">
+            {/* Subtle radial glow */}
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 rounded-full bg-primary/8 animate-[pulse_4s_ease-in-out_infinite]" />
+              <div className="absolute inset-3 rounded-full bg-primary/10 animate-[pulse_4s_ease-in-out_infinite_1s]" />
+              <div className="relative w-24 h-24 rounded-full bg-primary/8 flex items-center justify-center">
+                <Sparkles className="w-9 h-9 text-primary/80" />
               </div>
             </div>
-            <h1 className="text-3xl font-semibold text-foreground leading-tight mb-5">
-              You're Ready.
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-xs mx-auto">
-              Press record and speak your first affirmation.
-            </p>
+
+            <div>
+              <h1 className="text-[32px] font-semibold text-foreground leading-[1.2] mb-5 font-serif">
+                You're ready.
+              </h1>
+              <p className="text-lg text-muted-foreground/60 leading-relaxed max-w-[280px] mx-auto">
+                Press record and speak your first affirmation into being.
+              </p>
+            </div>
           </div>
-        </StepContainer>
+        </StepShell>
       )}
 
-      {/* ─── Bottom actions ─── */}
-      <div className="w-full max-w-md mx-auto px-8 pb-14 space-y-3">
+      {/* ─── Bottom CTA ─── */}
+      <div className="w-full max-w-md mx-auto px-8 pb-16 space-y-3 shrink-0">
+        {/* Primary CTA per step */}
         {step === 0 && (
           <Button
-            onClick={next}
+            onClick={goNext}
+            disabled={!canProceed}
             size="lg"
-            className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
+            className={cn(
+              "w-full h-14 text-base font-medium rounded-2xl transition-all duration-500",
+              canProceed ? "shadow-[var(--shadow-medium)] opacity-100" : "opacity-40"
+            )}
           >
-            Set Up My Practice
+            Continue
           </Button>
         )}
 
         {step === 1 && (
           <Button
-            onClick={next}
+            onClick={goNext}
+            disabled={!canProceed}
+            size="lg"
+            className={cn(
+              "w-full h-14 text-base font-medium rounded-2xl transition-all duration-500",
+              canProceed ? "shadow-[var(--shadow-medium)] opacity-100" : "opacity-40"
+            )}
+          >
+            Continue
+          </Button>
+        )}
+
+        {step === 2 && (
+          <Button
+            onClick={goNext}
             size="lg"
             className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
           >
@@ -330,28 +549,29 @@ const Onboarding = () => {
           </Button>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <>
-            {calPhase === "done" ? (
+            {calPhase === "done" && (
               <Button
-                onClick={next}
+                onClick={goNext}
                 size="lg"
                 className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
               >
                 Perfect
               </Button>
-            ) : calPhase === "idle" ? (
+            )}
+            {calPhase === "idle" && (
               <button
-                onClick={next}
-                className="w-full text-sm text-muted-foreground/50 hover:text-muted-foreground transition-colors py-2"
+                onClick={goNext}
+                className="w-full text-sm text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors duration-300 py-3"
               >
                 Skip for now
               </button>
-            ) : null}
+            )}
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <Button
             onClick={finish}
             size="lg"
