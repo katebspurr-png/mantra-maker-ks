@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Pause, Plus, GripVertical, Trash2, Shuffle, Volume2 } from "lucide-react";
+import { ArrowLeft, Play, Pause, Plus, GripVertical, Trash2, Shuffle, Volume2, Pencil, Check, X } from "lucide-react";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { PlaybackSettings, usePlaybackSettings } from "@/components/PlaybackSettings";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
@@ -119,6 +120,9 @@ export default function PlaylistDetail() {
   const [allRecordings, setAllRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Playback settings with session persistence
   const { settings: playbackSettings, setSettings: setPlaybackSettings, saveAsDefault } = usePlaybackSettings();
@@ -387,6 +391,24 @@ export default function PlaylistDetail() {
     }
   };
 
+  const startEditingTitle = useCallback(() => {
+    if (!playlist) return;
+    setEditTitle(playlist.title);
+    setIsEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.focus(), 50);
+  }, [playlist]);
+
+  const saveTitle = useCallback(async () => {
+    const trimmed = editTitle.trim();
+    if (!trimmed || !playlist || trimmed === playlist.title) {
+      setIsEditingTitle(false);
+      return;
+    }
+    await updatePlaylistSettings({ title: trimmed });
+    setIsEditingTitle(false);
+    sonnerToast.success("Playlist renamed");
+  }, [editTitle, playlist]);
+
   const availableRecordings = allRecordings.filter(
     (r) => !recordings.find((pr) => pr.id === r.id)
   );
@@ -418,7 +440,33 @@ export default function PlaylistDetail() {
           <button onClick={() => navigate("/playlists")} className="p-2 -ml-2">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-semibold">{playlist.title}</h1>
+          {isEditingTitle ? (
+            <div className="flex items-center gap-2 flex-1">
+              <Input
+                ref={titleInputRef}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveTitle();
+                  if (e.key === "Escape") setIsEditingTitle(false);
+                }}
+                className="text-xl font-semibold h-9"
+              />
+              <button onClick={saveTitle} className="p-1.5 text-primary">
+                <Check className="w-5 h-5" />
+              </button>
+              <button onClick={() => setIsEditingTitle(false)} className="p-1.5 text-muted-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <h1 className="text-xl font-semibold truncate">{playlist.title}</h1>
+              <button onClick={startEditingTitle} className="p-1.5 text-muted-foreground hover:text-foreground shrink-0">
+                <Pencil className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Play Button */}
