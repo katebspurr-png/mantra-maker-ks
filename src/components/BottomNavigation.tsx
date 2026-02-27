@@ -1,6 +1,7 @@
 import { Home, BookOpen, Mic, ListMusic, User, Sparkles } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/home" },
@@ -14,6 +15,9 @@ const navItems = [
 export function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isOpen: immersiveOpen } = useImmersivePlayer();
+
+  if (immersiveOpen) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border/40 safe-area-pb">

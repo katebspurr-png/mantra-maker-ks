@@ -3,14 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
 import { Recording } from "@/types";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 
 interface ResumePracticeHeroProps {
   recordings: Recording[];
 }
 
 export const ResumePracticeHero = ({ recordings }: ResumePracticeHeroProps) => {
-  const navigate = useNavigate();
-  const { currentTrack, isPlaying, source, playSingleRecording, togglePlayPause } = useGlobalAudio();
+  const { currentTrack, isPlaying, source, togglePlayPause } = useGlobalAudio();
+  const { openImmersive } = useImmersivePlayer();
 
   // Pick the most recent favorite, or most recent recording
   const heroRecording = recordings.find(r => r.is_favorite) || recordings[0];
@@ -20,15 +21,11 @@ export const ResumePracticeHero = ({ recordings }: ResumePracticeHeroProps) => {
   const isCurrentlyPlaying =
     source?.type === "single" && currentTrack?.id === heroRecording.id && isPlaying;
 
-  const handlePlay = async () => {
-    if (source?.type === "single" && currentTrack?.id === heroRecording.id) {
+  const handlePlay = () => {
+    if (isCurrentlyPlaying) {
       togglePlayPause();
     } else {
-      await playSingleRecording(heroRecording, {
-        mode: "loop",
-        repeatCount: 10,
-        durationMinutes: 15,
-      });
+      openImmersive(heroRecording);
     }
   };
 
@@ -40,7 +37,7 @@ export const ResumePracticeHero = ({ recordings }: ResumePracticeHeroProps) => {
 
       <p
         className="text-[22px] leading-[1.7] font-serif text-foreground/90 mb-6 cursor-pointer"
-        onClick={() => navigate(`/recording/${heroRecording.id}`)}
+        onClick={() => openImmersive(heroRecording)}
       >
         {heroRecording.text
           ? `"${heroRecording.text.length > 120 ? heroRecording.text.slice(0, 120) + "…" : heroRecording.text}"`
