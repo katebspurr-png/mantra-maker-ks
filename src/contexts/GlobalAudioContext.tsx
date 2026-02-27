@@ -274,6 +274,24 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     saveZenSettingsToDb(updates);
   }, [saveZenSettingsToDb]);
 
+  // Smoothly fade zen audio volume from 0 to target over durationMs
+  const zenFadeRef = useRef<number | null>(null);
+  const fadeZenAudioIn = useCallback((audio: HTMLAudioElement, targetVol: number, durationMs: number) => {
+    if (zenFadeRef.current) cancelAnimationFrame(zenFadeRef.current);
+    const start = performance.now();
+    const step = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(elapsed / durationMs, 1);
+      audio.volume = targetVol * t;
+      if (t < 1) {
+        zenFadeRef.current = requestAnimationFrame(step);
+      } else {
+        zenFadeRef.current = null;
+      }
+    };
+    zenFadeRef.current = requestAnimationFrame(step);
+  }, []);
+
   // startZenMusic is now handled inline in playTrackAtIndex per-recording
 
   const pauseZenMusic = useCallback(() => {
@@ -297,16 +315,17 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
       zenIsDuckedRef.current = false;
       stopZenMusic();
     } else if (isPlaying) {
-      // If main audio already playing, start zen immediately at ducked volume
+      // If main audio already playing, start zen immediately with fade-in
       setTimeout(() => {
         const track = ZEN_TRACKS.find(t => t.id === zenSettings.trackId) || ZEN_TRACKS[0];
         if (track && zenAudioRef.current) {
-          const duckedVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
-          zenAudioRef.current.volume = duckedVol;
+          const targetVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
+          zenAudioRef.current.volume = 0;
           zenIsDuckedRef.current = true;
           zenAudioRef.current.src = track.url;
           zenAudioRef.current.load();
           zenAudioRef.current.play().catch(() => {});
+          fadeZenAudioIn(zenAudioRef.current, targetVol, 2000);
         }
       }, 0);
     }
@@ -326,12 +345,15 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     if (zenAudioRef.current) {
       const track = ZEN_TRACKS.find(t => t.id === trackId);
       if (track && (isZenPlaying || (zenSettings.enabled && isPlaying))) {
-        const duckedVol = zenSettings.volume * (1 - zenSettings.duckingIntensity);
-        zenAudioRef.current.volume = isPlaying ? duckedVol : zenSettings.volume;
+        const targetVol = isPlaying
+          ? zenSettings.volume * (1 - zenSettings.duckingIntensity)
+          : zenSettings.volume;
         zenIsDuckedRef.current = isPlaying;
+        zenAudioRef.current.volume = 0;
         zenAudioRef.current.src = track.url;
         zenAudioRef.current.load();
         zenAudioRef.current.play().catch(() => {});
+        fadeZenAudioIn(zenAudioRef.current, targetVol, 2000);
       }
     }
   }, [updateZenSettings, isZenPlaying, isPlaying, zenSettings.enabled, zenSettings.volume, zenSettings.duckingIntensity]);
