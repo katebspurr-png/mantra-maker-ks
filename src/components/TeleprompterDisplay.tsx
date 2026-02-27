@@ -2,19 +2,11 @@ import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHand
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/**
- * TeleprompterDisplay Component
- * 
- * Shows affirmation text with optional karaoke-style word highlighting.
- * Now accepts WPM directly instead of a pace index.
- */
-
-// Text size presets
 const TEXT_SIZES = [
-  { label: "S", value: 20, lineHeight: 1.8 },
-  { label: "M", value: 28, lineHeight: 1.9 },
-  { label: "L", value: 36, lineHeight: 2.0 },
-  { label: "XL", value: 44, lineHeight: 2.1 },
+  { label: "S", value: 22, lineHeight: 1.9 },
+  { label: "M", value: 30, lineHeight: 2.0 },
+  { label: "L", value: 40, lineHeight: 2.1 },
+  { label: "XL", value: 48, lineHeight: 2.2 },
 ];
 
 export interface TeleprompterDisplayRef {
@@ -120,7 +112,6 @@ export const TeleprompterDisplay = forwardRef<TeleprompterDisplayRef, Teleprompt
       isHighlighting: () => isHighlightingActive,
     }), [startHighlighting, stopHighlighting, pauseHighlighting, resumeHighlighting, resetHighlighting, isHighlightingActive]);
 
-    // Update interval speed when WPM changes mid-highlight
     useEffect(() => {
       if (isHighlightingActive && intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -139,47 +130,47 @@ export const TeleprompterDisplay = forwardRef<TeleprompterDisplayRef, Teleprompt
 
     if (words.length === 0) {
       return (
-        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="min-h-[200px] px-6 py-8 flex items-center justify-center">
-            <p className="text-muted-foreground text-center">No affirmation text entered</p>
+        <div className="rounded-2xl bg-card shadow-[var(--shadow-soft)] overflow-hidden">
+          <div className="min-h-[220px] px-6 py-10 flex items-center justify-center">
+            <p className="text-muted-foreground/60 text-center">No affirmation text entered</p>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      <div className="rounded-2xl bg-card shadow-[var(--shadow-soft)] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
-          <span className="text-xs text-muted-foreground uppercase tracking-wide">
+        <div className="flex items-center justify-between px-5 py-3">
+          <span className="text-xs text-muted-foreground/60 uppercase tracking-wider">
             Your Affirmation
           </span>
           {isEditable && onEditClick && (
-            <Button variant="ghost" size="sm" onClick={onEditClick} className="text-xs h-7">
+            <Button variant="ghost" size="sm" onClick={onEditClick} className="text-xs h-7 text-muted-foreground hover:text-foreground">
               Edit text
             </Button>
           )}
         </div>
 
-        {/* Text display */}
+        {/* Text display — immersive */}
         <div 
           ref={containerRef}
-          className="min-h-[240px] px-6 py-8 cursor-pointer select-none"
+          className="min-h-[260px] px-8 py-10 cursor-pointer select-none"
           onClick={manualMode && karaokeEnabled ? advanceWord : undefined}
         >
           <div 
-            className="text-center leading-relaxed"
+            className="text-center"
             style={{ fontSize: `${currentTextSize.value}px`, lineHeight: currentTextSize.lineHeight }}
           >
             {words.map((word, index) => (
               <span
                 key={index}
                 className={cn(
-                  "inline-block mx-1 py-1 px-0.5 rounded transition-all duration-200",
-                  karaokeEnabled && index === currentWordIndex && "text-primary font-semibold scale-105 bg-primary/10",
-                  karaokeEnabled && index < currentWordIndex && "text-muted-foreground/60",
-                  karaokeEnabled && index > currentWordIndex && "text-foreground/80",
-                  !karaokeEnabled && "text-foreground"
+                  "inline-block mx-1 py-1 px-0.5 rounded-lg transition-all duration-300",
+                  karaokeEnabled && index === currentWordIndex && "text-primary font-semibold scale-105",
+                  karaokeEnabled && index < currentWordIndex && "text-muted-foreground/40",
+                  karaokeEnabled && index > currentWordIndex && "text-foreground/70",
+                  !karaokeEnabled && "text-foreground/85"
                 )}
               >
                 {word}
@@ -188,22 +179,22 @@ export const TeleprompterDisplay = forwardRef<TeleprompterDisplayRef, Teleprompt
           </div>
           
           {manualMode && karaokeEnabled && (
-            <p className="text-xs text-center text-muted-foreground mt-6">
+            <p className="text-xs text-center text-muted-foreground/50 mt-8">
               Tap anywhere to advance
             </p>
           )}
         </div>
 
-        {/* Progress indicator */}
+        {/* Progress indicator — subtle */}
         {karaokeEnabled && (
-          <div className="px-4 pb-3">
-            <div className="h-1 bg-muted rounded-full overflow-hidden">
+          <div className="px-6 pb-4">
+            <div className="h-0.5 bg-muted/50 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all duration-300 ease-out"
+                className="h-full bg-primary/40 transition-all duration-300 ease-out"
                 style={{ width: `${((currentWordIndex + 1) / words.length) * 100}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+            <div className="flex justify-between text-[10px] text-muted-foreground/40 mt-1.5">
               <span>{currentWordIndex + 1} / {words.length}</span>
               <span>{Math.round((currentWordIndex / words.length) * 100)}%</span>
             </div>
@@ -211,8 +202,8 @@ export const TeleprompterDisplay = forwardRef<TeleprompterDisplayRef, Teleprompt
         )}
 
         {!karaokeEnabled && (
-          <div className="px-4 pb-3 text-center">
-            <span className="text-xs text-muted-foreground">{words.length} words</span>
+          <div className="px-5 pb-4 text-center">
+            <span className="text-[10px] text-muted-foreground/40">{words.length} words</span>
           </div>
         )}
       </div>

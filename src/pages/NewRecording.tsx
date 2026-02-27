@@ -39,18 +39,15 @@ const NewRecording = () => {
   const prefilledText = locationState?.prefilledText || "";
   const existingAffirmationId = locationState?.affirmationId || null;
   
-  // Text state
   const [affirmationText, setAffirmationText] = useState(prefilledText);
   const [isEditMode, setIsEditMode] = useState(!prefilledText);
   
-  // Recording state
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [duration, setDuration] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingKey, setRecordingKey] = useState(0);
   const [previewKey, setPreviewKey] = useState(0);
   
-  // Save form state
   const [title, setTitle] = useState("");
   const [loopMode, setLoopMode] = useState<LoopMode>(() => {
     const saved = localStorage.getItem("defaultLoopMode") as LoopMode;
@@ -59,10 +56,8 @@ const NewRecording = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   
-  // Discard dialog state
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
-  // Teleprompter settings state
   const [teleprompterEnabled, setTeleprompterEnabled] = useState(true);
   const [karaokeEnabled, setKaraokeEnabled] = useState(true);
   const [textSizeIndex, setTextSizeIndex] = useState(() => {
@@ -71,7 +66,6 @@ const NewRecording = () => {
   });
   const [manualMode] = useState(false);
 
-  // WPM-based pace
   const [calibratedWpm] = useState<number | null>(() => {
     const saved = localStorage.getItem("teleprompter_calibrated_wpm");
     return saved ? parseInt(saved, 10) : null;
@@ -84,7 +78,6 @@ const NewRecording = () => {
   });
   const [currentCalibratedWpm, setCurrentCalibratedWpm] = useState(calibratedWpm);
 
-  // Ref to control teleprompter display
   const teleprompterRef = useRef<TeleprompterDisplayRef>(null);
 
   useEffect(() => {
@@ -93,7 +86,6 @@ const NewRecording = () => {
     }
   }, [prefilledText]);
 
-  // Persist teleprompter settings
   useEffect(() => {
     sessionStorage.setItem("teleprompterTextSize", textSizeIndex.toString());
   }, [textSizeIndex]);
@@ -114,7 +106,6 @@ const NewRecording = () => {
     setTitle(defaultTitle);
   };
 
-  // Recording lifecycle — sync with teleprompter
   const handleRecordingStart = () => {
     setIsRecording(true);
     if (teleprompterEnabled && karaokeEnabled && affirmationText.trim()) {
@@ -128,7 +119,6 @@ const NewRecording = () => {
     }
   };
 
-  // Auto-resume highlighting when recording resumes (if karaoke ON)
   const handleRecordingResume = () => {
     if (teleprompterEnabled && karaokeEnabled) {
       teleprompterRef.current?.resumeHighlighting();
@@ -244,21 +234,21 @@ const NewRecording = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
-        <div className="max-w-lg mx-auto px-4 py-4">
+      {/* Header — minimal, borderless */}
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+        <div className="max-w-lg mx-auto px-5 py-5">
           <div className="flex items-center gap-3">
-            <button onClick={handleBack} className="p-2 -ml-2">
-              <ArrowLeft className="w-5 h-5" />
+            <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-muted/60 transition-colors">
+              <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </button>
-            <h1 className="text-xl font-semibold">New Recording</h1>
+            <h1 className="text-lg font-medium tracking-tight text-foreground/90">New Recording</h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="max-w-lg mx-auto px-5 py-4">
         {!recordingBlob ? (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Text Input or Teleprompter Display */}
             {isEditMode ? (
               <TextInputArea
@@ -269,7 +259,7 @@ const NewRecording = () => {
                 onPreviewClick={affirmationText.trim() ? () => setIsEditMode(false) : undefined}
               />
             ) : (
-              <>
+              <div className="space-y-6">
                 <TeleprompterDisplay
                   ref={teleprompterRef}
                   text={affirmationText}
@@ -293,7 +283,7 @@ const NewRecording = () => {
                   calibratedWpm={currentCalibratedWpm}
                   onCalibrated={handleCalibrated}
                 />
-              </>
+              </div>
             )}
 
             {/* Recording Controls */}
@@ -307,7 +297,7 @@ const NewRecording = () => {
             />
           </div>
         ) : (
-          <div className="space-y-6 animate-in">
+          <div className="space-y-8 animate-in">
             {recordingBlob && (
               <AudioPreviewPlayer
                 key={previewKey}
@@ -317,26 +307,27 @@ const NewRecording = () => {
             )}
 
             {affirmationText && (
-              <div className="bg-card rounded-xl border border-border p-4">
-                <p className="text-sm text-muted-foreground mb-1">Your affirmation:</p>
-                <p className="text-base">{affirmationText}</p>
+              <div className="rounded-2xl bg-muted/30 p-5">
+                <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">Your affirmation</p>
+                <p className="text-lg leading-relaxed text-foreground/90">{affirmationText}</p>
               </div>
             )}
 
-            <div className="bg-card rounded-2xl p-6 border border-border">
-              <div className="space-y-4">
+            <div className="rounded-2xl p-6 shadow-[var(--shadow-soft)] bg-card">
+              <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
+                  <Label htmlFor="title" className="text-xs uppercase tracking-wide text-muted-foreground">Title</Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Affirmation title"
+                    className="border-0 bg-muted/40 focus-visible:ring-1 focus-visible:ring-ring/30"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tags (optional)</Label>
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Tags (optional)</Label>
                   <TagInput
                     tags={tags}
                     onChange={setTags}
@@ -345,23 +336,23 @@ const NewRecording = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label>Loop Mode</Label>
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">Loop Mode</Label>
                   <RadioGroup value={loopMode} onValueChange={(value) => setLoopMode(value as LoopMode)}>
-                    <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors">
+                    <div className="flex items-center space-x-3 rounded-xl p-4 hover:bg-muted/40 transition-colors cursor-pointer">
                       <RadioGroupItem value="once" id="once" />
-                      <Label htmlFor="once" className="flex-1 cursor-pointer font-normal">
+                      <Label htmlFor="once" className="flex-1 cursor-pointer font-normal text-sm">
                         Play once
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors">
+                    <div className="flex items-center space-x-3 rounded-xl p-4 hover:bg-muted/40 transition-colors cursor-pointer">
                       <RadioGroupItem value="three_times" id="three_times" />
-                      <Label htmlFor="three_times" className="flex-1 cursor-pointer font-normal">
+                      <Label htmlFor="three_times" className="flex-1 cursor-pointer font-normal text-sm">
                         Loop 3 times
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-3 rounded-lg border border-border p-4 hover:bg-accent/50 transition-colors">
+                    <div className="flex items-center space-x-3 rounded-xl p-4 hover:bg-muted/40 transition-colors cursor-pointer">
                       <RadioGroupItem value="infinite" id="infinite" />
-                      <Label htmlFor="infinite" className="flex-1 cursor-pointer font-normal">
+                      <Label htmlFor="infinite" className="flex-1 cursor-pointer font-normal text-sm">
                         Loop until I stop
                       </Label>
                     </div>
@@ -370,9 +361,9 @@ const NewRecording = () => {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 pt-2">
               <Button
-                className="w-full touch-target"
+                className="w-full touch-target h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
                 onClick={handleSave}
                 disabled={saving || !title.trim()}
                 size="lg"
@@ -381,8 +372,8 @@ const NewRecording = () => {
               </Button>
               
               <Button
-                variant="outline"
-                className="w-full touch-target"
+                variant="ghost"
+                className="w-full touch-target text-muted-foreground hover:text-foreground hover:bg-muted/40"
                 onClick={handleTryAgain}
                 disabled={saving}
               >
@@ -392,7 +383,7 @@ const NewRecording = () => {
               
               <Button
                 variant="ghost"
-                className="w-full touch-target text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="w-full touch-target text-destructive/70 hover:text-destructive hover:bg-destructive/5"
                 onClick={handleDiscard}
                 disabled={saving}
               >
@@ -407,7 +398,7 @@ const NewRecording = () => {
       <BottomNavigation />
 
       <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Discard recording?</AlertDialogTitle>
             <AlertDialogDescription>
