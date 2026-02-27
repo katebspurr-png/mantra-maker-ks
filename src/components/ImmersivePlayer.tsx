@@ -161,7 +161,7 @@ export function ImmersivePlayer() {
   const selectAmbientTrack = (trackId: string | null) => {
     if (trackId) {
       setZenEnabled(true);
-      setZenTrackId(trackId);
+      setZenTrackId(trackId); // setZenTrackId now handles starting playback directly
       saveAmbientPref({ trackId, volume: zenVolume });
     } else {
       setZenEnabled(false);
