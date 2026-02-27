@@ -10,7 +10,7 @@ const LOOP_STORAGE_KEY = "immersive-loop-listened-";
 const AMBIENT_PREF_KEY = "immersive-ambient-pref";
 
 interface AmbientPref {
-  trackId: string | null; // null = none
+  trackId: string | null;
   volume: number;
 }
 
@@ -26,7 +26,6 @@ function saveAmbientPref(pref: AmbientPref) {
   localStorage.setItem(AMBIENT_PREF_KEY, JSON.stringify(pref));
 }
 
-// Simplified sound options for immersive mode
 const AMBIENT_OPTIONS = [
   { id: null, label: "None" },
   ...ZEN_TRACKS.map(t => ({ id: t.id, label: t.title })),
@@ -54,7 +53,8 @@ export function ImmersivePlayer() {
   const [showControls, setShowControls] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showAmbientSheet, setShowAmbientSheet] = useState(false);
-  const [openCount, setOpenCount] = useState(0);
+  // A) Visibility-driven text fade: reset to 0 on each open, then set to 1 after a tick
+  const [textOpacity, setTextOpacity] = useState(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const touchStartY = useRef<number | null>(null);
 
@@ -62,12 +62,16 @@ export function ImmersivePlayer() {
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
-      setOpenCount(c => c + 1);
+      setTextOpacity(0); // Force opacity to 0 immediately
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setVisible(true));
       });
+      // After the browser has painted opacity:0, trigger fade to 1
+      const fadeTimer = setTimeout(() => setTextOpacity(1), 50);
+      return () => clearTimeout(fadeTimer);
     } else {
       setVisible(false);
+      setTextOpacity(0);
       setShowAmbientSheet(false);
       const t = setTimeout(() => setMounted(false), 400);
       return () => clearTimeout(t);
@@ -90,7 +94,6 @@ export function ImmersivePlayer() {
       playSingleRecording(recording, { mode, repeatCount: 10, durationMinutes: 15 });
     }
 
-    // Restore ambient preference
     const pref = loadAmbientPref();
     if (pref.trackId) {
       setZenEnabled(true);
@@ -115,7 +118,6 @@ export function ImmersivePlayer() {
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [isOpen, showAmbientSheet]);
 
-  // Keep controls visible while ambient sheet is open
   useEffect(() => {
     if (showAmbientSheet) {
       setShowControls(true);
@@ -140,7 +142,6 @@ export function ImmersivePlayer() {
     }
   };
 
-  // Loop toggle
   const isLooping = (() => {
     if (!recording) return false;
     const stored = localStorage.getItem(LOOP_STORAGE_KEY + recording.id);
@@ -157,13 +158,12 @@ export function ImmersivePlayer() {
     }
   };
 
-  // Ambient sound selection
   const currentAmbientId = zenEnabled ? zenTrackId : null;
 
   const selectAmbientTrack = (trackId: string | null) => {
     if (trackId) {
       setZenEnabled(true);
-      setZenTrackId(trackId); // setZenTrackId now handles starting playback directly
+      setZenTrackId(trackId);
       saveAmbientPref({ trackId, volume: zenVolume });
     } else {
       setZenEnabled(false);
@@ -236,17 +236,16 @@ export function ImmersivePlayer() {
         </button>
       </div>
 
-      {/* Affirmation text — centered */}
+      {/* A) Affirmation text — visibility-driven fade */}
       <div className="flex-1 flex items-center justify-center px-8">
         <p
-          key={openCount}
           className="text-center font-serif leading-[1.8] max-w-md"
           style={{
             fontSize: "clamp(24px, 6vw, 32px)",
             color: "hsl(0 0% 95%)",
             letterSpacing: "-0.01em",
-            opacity: 0,
-            animation: "immersive-text-fadein 900ms ease-out 300ms forwards",
+            opacity: textOpacity,
+            transition: "opacity 900ms ease-out",
           }}
         >
           {recording?.text
@@ -255,53 +254,69 @@ export function ImmersivePlayer() {
         </p>
       </div>
 
-      {/* Ambient Sound Bottom Sheet */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 z-20 transition-transform duration-300 ease-out ${
-          showAmbientSheet ? "translate-y-0" : "translate-y-full"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchEnd={(e) => e.stopPropagation()}
-      >
+      {/* C) Ambient Sound Bottom Sheet — fixed to viewport bottom */}
+      {showAmbientSheet && (
         <div
-          className="mx-4 mb-[calc(env(safe-area-inset-bottom,20px)+100px)] rounded-2xl p-5"
-          style={{ background: "hsl(160 6% 16% / 0.95)", backdropFilter: "blur(20px)" }}
+          className="fixed inset-0 z-[101]"
+          onClick={(e) => { e.stopPropagation(); setShowAmbientSheet(false); }}
+          style={{ background: "hsl(0 0% 0% / 0.4)" }}
         >
-          <p className="text-[13px] text-white/40 mb-4 tracking-wide">Background Sound</p>
-
-          <div className="space-y-1">
-            {AMBIENT_OPTIONS.map((opt) => (
-              <button
-                key={opt.id ?? "none"}
-                onClick={() => selectAmbientTrack(opt.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
-                  currentAmbientId === opt.id
-                    ? "text-white/90 bg-white/8"
-                    : "text-white/50 hover:text-white/70"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Volume slider — only show when a track is selected */}
-          {currentAmbientId && (
-            <div className="mt-5 px-1">
-              <p className="text-[12px] text-white/30 mb-2">Volume</p>
-              <Slider
-                value={[zenVolume]}
-                onValueChange={handleVolumeChange}
-                min={0}
-                max={1}
-                step={0.05}
-                className="[&_[role=slider]]:bg-white/60 [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_.bg-primary]:bg-white/30 [&_[data-orientation=horizontal]]:bg-white/10"
-              />
+          <div
+            className="absolute bottom-0 left-0 right-0 overflow-y-auto"
+            style={{
+              maxHeight: "70vh",
+              paddingBottom: "env(safe-area-inset-bottom, 20px)",
+              background: "hsl(160 6% 14% / 0.98)",
+              backdropFilter: "blur(24px)",
+              borderRadius: "20px 20px 0 0",
+              animation: "immersive-sheet-up 220ms ease-out",
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
+            {/* Drag indicator */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
-          )}
+
+            <div className="px-5 pb-6">
+              <p className="text-[13px] text-white/40 mb-4 tracking-wide">Background Sound</p>
+
+              <div className="space-y-1">
+                {AMBIENT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id ?? "none"}
+                    onClick={() => selectAmbientTrack(opt.id)}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
+                      currentAmbientId === opt.id
+                        ? "text-white/90 bg-white/[0.08]"
+                        : "text-white/50 hover:text-white/70"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Volume slider */}
+              {currentAmbientId && (
+                <div className="mt-5 px-1">
+                  <p className="text-[12px] text-white/30 mb-2">Volume</p>
+                  <Slider
+                    value={[zenVolume]}
+                    onValueChange={handleVolumeChange}
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    className="[&_[role=slider]]:bg-white/60 [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_.bg-primary]:bg-white/30 [&_[data-orientation=horizontal]]:bg-white/10"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Controls */}
       <div
@@ -309,13 +324,13 @@ export function ImmersivePlayer() {
           showControls ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* Progress line */}
-        <div className="w-full h-[2px] rounded-full bg-white/10 mb-8 overflow-hidden">
+        {/* B) Progress — subtle gradient fade instead of hard line */}
+        <div className="w-full h-[3px] rounded-full mb-8 overflow-hidden" style={{ background: "linear-gradient(90deg, transparent, hsl(0 0% 95% / 0.08), transparent)" }}>
           <div
             className="h-full rounded-full transition-[width] duration-300 ease-linear"
             style={{
               width: `${progress}%`,
-              background: "hsl(0 0% 95% / 0.4)",
+              background: "linear-gradient(90deg, hsl(0 0% 95% / 0.15), hsl(0 0% 95% / 0.35))",
             }}
           />
         </div>
