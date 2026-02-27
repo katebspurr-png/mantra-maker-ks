@@ -87,34 +87,34 @@ export const DailyProgressPreview = () => {
   
   return (
     <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-primary" />
-            <span className="font-semibold">Daily Progress</span>
+            <span className="font-semibold text-[17px]">Daily Progress</span>
           </div>
-          <div className="flex items-center gap-1 text-primary font-medium">
-            <span className="text-lg">{streak}</span>
-            <span className="text-sm text-muted-foreground">day streak</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[17px] font-medium text-foreground">{streak}</span>
+            <span className="text-[13px] text-muted-foreground">day streak</span>
           </div>
         </div>
         
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-5">
           {weekProgress.map((day, index) => {
             const dayOfWeek = new Date(day.date).getDay();
             return (
-              <div key={day.date} className="flex flex-col items-center gap-1">
-                <span className="text-xs text-muted-foreground">
+              <div key={day.date} className="flex flex-col items-center gap-1.5">
+                <span className="text-[11px] text-muted-foreground font-medium">
                   {dayLabels[dayOfWeek]}
                 </span>
                 <div 
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors text-[13px] ${
                     day.completed 
                       ? 'bg-primary text-primary-foreground' 
-                      : 'bg-muted'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
-                  {day.completed ? '●' : '○'}
+                  {day.completed ? '✓' : '○'}
                 </div>
               </div>
             );
