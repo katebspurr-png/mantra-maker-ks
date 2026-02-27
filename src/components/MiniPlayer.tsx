@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Play, Pause, X, Music } from "lucide-react";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 import { Progress } from "@/components/ui/progress";
 import { PlaybackStatus } from "@/components/PlaybackStatus";
 import { PlaybackSpeedControl } from "@/components/PlaybackSpeedControl";
@@ -31,8 +32,10 @@ export function MiniPlayer() {
     setPlaybackSpeed,
   } = useGlobalAudio();
 
-  // Don't show if no active source or track
-  if (!source || !currentTrack) {
+  const { isOpen: immersiveOpen } = useImmersivePlayer();
+
+  // Don't show if no active source or track, or if immersive player is open
+  if (!source || !currentTrack || immersiveOpen) {
     return null;
   }
 

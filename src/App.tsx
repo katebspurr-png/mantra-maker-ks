@@ -5,8 +5,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GlobalAudioProvider } from "@/contexts/GlobalAudioContext";
+import { ImmersivePlayerProvider } from "@/contexts/ImmersivePlayerContext";
 import { DemoProvider } from "@/contexts/DemoContext";
 import { MiniPlayer } from "@/components/MiniPlayer";
+import { ImmersivePlayer } from "@/components/ImmersivePlayer";
 import { SessionManager } from "@/components/SessionManager";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -50,6 +52,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <GlobalAudioProvider>
+        <ImmersivePlayerProvider>
         <DemoProvider>
           <SessionManager />
           <ThemeInitializer />
@@ -77,8 +80,10 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <MiniPlayer />
+            <ImmersivePlayer />
           </BrowserRouter>
         </DemoProvider>
+        </ImmersivePlayerProvider>
       </GlobalAudioProvider>
     </TooltipProvider>
   </QueryClientProvider>

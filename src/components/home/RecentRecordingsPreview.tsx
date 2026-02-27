@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Mic, ChevronRight, Star } from "lucide-react";
 import { Recording } from "@/types";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 import { useRecordingDurations } from "@/hooks/useAudioDuration";
 import { RecordingOptionsMenu } from "@/components/RecordingOptionsMenu";
 
@@ -15,11 +15,11 @@ interface RecentRecordingsPreviewProps {
 
 export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: RecentRecordingsPreviewProps) => {
   const navigate = useNavigate();
-  const { currentTrack, isPlaying, source, playSingleRecording, togglePlayPause } = useGlobalAudio();
+  const { currentTrack, isPlaying, source, togglePlayPause } = useGlobalAudio();
+  const { openImmersive } = useImmersivePlayer();
   
   const recentRecordings = recordings.slice(0, 5);
   
-  // Load durations for recordings with 0 duration
   const loadedDurations = useRecordingDurations(
     recentRecordings.map(r => ({
       id: r.id,
@@ -39,19 +39,13 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
     return loadedDurations.get(recording.id) || 0;
   };
 
-  const handlePlayToggle = async (recording: Recording, e: React.MouseEvent) => {
+  const handlePlayToggle = (recording: Recording, e: React.MouseEvent) => {
     e.stopPropagation();
-    
     const isCurrentTrack = source?.type === "single" && currentTrack?.id === recording.id;
-    
     if (isCurrentTrack) {
       togglePlayPause();
     } else {
-      await playSingleRecording(recording, {
-        mode: "loop",
-        repeatCount: 10,
-        durationMinutes: 15,
-      });
+      openImmersive(recording);
     }
   };
 
@@ -77,7 +71,6 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
 
   return (
     <div>
-        
         <div className="space-y-2.5">
           {recentRecordings.map((recording) => {
             const duration = getDuration(recording);
@@ -87,7 +80,7 @@ export const RecentRecordingsPreview = ({ recordings, onRecordingDeleted }: Rece
               <div 
                 key={recording.id}
                 className="flex items-center justify-between p-3.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                onClick={() => navigate(`/recording/${recording.id}`)}
+                onClick={() => openImmersive(recording)}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">

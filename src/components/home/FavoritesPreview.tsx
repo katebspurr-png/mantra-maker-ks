@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Heart, Play, Pause, ChevronRight, Mic } from "lucide-react";
 import { Recording, Affirmation, AFFIRMATION_CATEGORIES } from "@/types";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 
 interface FavoritesPreviewProps {
   favoriteRecordings: Recording[];
@@ -15,20 +15,16 @@ export const FavoritesPreview = ({
   favoriteAffirmations 
 }: FavoritesPreviewProps) => {
   const navigate = useNavigate();
-  const { currentTrack, isPlaying, source, playSingleRecording, togglePlayPause } = useGlobalAudio();
+  const { currentTrack, isPlaying, source, togglePlayPause } = useGlobalAudio();
+  const { openImmersive } = useImmersivePlayer();
 
-  const handlePlayToggle = async (recording: Recording, e: React.MouseEvent) => {
+  const handlePlayToggle = (recording: Recording, e: React.MouseEvent) => {
     e.stopPropagation();
     const isCurrentTrack = source?.type === "single" && currentTrack?.id === recording.id;
-    
     if (isCurrentTrack) {
       togglePlayPause();
     } else {
-      await playSingleRecording(recording, {
-        mode: "loop",
-        repeatCount: 10,
-        durationMinutes: 15,
-      });
+      openImmersive(recording);
     }
   };
 
@@ -47,8 +43,6 @@ export const FavoritesPreview = ({
 
   return (
     <div>
-
-        {/* Favorite Recordings */}
         {favoriteRecordings.length > 0 && (
           <div className="space-y-2 mb-3">
             <p className="text-[12px] text-muted-foreground tracking-wide mb-2">Recordings</p>
@@ -58,7 +52,7 @@ export const FavoritesPreview = ({
                 <div
                   key={recording.id}
                   className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                  onClick={() => navigate(`/recording/${recording.id}`)}
+                  onClick={() => openImmersive(recording)}
                 >
                   <p className="font-medium truncate text-sm flex-1">{recording.title}</p>
                   <Button
@@ -79,7 +73,6 @@ export const FavoritesPreview = ({
           </div>
         )}
 
-        {/* Favorite Affirmations */}
         {favoriteAffirmations.length > 0 && (
           <div className="space-y-2">
             <p className="text-[12px] text-muted-foreground tracking-wide mb-2">Affirmations</p>
