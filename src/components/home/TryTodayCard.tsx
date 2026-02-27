@@ -20,7 +20,7 @@ export const TryTodayCard = () => {
 
   const handleRecordThis = () => {
     if (affirmation) {
-      navigate("/new-recording", { state: { text: affirmation.text } });
+      navigate("/new-recording", { state: { prefilledText: affirmation.text } });
     }
   };
 
