@@ -146,9 +146,8 @@ const Home = () => {
 
         {/* 3. Record New Affirmation */}
         <Button 
-          variant="ghost"
           size="lg"
-          className="w-full h-[50px] text-[15px] font-medium text-muted-foreground hover:text-foreground"
+          className="w-full h-[52px] text-[15px] font-medium shadow-medium"
           onClick={() => navigate("/new-recording")}
         >
           <Mic className="w-4 h-4 mr-2" />

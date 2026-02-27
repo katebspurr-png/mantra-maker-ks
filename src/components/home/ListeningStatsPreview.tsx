@@ -23,9 +23,14 @@ export const ListeningStatsPreview = () => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-[28px] font-semibold text-foreground">{todayMinutes}</span>
-        <span className="text-[14px] text-muted-foreground">min today</span>
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-primary/8">
+          <Headphones className="w-4 h-4 text-primary" />
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[28px] font-semibold text-foreground">{todayMinutes}</span>
+          <span className="text-[14px] text-muted-foreground">min today</span>
+        </div>
       </div>
 
       <div className="flex gap-4 text-[13px] text-muted-foreground">

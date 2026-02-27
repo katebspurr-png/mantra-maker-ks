@@ -10,44 +10,48 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Premium neutral palette */
-    --background: 240 3% 97%;
-    --foreground: 240 6% 12%;
+    /* Warm neutral palette */
+    --background: 30 6% 96.5%;
+    --foreground: 30 6% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 6% 12%;
+    --card: 30 6% 99.5%;
+    --card-foreground: 30 6% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 12%;
+    --popover-foreground: 30 6% 12%;
 
     /* Primary – user theme overrides this */
     --primary: 266 4% 20.8%;
     --primary-foreground: 0 0% 100%;
 
-    /* Soft neutral secondary */
-    --secondary: 240 3% 95.5%;
-    --secondary-foreground: 240 5% 30%;
+    /* Soft warm secondary */
+    --secondary: 30 5% 94.5%;
+    --secondary-foreground: 30 5% 30%;
 
-    --muted: 240 3% 95.5%;
-    --muted-foreground: 240 3% 50%;
+    --muted: 30 4% 94%;
+    --muted-foreground: 30 3% 48%;
 
-    --accent: 240 3% 95.5%;
-    --accent-foreground: 240 5% 30%;
+    --accent: 30 5% 94.5%;
+    --accent-foreground: 30 5% 30%;
+
+    /* Surface elevation – subtle white lift */
+    --surface: 30 8% 99%;
+    --surface-foreground: 30 6% 12%;
 
     --destructive: 0 55% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 3% 92%;
-    --input: 240 3% 92%;
-    --ring: 240 3% 68%;
+    --border: 30 4% 91%;
+    --input: 30 4% 91%;
+    --ring: 30 3% 68%;
 
     --radius: 1rem;
 
     /* Animation tokens */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
-    --shadow-medium: 0 1px 4px 0 hsl(0 0% 0% / 0.04);
-    --shadow-float: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
+    --shadow-soft: 0 1px 3px 0 hsl(30 6% 20% / 0.04), 0 0 1px 0 hsl(30 6% 20% / 0.02);
+    --shadow-medium: 0 2px 6px 0 hsl(30 6% 20% / 0.05), 0 0 1px 0 hsl(30 6% 20% / 0.03);
+    --shadow-float: 0 4px 12px 0 hsl(30 6% 20% / 0.07), 0 0 1px 0 hsl(30 6% 20% / 0.03);
 
     --chart-1: 41 22.2% 64.6%;
     --chart-2: 185 11.8% 60%;
