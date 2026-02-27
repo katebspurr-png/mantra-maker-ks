@@ -16,8 +16,8 @@ export function BottomNavigation() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md safe-area-pb">
-      <div className="flex items-center justify-around h-[72px] max-w-lg mx-auto px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border/40 safe-area-pb">
+      <div className="flex items-center justify-around h-[68px] max-w-lg mx-auto px-3">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -29,8 +29,8 @@ export function BottomNavigation() {
                 onClick={() => navigate(item.path)}
                 className="flex flex-col items-center justify-center -mt-5"
               >
-                <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-[var(--shadow-float)]">
-                  <Icon className="w-6 h-6 text-primary-foreground" />
+                <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-[var(--shadow-soft)]">
+                  <Icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-[10px] mt-1.5 text-muted-foreground font-medium">{item.label}</span>
               </button>
@@ -44,8 +44,8 @@ export function BottomNavigation() {
                 onClick={() => navigate(item.path)}
                 className="flex flex-col items-center justify-center -mt-5"
               >
-                <div className="w-14 h-14 rounded-2xl bg-primary/80 flex items-center justify-center shadow-[var(--shadow-float)]">
-                  <Icon className="w-6 h-6 text-primary-foreground" />
+                <div className="w-12 h-12 rounded-2xl bg-primary/80 flex items-center justify-center shadow-[var(--shadow-soft)]">
+                  <Icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-[10px] mt-1.5 text-muted-foreground font-medium">{item.label}</span>
               </button>
@@ -60,15 +60,15 @@ export function BottomNavigation() {
             >
               <Icon
                 className={cn(
-                  "w-[22px] h-[22px] transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground"
+                  "w-5 h-5 transition-colors",
+                  isActive ? "text-primary" : "text-muted-foreground/70"
                 )}
-                strokeWidth={isActive ? 2.2 : 1.8}
+                strokeWidth={isActive ? 2 : 1.6}
               />
               <span
                 className={cn(
-                  "text-[10px] mt-1.5 transition-colors",
-                  isActive ? "text-primary font-medium" : "text-muted-foreground"
+                  "text-[9px] mt-1 transition-colors",
+                  isActive ? "text-primary font-medium" : "text-muted-foreground/70"
                 )}
               >
                 {item.label}

@@ -37,40 +37,31 @@ export const TryTodayCard = () => {
   if (!affirmation) return null;
 
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-[17px]">Try This Today</span>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="h-8 w-8"
-            onClick={pickRandomAffirmation}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        </div>
-        
-        <p className="text-[17px] italic mb-4 leading-[1.6]">
-          "{affirmation.text}"
-        </p>
-        
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+    <div className="space-y-5">
+      <p className="text-[20px] leading-[1.7] text-foreground/90">
+        "{affirmation.text}"
+      </p>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] text-muted-foreground">
             {categoryLabels[affirmation.category] || affirmation.category}
           </span>
-          <Button 
-            size="sm"
-            onClick={handleRecordThis}
+          <button
+            onClick={pickRandomAffirmation}
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            <Mic className="w-4 h-4 mr-2" />
-            Record This
-          </Button>
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
         </div>
-      </CardContent>
-    </Card>
+        <Button 
+          size="sm"
+          onClick={handleRecordThis}
+        >
+          <Mic className="w-3.5 h-3.5 mr-1.5" />
+          Record
+        </Button>
+      </div>
+    </div>
   );
 };

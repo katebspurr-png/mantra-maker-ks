@@ -86,51 +86,44 @@ export const DailyProgressPreview = () => {
   const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-[17px]">Daily Progress</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[17px] font-medium text-foreground">{streak}</span>
-            <span className="text-[13px] text-muted-foreground">day streak</span>
-          </div>
-        </div>
-        
-        <div className="flex justify-between items-center mb-5">
-          {weekProgress.map((day, index) => {
-            const dayOfWeek = new Date(day.date).getDay();
-            return (
-              <div key={day.date} className="flex flex-col items-center gap-1.5">
-                <span className="text-[11px] text-muted-foreground font-medium">
-                  {dayLabels[dayOfWeek]}
-                </span>
-                <div 
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors text-[13px] ${
-                    day.completed 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {day.completed ? '✓' : '○'}
-                </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <span className="text-[14px] text-muted-foreground">
+          {streak > 0 ? `${streak} days practiced` : "Start your practice"}
+        </span>
+      </div>
+      
+      <div className="flex justify-between items-center">
+        {weekProgress.map((day, index) => {
+          const dayOfWeek = new Date(day.date).getDay();
+          return (
+            <div key={day.date} className="flex flex-col items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">
+                {dayLabels[dayOfWeek]}
+              </span>
+              <div 
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors text-[12px] ${
+                  day.completed 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'border border-border text-muted-foreground'
+                }`}
+              >
+                {day.completed ? '✓' : ''}
               </div>
-            );
-          })}
-        </div>
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full text-muted-foreground"
-          onClick={() => navigate("/progress")}
-        >
-          <Calendar className="w-4 h-4 mr-2" />
-          View Progress
-        </Button>
-      </CardContent>
-    </Card>
+            </div>
+          );
+        })}
+      </div>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="w-full text-muted-foreground"
+        onClick={() => navigate("/progress")}
+      >
+        <Calendar className="w-4 h-4 mr-2" />
+        View Progress
+      </Button>
+    </div>
   );
 };

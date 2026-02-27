@@ -77,38 +77,25 @@ export const PlaylistsPreview = () => {
 
   if (playlists.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <ListMusic className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-[17px]">Your Practice</span>
-          </div>
-          <p className="text-[15px] text-muted-foreground mb-4 leading-relaxed">
-            Create playlists to organize your affirmations into daily routines.
-          </p>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate("/playlists")}
-            className="w-full"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Playlist
-          </Button>
-        </CardContent>
-      </Card>
+      <div>
+        <p className="text-[15px] text-muted-foreground mb-4 leading-relaxed">
+          Create playlists to organize your affirmations into daily routines.
+        </p>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => navigate("/playlists")}
+          className="w-full"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Create Playlist
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <ListMusic className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-[17px]">Your Practice</span>
-          </div>
-        </div>
+    <div>
         
         <div className="space-y-2.5">
           {playlists.map((playlist) => (
@@ -142,7 +129,6 @@ export const PlaylistsPreview = () => {
           <Plus className="w-4 h-4 mr-2" />
           Create Playlist
         </Button>
-      </CardContent>
-    </Card>
+    </div>
   );
 };
