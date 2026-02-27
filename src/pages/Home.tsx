@@ -14,12 +14,12 @@ import { CollapsibleSection } from "@/components/home/CollapsibleSection";
 import { useCollapsedSections } from "@/hooks/useCollapsedSections";
 import {
   ThoughtTransformerCard,
-  DailyProgressPreview,
   PlaylistsPreview,
   RecentRecordingsPreview,
   TryTodayCard,
   FavoritesPreview,
-  ListeningStatsPreview,
+  ResumePracticeHero,
+  YourRhythmSection,
 } from "@/components/home";
 
 const Home = () => {
@@ -39,7 +39,6 @@ const Home = () => {
         return;
       }
       
-      // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
@@ -50,7 +49,6 @@ const Home = () => {
       await Promise.all([fetchRecordings(), fetchFavoriteAffirmations()]);
       setLoading(false);
       
-      // Mark today as completed (user visited app)
       markTodayComplete(session.user.id);
     };
 
@@ -88,8 +86,6 @@ const Home = () => {
 
   const markTodayComplete = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
-    
-    // Upsert today's progress
     await supabase
       .from("daily_progress")
       .upsert(
@@ -109,11 +105,13 @@ const Home = () => {
     );
   }
 
+  const hasRecordings = recordings.length > 0;
+
   return (
     <div className="min-h-screen bg-background pb-32">
       <WelcomeDialog />
-       <AddToHomescreenPrompt />
-       <NotificationPrompt />
+      <AddToHomescreenPrompt />
+      <NotificationPrompt />
       
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
@@ -134,27 +132,30 @@ const Home = () => {
 
       {/* Main Content */}
       <div className="max-w-lg mx-auto px-5 py-6 space-y-9">
-        {/* 1. Thought Transformer */}
-        <CollapsibleSection id="thought-transformer" title="Thought Transformer" collapsed={isCollapsed("thought-transformer")} onToggle={() => toggle("thought-transformer")}>
-          <ThoughtTransformerCard />
-        </CollapsibleSection>
+        {/* 1. Hero — Resume Your Practice */}
+        {hasRecordings && <ResumePracticeHero recordings={recordings} />}
 
-        {/* 2. Try This Today */}
+        {/* 2. Record — Secondary Anchor */}
+        <Button 
+          size="lg"
+          className="w-full h-[52px] text-[15px] font-medium shadow-soft"
+          onClick={() => navigate("/new-recording")}
+        >
+          <Mic className="w-4 h-4 mr-2" />
+          Record a New Affirmation
+        </Button>
+
+        {/* 3. Try This Today */}
         <CollapsibleSection id="try-today" title="Try This Today" collapsed={isCollapsed("try-today")} onToggle={() => toggle("try-today")}>
           <TryTodayCard />
         </CollapsibleSection>
 
-        {/* 3. Record New Affirmation */}
-        <Button 
-          size="lg"
-          className="w-full h-[52px] text-[15px] font-medium shadow-medium"
-          onClick={() => navigate("/new-recording")}
-        >
-          <Mic className="w-4 h-4 mr-2" />
-          Record New Affirmation
-        </Button>
+        {/* 4. Thought Transformer — demoted */}
+        <CollapsibleSection id="thought-transformer" title="Thought Transformer" collapsed={isCollapsed("thought-transformer")} onToggle={() => toggle("thought-transformer")}>
+          <ThoughtTransformerCard />
+        </CollapsibleSection>
 
-        {/* 4. Favorites */}
+        {/* 5. Favorites */}
         <CollapsibleSection id="favorites" title="Favorites" collapsed={isCollapsed("favorites")} onToggle={() => toggle("favorites")}>
           <FavoritesPreview 
             favoriteRecordings={favoriteRecordings}
@@ -162,19 +163,14 @@ const Home = () => {
           />
         </CollapsibleSection>
 
-        {/* 5. Your Practice (Playlists) */}
+        {/* 6. Your Practice (Playlists) */}
         <CollapsibleSection id="playlists" title="Your Practice" collapsed={isCollapsed("playlists")} onToggle={() => toggle("playlists")}>
           <PlaylistsPreview />
         </CollapsibleSection>
 
-        {/* 6. Listening Stats */}
-        <CollapsibleSection id="listening-stats" title="Listening Time" collapsed={isCollapsed("listening-stats")} onToggle={() => toggle("listening-stats")}>
-          <ListeningStatsPreview />
-        </CollapsibleSection>
-
-        {/* 7. Daily Progress */}
-        <CollapsibleSection id="daily-progress" title="Daily Progress" collapsed={isCollapsed("daily-progress")} onToggle={() => toggle("daily-progress")}>
-          <DailyProgressPreview />
+        {/* 7. Your Rhythm — combined listening + progress */}
+        <CollapsibleSection id="your-rhythm" title="Your Rhythm" collapsed={isCollapsed("your-rhythm")} onToggle={() => toggle("your-rhythm")}>
+          <YourRhythmSection />
         </CollapsibleSection>
 
         {/* 8. Recent Recordings */}
