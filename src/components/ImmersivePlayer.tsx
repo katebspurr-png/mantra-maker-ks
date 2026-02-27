@@ -1,10 +1,36 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { X, Play, Pause, Repeat } from "lucide-react";
+import { X, Play, Pause, Repeat, AudioLines } from "lucide-react";
 import { useImmersivePlayer } from "@/contexts/ImmersivePlayerContext";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { ZEN_TRACKS } from "@/data/zenTracks";
+import { Slider } from "@/components/ui/slider";
 
 const CONTROLS_TIMEOUT = 3000;
 const LOOP_STORAGE_KEY = "immersive-loop-listened-";
+const AMBIENT_PREF_KEY = "immersive-ambient-pref";
+
+interface AmbientPref {
+  trackId: string | null; // null = none
+  volume: number;
+}
+
+function loadAmbientPref(): AmbientPref {
+  try {
+    const stored = localStorage.getItem(AMBIENT_PREF_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return { trackId: null, volume: 0.3 };
+}
+
+function saveAmbientPref(pref: AmbientPref) {
+  localStorage.setItem(AMBIENT_PREF_KEY, JSON.stringify(pref));
+}
+
+// Simplified sound options for immersive mode
+const AMBIENT_OPTIONS = [
+  { id: null, label: "None" },
+  ...ZEN_TRACKS.map(t => ({ id: t.id, label: t.title })),
+];
 
 export function ImmersivePlayer() {
   const { isOpen, recording, closeImmersive } = useImmersivePlayer();
@@ -16,11 +42,18 @@ export function ImmersivePlayer() {
     source,
     playSingleRecording,
     togglePlayPause,
+    zenEnabled,
+    zenTrackId,
+    zenVolume,
+    setZenEnabled,
+    setZenTrackId,
+    setZenVolume,
   } = useGlobalAudio();
 
-  const [visible, setVisible] = useState(false); // controls fade state
+  const [visible, setVisible] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [mounted, setMounted] = useState(false); // for fade transition
+  const [mounted, setMounted] = useState(false);
+  const [showAmbientSheet, setShowAmbientSheet] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const touchStartY = useRef<number | null>(null);
 
@@ -33,12 +66,13 @@ export function ImmersivePlayer() {
       });
     } else {
       setVisible(false);
+      setShowAmbientSheet(false);
       const t = setTimeout(() => setMounted(false), 400);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
 
-  // Auto-start playback when opening
+  // Auto-start playback + restore ambient pref when opening
   useEffect(() => {
     if (!isOpen || !recording) return;
 
@@ -46,20 +80,22 @@ export function ImmersivePlayer() {
       source?.type === "single" && currentTrack?.id === recording.id;
 
     if (!isAlreadyPlaying) {
-      // Check if user has listened before
       const hasListened = localStorage.getItem(LOOP_STORAGE_KEY + recording.id);
       const mode = hasListened ? (hasListened as "once" | "loop") : "loop";
-
-      // Save that user has now listened
       if (!hasListened) {
         localStorage.setItem(LOOP_STORAGE_KEY + recording.id, "loop");
       }
+      playSingleRecording(recording, { mode, repeatCount: 10, durationMinutes: 15 });
+    }
 
-      playSingleRecording(recording, {
-        mode,
-        repeatCount: 10,
-        durationMinutes: 15,
-      });
+    // Restore ambient preference
+    const pref = loadAmbientPref();
+    if (pref.trackId) {
+      setZenEnabled(true);
+      setZenTrackId(pref.trackId);
+      setZenVolume(pref.volume);
+    } else {
+      setZenEnabled(false);
     }
   }, [isOpen, recording?.id]);
 
@@ -67,20 +103,34 @@ export function ImmersivePlayer() {
   const resetControlsTimer = useCallback(() => {
     setShowControls(true);
     if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setShowControls(false), CONTROLS_TIMEOUT);
-  }, []);
+    if (!showAmbientSheet) {
+      hideTimer.current = setTimeout(() => setShowControls(false), CONTROLS_TIMEOUT);
+    }
+  }, [showAmbientSheet]);
 
   useEffect(() => {
     if (isOpen) resetControlsTimer();
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-  }, [isOpen]);
+  }, [isOpen, showAmbientSheet]);
 
-  // Swipe down to close
+  // Keep controls visible while ambient sheet is open
+  useEffect(() => {
+    if (showAmbientSheet) {
+      setShowControls(true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    } else if (isOpen) {
+      resetControlsTimer();
+    }
+  }, [showAmbientSheet]);
+
+  // Swipe down to close (but not from ambient sheet)
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (showAmbientSheet) return;
     touchStartY.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (showAmbientSheet) return;
     if (touchStartY.current !== null) {
       const diff = e.changedTouches[0].clientY - touchStartY.current;
       if (diff > 100) closeImmersive();
@@ -88,7 +138,7 @@ export function ImmersivePlayer() {
     }
   };
 
-  // Toggle loop
+  // Loop toggle
   const isLooping = (() => {
     if (!recording) return false;
     const stored = localStorage.getItem(LOOP_STORAGE_KEY + recording.id);
@@ -99,16 +149,31 @@ export function ImmersivePlayer() {
     if (!recording) return;
     const newMode = isLooping ? "once" : "loop";
     localStorage.setItem(LOOP_STORAGE_KEY + recording.id, newMode);
-
-    // Re-apply to current playback
-    const isCurrentTrack =
-      source?.type === "single" && currentTrack?.id === recording.id;
+    const isCurrentTrack = source?.type === "single" && currentTrack?.id === recording.id;
     if (isCurrentTrack) {
-      playSingleRecording(recording, {
-        mode: newMode,
-        repeatCount: 10,
-        durationMinutes: 15,
-      });
+      playSingleRecording(recording, { mode: newMode, repeatCount: 10, durationMinutes: 15 });
+    }
+  };
+
+  // Ambient sound selection
+  const currentAmbientId = zenEnabled ? zenTrackId : null;
+
+  const selectAmbientTrack = (trackId: string | null) => {
+    if (trackId) {
+      setZenEnabled(true);
+      setZenTrackId(trackId);
+      saveAmbientPref({ trackId, volume: zenVolume });
+    } else {
+      setZenEnabled(false);
+      saveAmbientPref({ trackId: null, volume: zenVolume });
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const vol = value[0];
+    setZenVolume(vol);
+    if (currentAmbientId) {
+      saveAmbientPref({ trackId: currentAmbientId, volume: vol });
     }
   };
 
@@ -126,7 +191,6 @@ export function ImmersivePlayer() {
     resetControlsTimer();
   };
 
-  // Progress
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   if (!mounted) return null;
@@ -139,7 +203,13 @@ export function ImmersivePlayer() {
       style={{ background: "hsl(160 8% 12%)" }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      onClick={resetControlsTimer}
+      onClick={() => {
+        if (showAmbientSheet) {
+          setShowAmbientSheet(false);
+        } else {
+          resetControlsTimer();
+        }
+      }}
     >
       {/* Breathing animation layer */}
       <div
@@ -180,6 +250,54 @@ export function ImmersivePlayer() {
         </p>
       </div>
 
+      {/* Ambient Sound Bottom Sheet */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 z-20 transition-transform duration-300 ease-out ${
+          showAmbientSheet ? "translate-y-0" : "translate-y-full"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
+        <div
+          className="mx-4 mb-[calc(env(safe-area-inset-bottom,20px)+100px)] rounded-2xl p-5"
+          style={{ background: "hsl(160 6% 16% / 0.95)", backdropFilter: "blur(20px)" }}
+        >
+          <p className="text-[13px] text-white/40 mb-4 tracking-wide">Background Sound</p>
+
+          <div className="space-y-1">
+            {AMBIENT_OPTIONS.map((opt) => (
+              <button
+                key={opt.id ?? "none"}
+                onClick={() => selectAmbientTrack(opt.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-[15px] transition-colors ${
+                  currentAmbientId === opt.id
+                    ? "text-white/90 bg-white/8"
+                    : "text-white/50 hover:text-white/70"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Volume slider — only show when a track is selected */}
+          {currentAmbientId && (
+            <div className="mt-5 px-1">
+              <p className="text-[12px] text-white/30 mb-2">Volume</p>
+              <Slider
+                value={[zenVolume]}
+                onValueChange={handleVolumeChange}
+                min={0}
+                max={1}
+                step={0.05}
+                className="[&_[role=slider]]:bg-white/60 [&_[role=slider]]:border-0 [&_[role=slider]]:w-4 [&_[role=slider]]:h-4 [&_.bg-primary]:bg-white/30 [&_[data-orientation=horizontal]]:bg-white/10"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Controls */}
       <div
         className={`pb-[calc(env(safe-area-inset-bottom,20px)+20px)] px-8 transition-opacity duration-500 ${
@@ -197,7 +315,7 @@ export function ImmersivePlayer() {
           />
         </div>
 
-        {/* Play/Pause + Loop */}
+        {/* Play/Pause + Loop + Ambient */}
         <div className="flex items-center justify-center gap-10">
           <button
             onClick={(e) => { e.stopPropagation(); toggleLoop(); resetControlsTimer(); }}
@@ -220,8 +338,17 @@ export function ImmersivePlayer() {
             )}
           </button>
 
-          {/* Spacer for symmetry */}
-          <div className="w-9" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAmbientSheet(prev => !prev);
+            }}
+            className={`p-2 rounded-full transition-colors ${
+              zenEnabled ? "text-white/80" : "text-white/30"
+            }`}
+          >
+            <AudioLines className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>
