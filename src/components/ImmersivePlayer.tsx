@@ -54,6 +54,7 @@ export function ImmersivePlayer() {
   const [showControls, setShowControls] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showAmbientSheet, setShowAmbientSheet] = useState(false);
+  const [textRevealed, setTextRevealed] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const touchStartY = useRef<number | null>(null);
 
@@ -61,11 +62,16 @@ export function ImmersivePlayer() {
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
+      setTextRevealed(false);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setVisible(true));
       });
+      // Delay text reveal so it settles in after the background appears
+      const textTimer = setTimeout(() => setTextRevealed(true), 300);
+      return () => clearTimeout(textTimer);
     } else {
       setVisible(false);
+      setTextRevealed(false);
       setShowAmbientSheet(false);
       const t = setTimeout(() => setMounted(false), 400);
       return () => clearTimeout(t);
@@ -242,6 +248,8 @@ export function ImmersivePlayer() {
             fontSize: "clamp(24px, 6vw, 32px)",
             color: "hsl(0 0% 95%)",
             letterSpacing: "-0.01em",
+            opacity: textRevealed ? 1 : 0,
+            transition: "opacity 1s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
           {recording?.text
