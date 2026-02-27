@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Mic, Square } from "lucide-react";
+import { Check, Sparkles, Mic, Square, Focus, Leaf, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { themePresets, ThemeId } from "@/hooks/useColorTheme";
 
@@ -23,8 +23,50 @@ const CALIBRATION_SCRIPT =
   "I deserve peace, happiness, and success. I am enough exactly as I am right now.";
 const SCRIPT_WORD_COUNT = CALIBRATION_SCRIPT.trim().split(/\s+/).length;
 const MIN_DURATION = 10;
+const TOTAL_STEPS = 6;
 
-const TOTAL_STEPS = 5;
+/* ═══════════════════════════════════════════
+   Vibe system — subtle tone adaptations
+   ═══════════════════════════════════════════ */
+type Vibe = "focused" | "grounded" | "energized";
+
+const VIBE_OPTIONS: { value: Vibe; label: string; tagline: string; icon: React.ReactNode }[] = [
+  { value: "focused", label: "Focused", tagline: "Clean, disciplined, minimal.", icon: <Focus className="w-6 h-6" /> },
+  { value: "grounded", label: "Grounded", tagline: "Calm, steady, spacious.", icon: <Leaf className="w-6 h-6" /> },
+  { value: "energized", label: "Energized", tagline: "Forward-moving, confident, sharp.", icon: <Zap className="w-6 h-6" /> },
+];
+
+/** Returns vibe-adapted copy. Differences are subtle — language density and pacing only. */
+function vibeCopy(vibe: Vibe | null) {
+  const v = vibe ?? "grounded";
+  return {
+    // Transition speed
+    transitionMs: v === "focused" ? 500 : v === "energized" ? 550 : 700,
+    // Step 1 — Intention
+    intentionHeadline: v === "focused" ? "What's your focus?" : v === "energized" ? "What are you building toward?" : "What brings you here?",
+    intentionSubtext: v === "focused" ? "Select one." : v === "energized" ? "Pick the direction that pulls you forward." : "There's no wrong answer. This helps us shape your experience.",
+    // Step 2 — Experience
+    experienceHeadline: v === "focused" ? "Your experience level" : v === "energized" ? "Where are you in your practice?" : "How familiar are you with affirmations?",
+    timingQuestion: v === "focused" ? "Preferred time?" : v === "energized" ? "When do you show up?" : "When do you imagine practicing?",
+    // Step 3 — Theme
+    themeHeadline: v === "focused" ? "Set your visual tone" : v === "energized" ? "Choose your energy" : "Choose the energy of your practice",
+    themeSubtext: v === "focused" ? "This applies across the app." : v === "energized" ? "Pick what matches the version of you that's emerging." : "Pick the tone that feels aligned with who you're becoming.",
+    themeCta: v === "focused" ? "Apply" : v === "energized" ? "Lock It In" : "This Feels Right",
+    // Step 4 — Calibration
+    calibrationHeadline: v === "focused" ? "Calibrate your pace" : v === "energized" ? "Set your speed" : "Let's match your natural rhythm",
+    calibrationSubtext: v === "focused" ? "Read aloud. We'll set your teleprompter speed." : v === "energized" ? "Read this passage — we'll sync to your tempo." : "Read this short passage aloud so your teleprompter moves at your pace.",
+    calibrationStartCta: v === "focused" ? "Begin" : v === "energized" ? "Start" : "Start Calibration",
+    calibrationDoneLine: v === "focused" ? "Pace locked." : v === "energized" ? "Speed captured." : "Your practice now moves at your speed.",
+    calibrationDoneCta: v === "focused" ? "Done" : v === "energized" ? "Let's Go" : "Perfect",
+    // Step 5 — Activation
+    activationHeadline: v === "focused" ? "Ready." : v === "energized" ? "Time to begin." : "You're ready.",
+    activationSubtext: v === "focused" ? "Record your first affirmation." : v === "energized" ? "Hit record. Speak your first affirmation into existence." : "Press record and speak your first affirmation into being.",
+    activationCta: v === "focused" ? "Record Now" : v === "energized" ? "Let's Record" : "Record My First Affirmation",
+    // Section spacing
+    sectionGap: v === "focused" ? "space-y-8" : v === "grounded" ? "space-y-10" : "space-y-9",
+    pillPadding: v === "focused" ? "p-4" : v === "grounded" ? "p-5" : "p-4",
+  };
+}
 
 /* ─── Option data ─── */
 const INTENTION_OPTIONS = [
@@ -50,7 +92,7 @@ const TIME_OPTIONS = [
 ];
 
 /* ─── Animated step wrapper ─── */
-function StepShell({ stepKey, children }: { stepKey: string; children: React.ReactNode }) {
+function StepShell({ stepKey, transitionMs, children }: { stepKey: string; transitionMs: number; children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -62,10 +104,10 @@ function StepShell({ stepKey, children }: { stepKey: string; children: React.Rea
     <div
       key={stepKey}
       className={cn(
-        "flex-1 flex flex-col items-center justify-center px-8 text-center max-w-md mx-auto w-full",
-        "transition-all duration-700 ease-out",
+        "flex-1 flex flex-col items-center justify-center px-8 text-center max-w-md mx-auto w-full ease-out",
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       )}
+      style={{ transition: `all ${transitionMs}ms ease-out` }}
     >
       {children}
     </div>
@@ -88,7 +130,7 @@ function OptionPill({
     <button
       onClick={onClick}
       className={cn(
-        "w-full text-left rounded-2xl p-5 transition-all duration-300",
+        "w-full text-left rounded-2xl transition-all duration-300",
         selected
           ? "bg-primary/8 shadow-[0_2px_12px_hsl(var(--primary)/0.12)]"
           : "bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-md)]",
@@ -100,12 +142,15 @@ function OptionPill({
   );
 }
 
-/* ─── Main component ─── */
+/* ═══════════════════════════════════════════
+   Main component
+   ═══════════════════════════════════════════ */
 const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
 
   /* Answers */
+  const [vibe, setVibe] = useState<Vibe | null>(null);
   const [intention, setIntention] = useState<string | null>(null);
   const [experience, setExperience] = useState<string | null>(null);
   const [usageTime, setUsageTime] = useState<string | null>(null);
@@ -120,6 +165,8 @@ const Onboarding = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(0);
 
+  const copy = vibeCopy(vibe);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -127,7 +174,7 @@ const Onboarding = () => {
     };
   }, []);
 
-  /* ─── Theme application ─── */
+  /* ─── Theme ─── */
   const applyTheme = (id: ThemeId) => {
     setSelectedTheme(id);
     const preset = themePresets.find(t => t.id === id);
@@ -150,10 +197,7 @@ const Onboarding = () => {
 
       recorder.onstop = () => {
         const duration = (Date.now() - startTimeRef.current) / 1000;
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(t => t.stop());
-          streamRef.current = null;
-        }
+        if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
         if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
 
         const wpm = Math.round((SCRIPT_WORD_COUNT / duration) * 60);
@@ -174,9 +218,7 @@ const Onboarding = () => {
       timerRef.current = setInterval(() => {
         setCalElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 500);
-    } catch {
-      // Mic denied — skip gracefully
-    }
+    } catch { /* mic denied — skip */ }
   }, []);
 
   const stopCalibration = useCallback(() => {
@@ -187,22 +229,15 @@ const Onboarding = () => {
 
   /* ─── Navigation ─── */
   const goNext = () => {
-    // Save on step transitions
-    if (step === 0 && intention) {
-      localStorage.setItem("intention_focus", intention);
-    }
-    if (step === 1) {
+    if (step === 0 && vibe) localStorage.setItem("selected_vibe", vibe);
+    if (step === 1 && intention) localStorage.setItem("intention_focus", intention);
+    if (step === 2) {
       if (experience) localStorage.setItem("experience_level", experience);
       if (usageTime) localStorage.setItem("usage_time", usageTime);
     }
-    if (step === 2) {
-      localStorage.setItem("loop-color-theme", selectedTheme);
-    }
+    if (step === 3) localStorage.setItem("loop-color-theme", selectedTheme);
 
-    if (step === TOTAL_STEPS - 1) {
-      finish();
-      return;
-    }
+    if (step === TOTAL_STEPS - 1) { finish(); return; }
     setStep(s => s + 1);
   };
 
@@ -213,54 +248,92 @@ const Onboarding = () => {
 
   const formatTimer = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  /* ─── Can proceed? ─── */
   const canProceed = (() => {
-    if (step === 0) return !!intention;
-    if (step === 1) return !!experience; // usage_time is optional
+    if (step === 0) return !!vibe;
+    if (step === 1) return !!intention;
+    if (step === 2) return !!experience;
     return true;
   })();
 
   return (
     <div className="bg-background min-h-screen flex flex-col selection:bg-primary/20">
-      {/* Progress dots — minimal */}
+      {/* Progress dots */}
       <div className="flex justify-center gap-2.5 pt-10 pb-2">
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div
             key={i}
             className={cn(
               "rounded-full transition-all duration-500",
-              i === step
-                ? "w-6 h-1.5 bg-primary/70"
-                : i < step
-                  ? "w-1.5 h-1.5 bg-primary/30"
+              i === step ? "w-6 h-1.5 bg-primary/70"
+                : i < step ? "w-1.5 h-1.5 bg-primary/30"
                   : "w-1.5 h-1.5 bg-muted-foreground/15"
             )}
           />
         ))}
       </div>
 
-      {/* ═══════════════════════════════════════════
-          STEP 0 — Intention (What brings you here?)
-          ═══════════════════════════════════════════ */}
+      {/* ═══ STEP 0 — Vibe Selection ═══ */}
       {step === 0 && (
-        <StepShell stepKey="intention">
+        <StepShell stepKey="vibe" transitionMs={700}>
           <div className="w-full space-y-10">
             <div>
               <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
-                What brings you here?
+                How should this space feel?
               </h1>
               <p className="text-base text-muted-foreground/70 leading-relaxed">
-                There's no wrong answer. This helps us shape your experience.
+                Choose the tone that supports how you work.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {VIBE_OPTIONS.map((opt) => {
+                const isActive = vibe === opt.value;
+                return (
+                  <OptionPill key={opt.value} selected={isActive} onClick={() => setVibe(opt.value)} className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className={cn(
+                        "shrink-0 w-11 h-11 rounded-xl flex items-center justify-center transition-colors duration-300",
+                        isActive ? "bg-primary/12 text-primary" : "bg-muted/50 text-muted-foreground/50"
+                      )}>
+                        {opt.icon}
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className={cn(
+                            "text-[16px] transition-colors duration-300",
+                            isActive ? "text-foreground font-medium" : "text-foreground/70"
+                          )}>
+                            {opt.label}
+                          </p>
+                          {isActive && <Check className="w-4 h-4 text-primary" />}
+                        </div>
+                        <p className="text-[13px] text-muted-foreground/50 mt-0.5">{opt.tagline}</p>
+                      </div>
+                    </div>
+                  </OptionPill>
+                );
+              })}
+            </div>
+          </div>
+        </StepShell>
+      )}
+
+      {/* ═══ STEP 1 — Intention ═══ */}
+      {step === 1 && (
+        <StepShell stepKey="intention" transitionMs={copy.transitionMs}>
+          <div className={cn("w-full", copy.sectionGap)}>
+            <div>
+              <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
+                {copy.intentionHeadline}
+              </h1>
+              <p className="text-base text-muted-foreground/70 leading-relaxed">
+                {copy.intentionSubtext}
               </p>
             </div>
 
             <div className="space-y-3">
               {INTENTION_OPTIONS.map((opt) => (
-                <OptionPill
-                  key={opt.value}
-                  selected={intention === opt.value}
-                  onClick={() => setIntention(opt.value)}
-                >
+                <OptionPill key={opt.value} selected={intention === opt.value} onClick={() => setIntention(opt.value)} className={copy.pillPadding}>
                   <div className="flex items-center gap-4">
                     <span className="text-2xl">{opt.emoji}</span>
                     <span className={cn(
@@ -269,9 +342,7 @@ const Onboarding = () => {
                     )}>
                       {opt.label}
                     </span>
-                    {intention === opt.value && (
-                      <Check className="w-4 h-4 text-primary ml-auto" />
-                    )}
+                    {intention === opt.value && <Check className="w-4 h-4 text-primary ml-auto" />}
                   </div>
                 </OptionPill>
               ))}
@@ -280,25 +351,19 @@ const Onboarding = () => {
         </StepShell>
       )}
 
-      {/* ═══════════════════════════════════════════
-          STEP 1 — Experience + Timing
-          ═══════════════════════════════════════════ */}
-      {step === 1 && (
-        <StepShell stepKey="experience">
-          <div className="w-full space-y-10">
+      {/* ═══ STEP 2 — Experience + Timing ═══ */}
+      {step === 2 && (
+        <StepShell stepKey="experience" transitionMs={copy.transitionMs}>
+          <div className={cn("w-full", copy.sectionGap)}>
             <div>
               <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
-                How familiar are you with affirmations?
+                {copy.experienceHeadline}
               </h1>
             </div>
 
             <div className="space-y-3">
               {EXPERIENCE_OPTIONS.map((opt) => (
-                <OptionPill
-                  key={opt.value}
-                  selected={experience === opt.value}
-                  onClick={() => setExperience(opt.value)}
-                >
+                <OptionPill key={opt.value} selected={experience === opt.value} onClick={() => setExperience(opt.value)} className={copy.pillPadding}>
                   <div className="flex items-center justify-between">
                     <div className="text-left">
                       <p className={cn(
@@ -309,20 +374,15 @@ const Onboarding = () => {
                       </p>
                       <p className="text-xs text-muted-foreground/50 mt-0.5">{opt.description}</p>
                     </div>
-                    {experience === opt.value && (
-                      <Check className="w-4 h-4 text-primary shrink-0 ml-3" />
-                    )}
+                    {experience === opt.value && <Check className="w-4 h-4 text-primary shrink-0 ml-3" />}
                   </div>
                 </OptionPill>
               ))}
             </div>
 
-            {/* Optional: When do you practice? */}
             {experience && (
               <div className="space-y-4 pt-2">
-                <p className="text-sm text-muted-foreground/60">
-                  When do you imagine practicing?
-                </p>
+                <p className="text-sm text-muted-foreground/60">{copy.timingQuestion}</p>
                 <div className="grid grid-cols-2 gap-2.5">
                   {TIME_OPTIONS.map((opt) => (
                     <button
@@ -351,18 +411,16 @@ const Onboarding = () => {
         </StepShell>
       )}
 
-      {/* ═══════════════════════════════════════════
-          STEP 2 — Choose Your Atmosphere
-          ═══════════════════════════════════════════ */}
-      {step === 2 && (
-        <StepShell stepKey="theme">
+      {/* ═══ STEP 3 — Theme ═══ */}
+      {step === 3 && (
+        <StepShell stepKey="theme" transitionMs={copy.transitionMs}>
           <div className="w-full space-y-8">
             <div>
               <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
-                Choose the energy of your practice
+                {copy.themeHeadline}
               </h1>
               <p className="text-base text-muted-foreground/70 leading-relaxed">
-                Pick the tone that feels aligned with who you're becoming.
+                {copy.themeSubtext}
               </p>
             </div>
 
@@ -374,24 +432,25 @@ const Onboarding = () => {
                     key={preset.id}
                     onClick={() => applyTheme(preset.id)}
                     className={cn(
-                      "relative flex flex-col items-center gap-3.5 rounded-2xl p-5 transition-all duration-400",
+                      "relative flex flex-col items-center gap-3.5 rounded-2xl p-5 transition-all",
                       isActive
                         ? "scale-[1.02] bg-card shadow-[0_4px_20px_hsl(var(--primary)/0.15)]"
                         : "bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-md)]"
                     )}
+                    style={{ transitionDuration: `${copy.transitionMs}ms` }}
                   >
                     <div
                       className={cn(
-                        "w-12 h-12 rounded-full transition-all duration-400 flex items-center justify-center",
+                        "w-12 h-12 rounded-full flex items-center justify-center transition-all",
                         isActive && "shadow-[0_0_20px_hsl(var(--primary)/0.25)]"
                       )}
-                      style={{ backgroundColor: preset.preview }}
+                      style={{ backgroundColor: preset.preview, transitionDuration: `${copy.transitionMs}ms` }}
                     >
                       {isActive && <Check className="w-5 h-5 text-white" />}
                     </div>
                     <div
-                      className="w-full h-7 rounded-lg transition-opacity duration-300"
-                      style={{ backgroundColor: preset.preview, opacity: isActive ? 0.9 : 0.5 }}
+                      className="w-full h-7 rounded-lg transition-opacity"
+                      style={{ backgroundColor: preset.preview, opacity: isActive ? 0.9 : 0.5, transitionDuration: `${copy.transitionMs}ms` }}
                     />
                     <div>
                       <p className="text-sm font-medium">{preset.name}</p>
@@ -405,18 +464,16 @@ const Onboarding = () => {
         </StepShell>
       )}
 
-      {/* ═══════════════════════════════════════════
-          STEP 3 — Calibration
-          ═══════════════════════════════════════════ */}
-      {step === 3 && (
-        <StepShell stepKey="calibrate">
+      {/* ═══ STEP 4 — Calibration ═══ */}
+      {step === 4 && (
+        <StepShell stepKey="calibrate" transitionMs={copy.transitionMs}>
           <div className="w-full space-y-8">
             <div>
               <h1 className="text-[28px] font-semibold text-foreground leading-[1.25] mb-4 font-serif">
-                Let's match your natural rhythm
+                {copy.calibrationHeadline}
               </h1>
               <p className="text-base text-muted-foreground/70 leading-relaxed">
-                Read this short passage aloud so your teleprompter moves at your pace.
+                {copy.calibrationSubtext}
               </p>
             </div>
 
@@ -433,7 +490,7 @@ const Onboarding = () => {
                 size="lg"
               >
                 <Mic className="w-5 h-5" />
-                Start Calibration
+                {copy.calibrationStartCta}
               </Button>
             )}
 
@@ -448,9 +505,7 @@ const Onboarding = () => {
                     {formatTimer(calElapsed)}
                   </span>
                   {calElapsed < MIN_DURATION && (
-                    <p className="text-xs text-muted-foreground/40">
-                      {MIN_DURATION - calElapsed}s more
-                    </p>
+                    <p className="text-xs text-muted-foreground/40">{MIN_DURATION - calElapsed}s more</p>
                   )}
                 </div>
                 <Button
@@ -473,7 +528,7 @@ const Onboarding = () => {
                   <p className="text-sm text-primary/60">words per minute</p>
                 </div>
                 <p className="text-base text-muted-foreground/70 leading-relaxed">
-                  Your practice now moves at your speed.
+                  {copy.calibrationDoneLine}
                 </p>
               </div>
             )}
@@ -481,13 +536,10 @@ const Onboarding = () => {
         </StepShell>
       )}
 
-      {/* ═══════════════════════════════════════════
-          STEP 4 — Activation
-          ═══════════════════════════════════════════ */}
-      {step === 4 && (
-        <StepShell stepKey="activate">
+      {/* ═══ STEP 5 — Activation ═══ */}
+      {step === 5 && (
+        <StepShell stepKey="activate" transitionMs={copy.transitionMs}>
           <div className="space-y-12">
-            {/* Subtle radial glow */}
             <div className="relative w-24 h-24 mx-auto">
               <div className="absolute inset-0 rounded-full bg-primary/8 animate-[pulse_4s_ease-in-out_infinite]" />
               <div className="absolute inset-3 rounded-full bg-primary/10 animate-[pulse_4s_ease-in-out_infinite_1s]" />
@@ -498,10 +550,10 @@ const Onboarding = () => {
 
             <div>
               <h1 className="text-[32px] font-semibold text-foreground leading-[1.2] mb-5 font-serif">
-                You're ready.
+                {copy.activationHeadline}
               </h1>
               <p className="text-lg text-muted-foreground/60 leading-relaxed max-w-[280px] mx-auto">
-                Press record and speak your first affirmation into being.
+                {copy.activationSubtext}
               </p>
             </div>
           </div>
@@ -510,7 +562,6 @@ const Onboarding = () => {
 
       {/* ─── Bottom CTA ─── */}
       <div className="w-full max-w-md mx-auto px-8 pb-16 space-y-3 shrink-0">
-        {/* Primary CTA per step */}
         {step === 0 && (
           <Button
             onClick={goNext}
@@ -542,14 +593,28 @@ const Onboarding = () => {
         {step === 2 && (
           <Button
             onClick={goNext}
+            disabled={!canProceed}
             size="lg"
-            className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
+            className={cn(
+              "w-full h-14 text-base font-medium rounded-2xl transition-all duration-500",
+              canProceed ? "shadow-[var(--shadow-medium)] opacity-100" : "opacity-40"
+            )}
           >
-            This Feels Right
+            Continue
           </Button>
         )}
 
         {step === 3 && (
+          <Button
+            onClick={goNext}
+            size="lg"
+            className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
+          >
+            {copy.themeCta}
+          </Button>
+        )}
+
+        {step === 4 && (
           <>
             {calPhase === "done" && (
               <Button
@@ -557,7 +622,7 @@ const Onboarding = () => {
                 size="lg"
                 className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
               >
-                Perfect
+                {copy.calibrationDoneCta}
               </Button>
             )}
             {calPhase === "idle" && (
@@ -571,13 +636,13 @@ const Onboarding = () => {
           </>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <Button
             onClick={finish}
             size="lg"
             className="w-full h-14 text-base font-medium rounded-2xl shadow-[var(--shadow-medium)]"
           >
-            Record My First Affirmation
+            {copy.activationCta}
           </Button>
         )}
       </div>
