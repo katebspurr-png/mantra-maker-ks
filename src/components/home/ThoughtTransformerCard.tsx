@@ -8,7 +8,7 @@ export const ThoughtTransformerCard = () => {
 
   return (
     <div className="flex items-start gap-4">
-      <div className="p-2.5 rounded-xl bg-muted/60">
+      <div className="p-2.5 rounded-xl bg-primary/8">
         <Sparkles className="w-5 h-5 text-primary" />
       </div>
       <div className="flex-1 space-y-2">

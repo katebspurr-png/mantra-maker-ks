@@ -29,7 +29,7 @@ export function BottomNavigation() {
                 onClick={() => navigate(item.path)}
                 className="flex flex-col items-center justify-center -mt-5"
               >
-                <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-[var(--shadow-soft)]">
+                <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-[var(--shadow-float)]">
                   <Icon className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-[10px] mt-1.5 text-muted-foreground font-medium">{item.label}</span>

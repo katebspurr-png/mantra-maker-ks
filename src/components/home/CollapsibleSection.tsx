@@ -19,6 +19,10 @@ export function CollapsibleSection({
   children,
   className,
 }: CollapsibleSectionProps) {
+  // Sections that get a soft surface treatment
+  const surfaceSections = new Set(["try-today", "daily-progress", "recent-recordings", "favorites", "playlists"]);
+  const hasSurface = surfaceSections.has(id);
+
   return (
     <div className={className}>
       <button
@@ -47,7 +51,12 @@ export function CollapsibleSection({
             : "grid-rows-[1fr] opacity-100"
         )}
       >
-        <div className="overflow-hidden">{children}</div>
+        <div className={cn(
+          "overflow-hidden",
+          hasSurface && !collapsed && "bg-surface rounded-2xl p-5 shadow-soft"
+        )}>
+          {children}
+        </div>
       </div>
     </div>
   );

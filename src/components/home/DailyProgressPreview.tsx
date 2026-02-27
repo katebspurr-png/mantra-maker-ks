@@ -93,19 +93,19 @@ export const DailyProgressPreview = () => {
         </span>
       </div>
       
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center px-1">
         {weekProgress.map((day, index) => {
           const dayOfWeek = new Date(day.date).getDay();
           return (
-            <div key={day.date} className="flex flex-col items-center gap-2">
+            <div key={day.date} className="flex flex-col items-center gap-2.5">
               <span className="text-[11px] text-muted-foreground">
                 {dayLabels[dayOfWeek]}
               </span>
               <div 
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors text-[12px] ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all text-[12px] ${
                   day.completed 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'border border-border text-muted-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-soft' 
+                    : 'ring-1 ring-border text-muted-foreground/50'
                 }`}
               >
                 {day.completed ? '✓' : ''}

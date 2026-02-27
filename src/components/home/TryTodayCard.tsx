@@ -38,7 +38,7 @@ export const TryTodayCard = () => {
 
   return (
     <div className="space-y-5">
-      <p className="text-[20px] leading-[1.7] text-foreground/90">
+      <p className="text-[22px] leading-[1.8] text-foreground/90 font-serif">
         "{affirmation.text}"
       </p>
       
