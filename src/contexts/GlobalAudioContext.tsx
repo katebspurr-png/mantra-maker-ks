@@ -282,7 +282,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
     const step = (now: number) => {
       const elapsed = now - start;
       const t = Math.min(elapsed / durationMs, 1);
-      audio.volume = targetVol * t;
+      audio.volume = Math.max(0, Math.min(1, targetVol * t));
       if (t < 1) {
         zenFadeRef.current = requestAnimationFrame(step);
       } else {
