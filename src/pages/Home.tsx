@@ -118,10 +118,10 @@ const Home = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
         <div className="max-w-lg mx-auto px-5 pt-6 pb-4">
-          <h1 className="text-[30px] font-semibold tracking-tight leading-tight">
+          <h1 className="text-[32px] font-semibold tracking-tight leading-tight">
             Hi, {profile?.first_name || "there"}
           </h1>
-          <p className="text-[15px] text-muted-foreground mt-1">
+          <p className="text-[15px] text-muted-foreground mt-1.5">
             Your daily affirmation practice
           </p>
         </div>
@@ -133,7 +133,7 @@ const Home = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-lg mx-auto px-5 py-6 space-y-7">
+      <div className="max-w-lg mx-auto px-5 py-6 space-y-9">
         {/* 1. Thought Transformer */}
         <CollapsibleSection id="thought-transformer" title="Thought Transformer" collapsed={isCollapsed("thought-transformer")} onToggle={() => toggle("thought-transformer")}>
           <ThoughtTransformerCard />
@@ -146,11 +146,12 @@ const Home = () => {
 
         {/* 3. Record New Affirmation */}
         <Button 
+          variant="ghost"
           size="lg"
-          className="w-full h-[52px] text-[17px] font-semibold rounded-2xl"
+          className="w-full h-[50px] text-[15px] font-medium text-muted-foreground hover:text-foreground"
           onClick={() => navigate("/new-recording")}
         >
-          <Mic className="w-5 h-5 mr-2" />
+          <Mic className="w-4 h-4 mr-2" />
           Record New Affirmation
         </Button>
 

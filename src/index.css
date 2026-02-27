@@ -11,43 +11,43 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Premium neutral palette */
-    --background: 240 5% 96.5%;
-    --foreground: 240 6% 10%;
+    --background: 240 3% 97%;
+    --foreground: 240 6% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 6% 10%;
+    --card-foreground: 240 6% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 10%;
+    --popover-foreground: 240 6% 12%;
 
     /* Primary – user theme overrides this */
     --primary: 266 4% 20.8%;
     --primary-foreground: 0 0% 100%;
 
     /* Soft neutral secondary */
-    --secondary: 240 4% 95%;
-    --secondary-foreground: 240 6% 25%;
+    --secondary: 240 3% 95.5%;
+    --secondary-foreground: 240 5% 30%;
 
-    --muted: 240 4% 95%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 240 3% 95.5%;
+    --muted-foreground: 240 3% 50%;
 
-    --accent: 240 4% 95%;
-    --accent-foreground: 240 6% 25%;
+    --accent: 240 3% 95.5%;
+    --accent-foreground: 240 5% 30%;
 
-    --destructive: 0 60% 50%;
+    --destructive: 0 55% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 4% 91%;
-    --input: 240 4% 91%;
-    --ring: 240 4% 65%;
+    --border: 240 3% 92%;
+    --input: 240 3% 92%;
+    --ring: 240 3% 68%;
 
     --radius: 1rem;
 
     /* Animation tokens */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.04);
-    --shadow-medium: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
-    --shadow-float: 0 4px 14px 0 hsl(0 0% 0% / 0.08);
+    --shadow-soft: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --shadow-medium: 0 1px 4px 0 hsl(0 0% 0% / 0.04);
+    --shadow-float: 0 2px 8px 0 hsl(0 0% 0% / 0.06);
 
     --chart-1: 41 22.2% 64.6%;
     --chart-2: 185 11.8% 60%;
@@ -65,14 +65,14 @@ All colors MUST be HSL.
     --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
-    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.04);
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
-    --shadow: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
-    --shadow-md: 0 2px 6px 0 hsl(0 0% 0% / 0.06);
-    --shadow-lg: 0 4px 12px 0 hsl(0 0% 0% / 0.07);
-    --shadow-xl: 0 6px 16px 0 hsl(0 0% 0% / 0.08);
-    --shadow-2xl: 0 8px 24px 0 hsl(0 0% 0% / 0.1);
+    --shadow-2xs: 0 1px 1px 0 hsl(0 0% 0% / 0.02);
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --shadow: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --shadow-md: 0 1px 4px 0 hsl(0 0% 0% / 0.04);
+    --shadow-lg: 0 2px 8px 0 hsl(0 0% 0% / 0.05);
+    --shadow-xl: 0 4px 12px 0 hsl(0 0% 0% / 0.06);
+    --shadow-2xl: 0 6px 16px 0 hsl(0 0% 0% / 0.07);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }

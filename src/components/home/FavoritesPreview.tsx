@@ -46,19 +46,12 @@ export const FavoritesPreview = ({
   }
 
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Heart className="w-5 h-5 text-red-500" fill="currentColor" />
-            <span className="font-semibold text-[17px]">Favorites</span>
-          </div>
-        </div>
+    <div>
 
         {/* Favorite Recordings */}
         {favoriteRecordings.length > 0 && (
           <div className="space-y-2 mb-3">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Recordings</p>
+            <p className="text-[12px] text-muted-foreground tracking-wide mb-2">Recordings</p>
             {favoriteRecordings.slice(0, 3).map((recording) => {
               const playing = isRecordingPlaying(recording.id);
               return (
@@ -89,7 +82,7 @@ export const FavoritesPreview = ({
         {/* Favorite Affirmations */}
         {favoriteAffirmations.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Affirmations</p>
+            <p className="text-[12px] text-muted-foreground tracking-wide mb-2">Affirmations</p>
             {favoriteAffirmations.slice(0, 2).map((affirmation) => {
               const categoryLabel = AFFIRMATION_CATEGORIES.find(
                 (c) => c.value === affirmation.category
@@ -127,7 +120,6 @@ export const FavoritesPreview = ({
           View All Favorites
           <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
-      </CardContent>
-    </Card>
+    </div>
   );
 };

@@ -26,9 +26,9 @@ export function CollapsibleSection({
         aria-expanded={!collapsed}
         aria-controls={`section-${id}`}
         aria-label={`${collapsed ? "Expand" : "Collapse"} ${title} section`}
-        className="w-full flex items-center justify-between py-1.5 mb-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+        className="w-full flex items-center justify-between py-2 mb-4 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
       >
-        <h2 className="font-medium text-[13px] text-muted-foreground uppercase tracking-wider">
+        <h2 className="font-medium text-[20px] text-foreground tracking-tight">
           {title}
         </h2>
         <ChevronDown
