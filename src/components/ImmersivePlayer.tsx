@@ -54,7 +54,7 @@ export function ImmersivePlayer() {
   const [showControls, setShowControls] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [showAmbientSheet, setShowAmbientSheet] = useState(false);
-  const [textRevealed, setTextRevealed] = useState(false);
+  const [openCount, setOpenCount] = useState(0);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>();
   const touchStartY = useRef<number | null>(null);
 
@@ -62,16 +62,12 @@ export function ImmersivePlayer() {
   useEffect(() => {
     if (isOpen) {
       setMounted(true);
-      setTextRevealed(false);
+      setOpenCount(c => c + 1);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => setVisible(true));
       });
-      // Delay text reveal so it settles in after the background appears
-      const textTimer = setTimeout(() => setTextRevealed(true), 300);
-      return () => clearTimeout(textTimer);
     } else {
       setVisible(false);
-      setTextRevealed(false);
       setShowAmbientSheet(false);
       const t = setTimeout(() => setMounted(false), 400);
       return () => clearTimeout(t);
@@ -243,13 +239,14 @@ export function ImmersivePlayer() {
       {/* Affirmation text — centered */}
       <div className="flex-1 flex items-center justify-center px-8">
         <p
+          key={openCount}
           className="text-center font-serif leading-[1.8] max-w-md"
           style={{
             fontSize: "clamp(24px, 6vw, 32px)",
             color: "hsl(0 0% 95%)",
             letterSpacing: "-0.01em",
-            opacity: textRevealed ? 1 : 0,
-            transition: "opacity 1s cubic-bezier(0.4, 0, 0.2, 1)",
+            opacity: 0,
+            animation: "immersive-text-fadein 900ms ease-out 300ms forwards",
           }}
         >
           {recording?.text
