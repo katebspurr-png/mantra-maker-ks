@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Flame, Calendar } from "lucide-react";
 
 interface DayProgress {
   date: string;
@@ -11,7 +7,6 @@ interface DayProgress {
 }
 
 export const DailyProgressPreview = () => {
-  const navigate = useNavigate();
   const [streak, setStreak] = useState(0);
   const [weekProgress, setWeekProgress] = useState<DayProgress[]>([]);
 
@@ -115,15 +110,6 @@ export const DailyProgressPreview = () => {
         })}
       </div>
       
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="w-full text-muted-foreground"
-        onClick={() => navigate("/progress")}
-      >
-        <Calendar className="w-4 h-4 mr-2" />
-        View Progress
-      </Button>
     </div>
   );
 };

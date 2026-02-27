@@ -20,7 +20,7 @@ export function CollapsibleSection({
   className,
 }: CollapsibleSectionProps) {
   // Sections that get a soft surface treatment
-  const surfaceSections = new Set(["try-today", "daily-progress", "recent-recordings", "favorites", "playlists"]);
+  const surfaceSections = new Set(["try-today", "recent-recordings", "favorites", "playlists", "your-rhythm"]);
   const hasSurface = surfaceSections.has(id);
 
   return (
