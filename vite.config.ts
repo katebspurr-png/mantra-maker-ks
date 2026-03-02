@@ -41,6 +41,8 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         // Navigation fallback should NOT apply to API or storage requests
         navigateFallback: "/index.html",
