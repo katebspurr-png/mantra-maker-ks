@@ -18,7 +18,7 @@ export function InstallPromptBanner() {
           <Download className="w-5 h-5 text-primary" />
         </div>
         <div className="min-w-0">
-          <p className="font-medium text-foreground text-sm">Install Loop Voice Mantra</p>
+          <p className="font-medium text-foreground text-sm">Install Resonance</p>
           <p className="text-xs text-muted-foreground">Add to home screen for quick access</p>
         </div>
       </div>

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>Loop Voice Mantra</string>
+        <string>Resonance</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,6 +48,6 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Loop Voice Mantra needs microphone access to record your personal affirmations and mantras.</string>
+	<string>Resonance needs microphone access to record your personal affirmations and mantras.</string>
 </dict>
 </plist>

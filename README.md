@@ -94,7 +94,7 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 3. **Mobile Testing (Android)**
    - Open the app in Chrome on Android
    - Look for the "Add to Home Screen" banner or use Chrome menu → "Install app"
-   - The app should appear on your home screen with the Loop Voice Mantra icon
+   - The app should appear on your home screen with the Resonance icon
    - Launch it and verify it opens in standalone mode (no browser URL bar)
 
 4. **Mobile Testing (iOS)**

@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "icons/*.png"],
       manifest: {
-        name: "Loop Voice Mantra",
-        short_name: "Loop Mantra",
+        name: "Resonance",
+        short_name: "Resonance",
         description: "Record affirmations in your own voice and play them on a loop.",
         start_url: "/",
         display: "standalone",
