@@ -360,8 +360,8 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   const repetitionCountRef = useRef(0);
   const playlistRepetitionRef = useRef(0);
   const durationStartTimeRef = useRef<number | null>(null);
-  const durationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const durationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const delayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playOrderRef = useRef<number[]>([]);
   
   // Listening tracking refs
