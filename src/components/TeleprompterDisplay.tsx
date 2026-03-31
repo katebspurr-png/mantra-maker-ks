@@ -37,7 +37,7 @@ export const TeleprompterDisplay = forwardRef<TeleprompterDisplayRef, Teleprompt
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [isHighlightingActive, setIsHighlightingActive] = useState(false);
     
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const currentTextSize = TEXT_SIZES[textSizeIndex] || TEXT_SIZES[1];
