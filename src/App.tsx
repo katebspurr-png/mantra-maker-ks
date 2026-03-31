@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { GlobalAudioProvider } from "@/contexts/GlobalAudioContext";
 import { ImmersivePlayerProvider } from "@/contexts/ImmersivePlayerContext";
 import { DemoProvider } from "@/contexts/DemoContext";
@@ -48,12 +49,43 @@ function ThemeInitializer() {
 
 const queryClient = new QueryClient();
 
+/**
+ * Catches PASSWORD_RECOVERY auth events globally and redirects to /reset-password.
+ * This prevents the recovery link from acting like a magic sign-in link.
+ */
+function RecoveryRedirect() {
+  useEffect(() => {
+    // Check URL hash on mount – Supabase recovery links contain type=recovery
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      // Ensure we're on the reset-password page
+      if (!window.location.pathname.includes("/reset-password")) {
+        window.location.replace("/reset-password" + hash);
+        return;
+      }
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        if (!window.location.pathname.includes("/reset-password")) {
+          window.location.replace("/reset-password");
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <GlobalAudioProvider>
         <ImmersivePlayerProvider>
         <DemoProvider>
+          <RecoveryRedirect />
           <SessionManager />
           <ThemeInitializer />
           <Toaster />
