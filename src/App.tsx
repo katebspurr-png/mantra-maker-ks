@@ -48,6 +48,36 @@ function ThemeInitializer() {
 
 const queryClient = new QueryClient();
 
+/**
+ * Catches PASSWORD_RECOVERY auth events globally and redirects to /reset-password.
+ * This prevents the recovery link from acting like a magic sign-in link.
+ */
+function RecoveryRedirect() {
+  useEffect(() => {
+    // Check URL hash on mount – Supabase recovery links contain type=recovery
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      // Ensure we're on the reset-password page
+      if (!window.location.pathname.includes("/reset-password")) {
+        window.location.replace("/reset-password" + hash);
+        return;
+      }
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        if (!window.location.pathname.includes("/reset-password")) {
+          window.location.replace("/reset-password");
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
