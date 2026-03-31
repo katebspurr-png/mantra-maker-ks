@@ -85,6 +85,7 @@ const App = () => (
       <GlobalAudioProvider>
         <ImmersivePlayerProvider>
         <DemoProvider>
+          <RecoveryRedirect />
           <SessionManager />
           <ThemeInitializer />
           <Toaster />
