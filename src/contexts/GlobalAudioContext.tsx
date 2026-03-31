@@ -367,7 +367,7 @@ export function GlobalAudioProvider({ children }: { children: React.ReactNode })
   // Listening tracking refs
   const listeningStartTimeRef = useRef<Date | null>(null);
   const accumulatedSecondsRef = useRef(0);
-  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentRecordingIdRef = useRef<string | null>(null);
   const currentPlaylistIdRef = useRef<string | null>(null);
   

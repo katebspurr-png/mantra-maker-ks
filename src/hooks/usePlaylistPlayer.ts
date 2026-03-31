@@ -52,7 +52,7 @@ export function usePlaylistPlayer({
   // This is important for PWA compatibility - reusing the same element
   // that was "unlocked" by the initial user gesture
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const delayTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const delayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playOrderRef = useRef<number[]>([]);
   const currentIndexRef = useRef(0);
 

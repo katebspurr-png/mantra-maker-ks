@@ -162,7 +162,7 @@ const Onboarding = () => {
   const [calWpm, setCalWpm] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = useRef(0);
 
   const copy = vibeCopy(vibe);

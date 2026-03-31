@@ -70,7 +70,7 @@ export function Teleprompter({
   const [showControls, setShowControls] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentTextSize = TEXT_SIZES[textSizeIndex];
