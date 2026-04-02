@@ -86,9 +86,18 @@ export const ToneAnalysis = ({ recordingId, audioUrl, affirmationText }: ToneAna
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // audioUrl is a storage path — generate a signed URL for the edge function
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from("recordings")
+        .createSignedUrl(audioUrl, 300); // 5 min expiry
+
+      if (signedUrlError || !signedUrlData?.signedUrl) {
+        throw new Error("Could not generate audio URL for analysis");
+      }
+
       const { data, error } = await supabase.functions.invoke("analyze-tone", {
         body: {
-          audioUrl,
+          audioUrl: signedUrlData.signedUrl,
           affirmationText,
         },
       });
