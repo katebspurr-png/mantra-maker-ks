@@ -1,13 +1,36 @@
 import UIKit
 import Capacitor
+import SwiftUI
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
+    
+    // Set this to true to use the new SwiftUI "Breath" design
+    // Set to false to use the original Capacitor web view
+    let useSwiftUIVersion = true
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        
+        if useSwiftUIVersion {
+            // Launch SwiftUI version
+            let appState = AppState()
+            let contentView = Group {
+                if appState.hasCompletedOnboarding {
+                    MainTabView()
+                        .environmentObject(appState)
+                } else {
+                    OnboardingFlow()
+                        .environmentObject(appState)
+                }
+            }
+            
+            window = UIWindow(frame: UIScreen.main.bounds)
+            window?.rootViewController = UIHostingController(rootView: contentView.environmentObject(appState))
+            window?.makeKeyAndVisible()
+        }
+        
         return true
     }
 

@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resonance — Fresh Start Concepts</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Plus Jakarta Sans', sans-serif; background: #1a1816; }
+@keyframes breathe { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.07);opacity:.8} }
+@keyframes expandPulse { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.5);opacity:0} }
+@keyframes waveBar { 0%,100%{transform:scaleY(.4)} 50%{transform:scaleY(1)} }
+@keyframes floatUp { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel">
+
+/* ══════════════════════════════════════════
+   CONCEPT A — "Sanctuary"
+   Deep warm dark. Candlelit. Meditative.
+   Type: Cormorant Garamond + Plus Jakarta Sans
+   ══════════════════════════════════════════ */
+const SanctuaryHome = () => {
+  const S = {
+    bg: "#181310",
+    bgCard: "#221C18",
+    bgCard2: "#2A231E",
+    text: "#F0EAE2",
+    textDim: "rgba(240,234,226,0.45)",
+    textMuted: "rgba(240,234,226,0.25)",
+    amber: "#D4956A",
+    amberSoft: "rgba(212,149,106,0.14)",
+    gold: "#C4A46A",
+    border: "rgba(240,234,226,0.08)",
+    serif: "'Cormorant Garamond', serif",
+    sans: "'Plus Jakarta Sans', sans-serif",
+  };
+
+  const recs = [
+    { t: "I am a highly sought-after professional whose expertise enriches any team I join.", tag:"confidence" },
+    { t: "Today I move forward with grace and intention.", tag:"clarity" },
+    { t: "I am worthy of the love I give to others.", tag:"self-love" },
+  ];
+
+  return (
+    <div style={{ background:S.bg, minHeight:"100%", fontFamily:S.sans, paddingBottom:84, position:"relative", overflow:"hidden" }}>
+      {/* Ambient orb — top left */}
+      <div style={{ position:"absolute", top:-40, left:-40, width:220, height:220, borderRadius:"50%",
+        background:`radial-gradient(circle, ${S.amber}18, transparent 65%)`, filter:"blur(40px)", pointerEvents:"none" }}></div>
+
+      {/* Header */}
+      <div style={{ padding:"28px 22px 0", display:"flex", alignItems:"flex-start", justifyContent:"space-between" }}>
+        <div>
+          <div style={{ fontSize:13, color:S.textMuted, letterSpacing:"0.1em", textTransform:"uppercase",
+            fontWeight:500, marginBottom:6 }}>Good evening</div>
+          <div style={{ fontSize:32, fontFamily:S.serif, fontWeight:400, color:S.text,
+            letterSpacing:"-0.01em", lineHeight:1.1 }}>Kate</div>
+        </div>
+        <button style={{ width:38, height:38, borderRadius:"50%", background:S.bgCard2,
+          border:`1px solid ${S.border}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+          <span style={{ fontSize:14, fontWeight:600, color:S.textDim, fontFamily:S.sans }}>K</span>
+        </button>
+      </div>
+
+      {/* Featured affirmation */}
+      <div style={{ margin:"28px 22px 0", padding:"28px 24px", borderRadius:20,
+        background:S.bgCard, border:`1px solid ${S.border}`,
+        position:"relative", overflow:"hidden" }}>
+        <div style={{ position:"absolute", bottom:-20, right:-20, width:120, height:120, borderRadius:"50%",
+          background:`radial-gradient(circle, ${S.amber}10, transparent 60%)`, filter:"blur(20px)" }}></div>
+        <div style={{ fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase",
+          color:S.amber, fontWeight:600, marginBottom:18, opacity:0.8 }}>Your practice</div>
+        <div style={{ fontSize:24, fontFamily:S.serif, fontStyle:"italic", color:S.text,
+          lineHeight:1.65, fontWeight:300, letterSpacing:"0.01em" }}>
+          "I am a highly sought-after professional whose expertise enriches any team I join."
+        </div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:22 }}>
+          <div style={{ fontSize:12, color:S.textDim }}>1:14 · Listened 12 times</div>
+          <button style={{ width:48, height:48, borderRadius:"50%", border:"none", cursor:"pointer",
+            background:`linear-gradient(135deg, ${S.amber}, ${S.gold})`,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            boxShadow:`0 4px 18px ${S.amber}40` }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Recordings */}
+      <div style={{ padding:"28px 22px 0" }}>
+        <div style={{ fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase",
+          color:S.textMuted, fontWeight:600, marginBottom:16 }}>Your words</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
+          {recs.map((r, i) => (
+            <div key={i} style={{ padding:"16px 0", borderBottom:`1px solid ${S.border}`,
+              display:"flex", alignItems:"center", gap:14 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:15, fontFamily:S.serif, color:S.text, lineHeight:1.5,
+                  overflow:"hidden", display:"-webkit-box", WebkitLineClamp:1, WebkitBoxOrient:"vertical",
+                  opacity: i === 0 ? 1 : 0.6 }}>{r.t}</div>
+                <div style={{ fontSize:11, color:S.textMuted, marginTop:4, letterSpacing:"0.04em" }}>{r.tag}</div>
+              </div>
+              <button style={{ width:32, height:32, borderRadius:"50%",
+                background: i===0 ? S.amberSoft : "rgba(255,255,255,0.04)",
+                border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill={i===0?S.amber:S.textMuted}>
+                  <path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z"/>
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Today suggestion */}
+      <div style={{ margin:"24px 22px 0", padding:"20px", borderRadius:16, border:`1px solid ${S.border}`,
+        background:`linear-gradient(135deg, ${S.bgCard} 60%, rgba(212,149,106,0.06))` }}>
+        <div style={{ fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase",
+          color:S.amber, fontWeight:600, marginBottom:12, opacity:0.8 }}>Try today</div>
+        <div style={{ fontSize:18, fontFamily:S.serif, fontStyle:"italic", color:"rgba(240,234,226,0.75)",
+          lineHeight:1.65, fontWeight:300 }}>
+          "I am worthy of success and I embrace challenges as opportunities."
+        </div>
+        <button style={{ marginTop:16, background:"none", border:`1px solid rgba(212,149,106,0.3)`,
+          borderRadius:20, padding:"8px 18px", fontSize:13, color:S.amber, fontFamily:S.sans,
+          fontWeight:500, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={S.amber} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+            <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          Record This
+        </button>
+      </div>
+
+      {/* Bottom nav */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80,
+        background:"rgba(18,14,11,0.9)", backdropFilter:"blur(20px)",
+        borderTop:`1px solid ${S.border}`,
+        display:"flex", alignItems:"center", justifyContent:"space-around", padding:"0 8px" }}>
+        {[
+          { id:"home", active:true, d:"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10" },
+          { id:"library", d:"M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" },
+          { id:"playlists", d:"M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01" },
+          { id:"profile", d:"M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 3a4 4 0 100 8 4 4 0 000-8z" },
+        ].map((item, i) => {
+          if (i === 2) return (
+            <div key="rec" style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+              <div style={{ width:48, height:48, borderRadius:14, marginTop:-14,
+                background:`linear-gradient(135deg, ${S.amber}, ${S.gold})`,
+                boxShadow:`0 4px 16px ${S.amber}40`,
+                display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:9, color:S.textMuted, marginTop:4, fontFamily:S.sans }}>Record</span>
+            </div>
+          );
+          return (
+            <button key={item.id} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              gap:4, background:"none", border:"none", cursor:"pointer" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke={item.active ? S.amber : S.textMuted} strokeWidth={item.active?"2":"1.5"}
+                strokeLinecap="round" strokeLinejoin="round">
+                {item.d.split(" M").map((d, di) => <path key={di} d={di===0?d:"M"+d}/>)}
+              </svg>
+              <span style={{ fontSize:9, color:item.active?S.amber:S.textMuted, fontFamily:S.sans,
+                fontWeight:item.active?600:400 }}>{item.id.charAt(0).toUpperCase()+item.id.slice(1)}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════
+   CONCEPT B — "Frequency"
+   Audio-native. Dark cool. Bold.
+   Type: EB Garamond + Space Grotesk
+   ══════════════════════════════════════════ */
+const FrequencyHome = () => {
+  const F = {
+    bg: "#0D0F14",
+    bgCard: "#13161D",
+    bgCard2: "#181C25",
+    text: "#E8EAF0",
+    textDim: "rgba(232,234,240,0.5)",
+    textMuted: "rgba(232,234,240,0.25)",
+    accent: "#7B6CF6",
+    accentSoft: "rgba(123,108,246,0.12)",
+    accentGlow: "rgba(123,108,246,0.35)",
+    teal: "#4ECDC4",
+    border: "rgba(232,234,240,0.07)",
+    serif: "'EB Garamond', serif",
+    sans: "'Space Grotesk', sans-serif",
+  };
+
+  const bars = [3,6,9,5,8,11,7,4,9,6,8,5,10,7,4,8,6,9,5,7,10,6,8,4,9,7,5,10,6,8];
+
+  return (
+    <div style={{ background:F.bg, minHeight:"100%", fontFamily:F.sans, paddingBottom:84, overflow:"hidden", position:"relative" }}>
+      {/* Background glow */}
+      <div style={{ position:"absolute", top:"30%", right:-60, width:240, height:240, borderRadius:"50%",
+        background:`radial-gradient(circle, ${F.accent}10, transparent 65%)`, filter:"blur(50px)", pointerEvents:"none" }}></div>
+
+      {/* Header */}
+      <div style={{ padding:"26px 22px 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div>
+          <div style={{ fontSize:24, fontWeight:600, color:F.text, letterSpacing:"-0.03em", lineHeight:1 }}>resonance</div>
+          <div style={{ fontSize:12, color:F.textMuted, marginTop:4, letterSpacing:"0.04em" }}>kate · may 3</div>
+        </div>
+        <button style={{ height:32, padding:"0 14px", borderRadius:8, background:F.accentSoft,
+          border:"none", cursor:"pointer", fontSize:13, color:F.accent, fontFamily:F.sans, fontWeight:500 }}>
+          + Record
+        </button>
+      </div>
+
+      {/* Now playing — hero */}
+      <div style={{ margin:"24px 22px 0", padding:"22px", borderRadius:18,
+        background:F.bgCard, border:`1px solid ${F.border}` }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+          <div style={{ width:6, height:6, borderRadius:"50%", background:F.accent,
+            animation:"breathe 2s ease-in-out infinite" }}></div>
+          <span style={{ fontSize:11, color:F.accent, letterSpacing:"0.08em",
+            textTransform:"uppercase", fontWeight:600 }}>Last played</span>
+        </div>
+
+        {/* Waveform */}
+        <div style={{ display:"flex", alignItems:"center", gap:2.5, height:40, marginBottom:16 }}>
+          {bars.map((h, i) => (
+            <div key={i} style={{ flex:1, height:h*3+4, borderRadius:2, background: i < 10 ? F.accent : `${F.text}15`,
+              animationName: i < 10 ? "waveBar" : "none",
+              animationDuration:`${0.6+i*0.05}s`, animationTimingFunction:"ease-in-out",
+              animationIterationCount:"infinite" }}></div>
+          ))}
+        </div>
+
+        <div style={{ fontSize:18, fontFamily:F.serif, fontStyle:"italic", color:F.text,
+          lineHeight:1.6, fontWeight:400, marginBottom:14 }}>
+          "I am a highly sought-after professional whose expertise enriches any team I join."
+        </div>
+
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ fontSize:12, color:F.textMuted, letterSpacing:"0.02em" }}>1:14 · confidence</div>
+          <button style={{ width:42, height:42, borderRadius:12, background:F.accent,
+            border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+            boxShadow:`0 0 20px ${F.accentGlow}` }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Section header */}
+      <div style={{ padding:"28px 22px 12px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <span style={{ fontSize:11, letterSpacing:"0.08em", textTransform:"uppercase",
+          color:F.textMuted, fontWeight:600 }}>Your library</span>
+        <span style={{ fontSize:12, color:F.accent, fontWeight:500 }}>See all</span>
+      </div>
+
+      {/* Recording rows */}
+      {[
+        {t:"Today I move forward with grace and intention.", dur:"0:21", tag:"clarity", bars:[5,8,4,10,6,8]},
+        {t:"I am worthy of the love I give to others.", dur:"0:18", tag:"self-love", bars:[8,5,9,4,7,10]},
+        {t:"I release what no longer serves me.", dur:"0:14", tag:"healing", bars:[4,9,6,5,8,4]},
+      ].map((r,i) => (
+        <div key={i} style={{ margin:"0 22px 10px", padding:"14px 16px", borderRadius:14,
+          background:F.bgCard, border:`1px solid ${F.border}`,
+          display:"flex", alignItems:"center", gap:14 }}>
+          {/* Mini waveform thumb */}
+          <div style={{ display:"flex", alignItems:"center", gap:1.5, height:22, flexShrink:0 }}>
+            {r.bars.map((h,bi) => (
+              <div key={bi} style={{ width:3, height:h*2, borderRadius:1.5,
+                background: `${F.accent}50` }}></div>
+            ))}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:14, color:F.text, fontFamily:F.serif, fontStyle:"italic",
+              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.t}</div>
+            <div style={{ fontSize:11, color:F.textMuted, marginTop:2 }}>{r.dur} · {r.tag}</div>
+          </div>
+          <button style={{ width:30, height:30, borderRadius:"50%", background:F.accentSoft,
+            border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill={F.accent}><path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z"/></svg>
+          </button>
+        </div>
+      ))}
+
+      {/* Try today */}
+      <div style={{ margin:"14px 22px 0", padding:"18px", borderRadius:14,
+        background:`linear-gradient(135deg, ${F.accentSoft}, transparent)`,
+        border:`1px solid rgba(123,108,246,0.2)` }}>
+        <div style={{ fontSize:11, letterSpacing:"0.08em", textTransform:"uppercase",
+          color:F.accent, fontWeight:600, marginBottom:10 }}>Suggested</div>
+        <div style={{ fontSize:16, fontFamily:F.serif, fontStyle:"italic", color:F.textDim, lineHeight:1.6 }}>
+          "I am worthy of success and I embrace challenges as opportunities."
+        </div>
+        <button style={{ marginTop:12, background:"none", border:`1px solid rgba(123,108,246,0.4)`,
+          borderRadius:8, padding:"7px 16px", fontSize:12, color:F.accent, fontFamily:F.sans,
+          fontWeight:600, cursor:"pointer", letterSpacing:"0.02em" }}>Record This</button>
+      </div>
+
+      {/* Nav */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80,
+        background:"rgba(8,9,13,0.92)", backdropFilter:"blur(20px)",
+        borderTop:`1px solid ${F.border}`,
+        display:"flex", alignItems:"center", justifyContent:"space-around" }}>
+        {[
+          { label:"Home", active:true, path:"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
+          { label:"Library", path:"M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" },
+          { label:"Record", isCTA:true },
+          { label:"Sets", path:"M8 6h13 M8 12h13 M8 18h13" },
+          { label:"You", path:"M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 3a4 4 0 100 8 4 4 0 000-8z" },
+        ].map((item, i) => {
+          if (item.isCTA) return (
+            <div key="cta" style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+              <div style={{ width:46, height:46, borderRadius:14, marginTop:-12,
+                background:F.accent, boxShadow:`0 0 20px ${F.accentGlow}`,
+                display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:9, color:F.textMuted, marginTop:4, fontFamily:F.sans }}>Record</span>
+            </div>
+          );
+          return (
+            <button key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              gap:4, background:"none", border:"none", cursor:"pointer" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke={item.active?F.accent:F.textMuted} strokeWidth={item.active?"2":"1.5"}
+                strokeLinecap="round" strokeLinejoin="round">
+                {item.path && item.path.split(" M").map((d,di)=><path key={di} d={di===0?d:"M"+d}/>)}
+              </svg>
+              <span style={{ fontSize:9, color:item.active?F.accent:F.textMuted, fontFamily:F.sans,
+                fontWeight:item.active?600:400 }}>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════
+   CONCEPT C — "Breath"
+   Radical whitespace. Poetry scale. One thing.
+   Type: Cormorant Garamond + Plus Jakarta Sans
+   ══════════════════════════════════════════ */
+const BreathHome = () => {
+  const B = {
+    bg: "#FDFCF9",
+    bgWarm: "#F7F2EB",
+    text: "#1C1A16",
+    textSoft: "#7A7468",
+    textMuted: "#B0A99F",
+    accent: "#4A6741",
+    accentSoft: "rgba(74,103,65,0.1)",
+    warm: "#C07A52",
+    warmSoft: "rgba(192,122,82,0.1)",
+    border: "#EAE5DC",
+    serif: "'Cormorant Garamond', serif",
+    sans: "'Plus Jakarta Sans', sans-serif",
+  };
+
+  return (
+    <div style={{ background:B.bg, minHeight:"100%", fontFamily:B.sans, paddingBottom:84 }}>
+      {/* Minimal header */}
+      <div style={{ padding:"28px 28px 0", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ fontSize:13, color:B.textMuted, fontWeight:500, letterSpacing:"0.04em" }}>May 3</div>
+        <div style={{ fontSize:13, color:B.textMuted, fontWeight:500 }}>Kate</div>
+      </div>
+
+      {/* Giant affirmation — center stage */}
+      <div style={{ padding:"52px 28px 0" }}>
+        <div style={{ fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase",
+          color:B.accent, fontWeight:600, marginBottom:20, opacity:0.8 }}>Your practice</div>
+        <div style={{ fontSize:34, fontFamily:B.serif, fontWeight:300, fontStyle:"italic",
+          color:B.text, lineHeight:1.55, letterSpacing:"0.01em" }}>
+          "I am a highly sought-after professional whose expertise enriches any team I join."
+        </div>
+
+        {/* Minimal meta + play */}
+        <div style={{ display:"flex", alignItems:"center", gap:14, marginTop:28 }}>
+          <button style={{ width:52, height:52, borderRadius:"50%", border:`1.5px solid ${B.text}`,
+            background:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+            flexShrink:0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={B.text}><path d="M8 5.14v13.72a1 1 0 001.5.86l11-6.86a1 1 0 000-1.72l-11-6.86a1 1 0 00-1.5.86z"/></svg>
+          </button>
+          <div>
+            <div style={{ fontSize:14, color:B.text, fontWeight:500 }}>I am a highly sought-after pr...</div>
+            <div style={{ fontSize:12, color:B.textMuted, marginTop:1 }}>1:14 · 12 listens</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Breathing divider */}
+      <div style={{ margin:"44px 28px", height:1, background:`linear-gradient(90deg, transparent, ${B.border}, transparent)` }}></div>
+
+      {/* Record CTA — understated but clear */}
+      <div style={{ padding:"0 28px" }}>
+        <div style={{ fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase",
+          color:B.textMuted, fontWeight:600, marginBottom:18 }}>Or speak something new</div>
+        <button style={{ width:"100%", height:56, borderRadius:16,
+          background:"none", border:`1.5px solid ${B.border}`,
+          color:B.textSoft, fontSize:15, fontFamily:B.sans, fontWeight:500,
+          display:"flex", alignItems:"center", justifyContent:"center", gap:9, cursor:"pointer",
+          letterSpacing:"-0.01em" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={B.textSoft} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+            <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          Record a New Affirmation
+        </button>
+      </div>
+
+      {/* Today suggestion — warm block */}
+      <div style={{ margin:"28px 0 0", background:B.bgWarm, padding:"28px 28px" }}>
+        <div style={{ fontSize:11, letterSpacing:"0.1em", textTransform:"uppercase",
+          color:B.warm, fontWeight:600, marginBottom:16, opacity:0.9 }}>Try today</div>
+        <div style={{ fontSize:26, fontFamily:B.serif, fontWeight:300, fontStyle:"italic",
+          color:B.text, lineHeight:1.6 }}>
+          "I am worthy of success and I embrace challenges as opportunities."
+        </div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:20 }}>
+          <span style={{ fontSize:12, color:B.warm, fontWeight:500 }}>Confidence</span>
+          <button style={{ height:34, padding:"0 18px", borderRadius:20,
+            background:"none", border:`1px solid ${B.warm}50`,
+            color:B.warm, fontSize:13, fontWeight:500, fontFamily:B.sans,
+            display:"flex", alignItems:"center", gap:6, cursor:"pointer" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={B.warm} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+              <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="22"/>
+            </svg>
+            Record
+          </button>
+        </div>
+      </div>
+
+      {/* Nav — minimal, no labels for 4 items */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:80,
+        background:`${B.bg}f0`, backdropFilter:"blur(16px)", borderTop:`1px solid ${B.border}`,
+        display:"flex", alignItems:"center", justifyContent:"space-around" }}>
+        {[
+          { label:"Home", active:true, d:"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" },
+          { label:"Library", d:"M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" },
+          { label:"Record", isCTA:true },
+          { label:"Playlists", d:"M8 6h13 M8 12h13 M8 18h13" },
+          { label:"You", d:"M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 3a4 4 0 100 8 4 4 0 000-8z" },
+        ].map((item,i) => {
+          if (item.isCTA) return (
+            <div key="cta" style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+              <div style={{ width:46, height:46, borderRadius:14, marginTop:-14,
+                background:B.text, display:"flex", alignItems:"center", justifyContent:"center",
+                boxShadow:`0 4px 14px rgba(28,26,22,0.2)` }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+              </div>
+              <span style={{ fontSize:9, color:B.textMuted, marginTop:4, fontFamily:B.sans }}>Record</span>
+            </div>
+          );
+          return (
+            <button key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              gap:4, background:"none", border:"none", cursor:"pointer" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke={item.active?B.accent:B.textMuted} strokeWidth={item.active?"2":"1.5"}
+                strokeLinecap="round" strokeLinejoin="round">
+                {item.d && item.d.split(" M").map((d,di)=><path key={di} d={di===0?d:"M"+d}/>)}
+              </svg>
+              <span style={{ fontSize:9, color:item.active?B.accent:B.textMuted, fontFamily:B.sans,
+                fontWeight:item.active?600:400 }}>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ═══ CANVAS ═══ */
+const App = () => (
+  <DesignCanvas title="Resonance — Fresh Start" subtitle="Three directions from zero · New palettes · New type · New structure">
+    <DCSection id="sanctuary" title='A — "Sanctuary"  ·  Candlelit dark, Cormorant + Jakarta'>
+      <DCArtboard id="sanc-a" label="Deep warm dark — intimate, meditative, candlelit" width={393} height={920}>
+        <IOSDevice screenWidth={393} screenHeight={920}><SanctuaryHome /></IOSDevice>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="frequency" title='B — "Frequency"  ·  Audio-native dark, EB Garamond + Space Grotesk'>
+      <DCArtboard id="freq-a" label="Audio-native — waveforms, electric indigo, music-app energy" width={393} height={920}>
+        <IOSDevice screenWidth={393} screenHeight={920}><FrequencyHome /></IOSDevice>
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="breath" title='C — "Breath"  ·  Radical whitespace, Cormorant + Jakarta'>
+      <DCArtboard id="breath-a" label="Poetry scale — one affirmation, generous silence, warm block" width={393} height={920}>
+        <IOSDevice screenWidth={393} screenHeight={920}><BreathHome /></IOSDevice>
+      </DCArtboard>
+    </DCSection>
+  </DesignCanvas>
+);
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
