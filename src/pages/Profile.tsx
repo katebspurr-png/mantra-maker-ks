@@ -15,6 +15,7 @@ import { ColorThemeSelector } from "@/components/ColorThemeSelector";
 import { Switch } from "@/components/ui/switch";
 import { CalibrationDialog } from "@/components/CalibrationDialog";
 import { format } from "date-fns";
+import { ExportLibraryButton } from "@/components/ExportLibraryButton";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -314,6 +315,9 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Export Library */}
+        <ExportLibraryButton />
 
         {/* Logout */}
         <Button
