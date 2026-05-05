@@ -38,6 +38,7 @@ struct MainTabView: View {
 
 // MARK: - Custom Tab Bar
 struct CustomTabBar: View {
+    @EnvironmentObject var appState: AppState
     @Binding var selectedTab: Int
     @State private var showingRecordSheet = false
     
@@ -113,6 +114,7 @@ struct CustomTabBar: View {
         .frame(height: ResTabBar.height)
         .sheet(isPresented: $showingRecordSheet) {
             RecordView()
+                .environmentObject(appState)
         }
     }
 }

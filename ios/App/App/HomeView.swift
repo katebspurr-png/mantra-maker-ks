@@ -3,10 +3,27 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @State private var expandedSections: Set<String> = ["thought-transformer"]
-    @State private var todaySuggestion = "I am worthy of success and I embrace challenges as opportunities."
+    @State private var todaySuggestion = ""
+    @State private var suggestionCategory = "confidence"
+    @State private var showingRecordSheet = false
+    @State private var showingThoughtTransformer = false
+    @State private var showingRecordWithSuggestion = false
     
     var currentRecording: Recording? {
         appState.recordings.first
+    }
+    
+    var favoriteRecordings: [Recording] {
+        appState.recordings.filter { $0.isFavorite }
+    }
+    
+    var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<12: return "GOOD MORNING"
+        case 12..<17: return "GOOD AFTERNOON"
+        default: return "GOOD EVENING"
+        }
     }
     
     var body: some View {
@@ -42,11 +59,56 @@ struct HomeView: View {
             .padding(.bottom, ResTabBar.height + 20)
         }
         .background(Color.resBg)
+        .sheet(isPresented: $showingRecordSheet) {
+            RecordView()
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $showingThoughtTransformer) {
+            ThoughtTransformerView()
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $showingRecordWithSuggestion) {
+            RecordView(prefillText: todaySuggestion)
+                .environmentObject(appState)
+        }
+        .onAppear {
+            if todaySuggestion.isEmpty {
+                generateNewSuggestion()
+            }
+        }
+    }
+    
+    private func generateNewSuggestion() {
+        // Personalize based on user's most common categories
+        let categoryCount = Dictionary(grouping: appState.recordings.compactMap { $0.category }) { $0 }
+            .mapValues { $0.count }
+        
+        let mostCommonCategory = categoryCount.max(by: { $0.value < $1.value })?.key ?? "confidence"
+        
+        // Get suggestions for this category
+        let categorySuggestions = Suggestion.sampleData.filter { $0.category == mostCommonCategory }
+        
+        if let suggestion = categorySuggestions.randomElement() {
+            withAnimation {
+                todaySuggestion = suggestion.text
+                suggestionCategory = suggestion.category
+            }
+        } else {
+            // Fallback to random suggestion
+            if let suggestion = Suggestion.sampleData.randomElement() {
+                withAnimation {
+                    todaySuggestion = suggestion.text
+                    suggestionCategory = suggestion.category
+                }
+            }
+        }
+        
+        HapticManager.shared.buttonTap()
     }
     
     var stickyHeader: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("GOOD MORNING")
+            Text(greeting)
                 .font(.custom("PlusJakartaSans-SemiBold", size: 13))
                 .foregroundColor(.resTextMuted)
                 .kerning(0.04)
@@ -93,7 +155,7 @@ struct HomeView: View {
     }
     
     var recordButton: some View {
-        Button(action: {}) {
+        Button(action: { showingRecordSheet = true }) {
             HStack(spacing: 9) {
                 Image(systemName: "mic")
                     .font(.system(size: 16))
@@ -122,7 +184,7 @@ struct HomeView: View {
                 
                 HStack {
                     HStack(spacing: 8) {
-                        Text("Confidence")
+                        Text(suggestionCategory.capitalized)
                             .font(.resCaption)
                             .foregroundColor(.resWarm)
                             .padding(.horizontal, 10)
@@ -130,7 +192,7 @@ struct HomeView: View {
                             .background(Color.resWarmSoft)
                             .cornerRadius(12)
                         
-                        Button(action: {}) {
+                        Button(action: generateNewSuggestion) {
                             Image(systemName: "arrow.clockwise")
                                 .font(.system(size: 13))
                                 .foregroundColor(.resTextMuted)
@@ -140,7 +202,7 @@ struct HomeView: View {
                     
                     Spacer()
                     
-                    Button(action: {}) {
+                    Button(action: { showingRecordWithSuggestion = true }) {
                         HStack(spacing: 6) {
                             Image(systemName: "mic")
                                 .font(.system(size: 12))
@@ -176,7 +238,7 @@ struct HomeView: View {
                             .foregroundColor(.resTextSoft)
                             .lineSpacing(4)
                         
-                        Button(action: {}) {
+                        Button(action: { showingThoughtTransformer = true }) {
                             HStack(spacing: 5) {
                                 Text("Transform a Thought")
                                     .font(.resBodyMd)
@@ -193,9 +255,41 @@ struct HomeView: View {
             
             CollapsibleSection(
                 title: "Favorites",
-                subtitle: nil,
-                isExpanded: .constant(false)
-            )
+                subtitle: favoriteRecordings.isEmpty ? nil : "\(favoriteRecordings.count) recording\(favoriteRecordings.count == 1 ? "" : "s")",
+                isExpanded: Binding(
+                    get: { expandedSections.contains("favorites") },
+                    set: { isExpanded in
+                        if isExpanded {
+                            expandedSections.insert("favorites")
+                        } else {
+                            expandedSections.remove("favorites")
+                        }
+                    }
+                )
+            ) {
+                if favoriteRecordings.isEmpty {
+                    AnyView(
+                        Text("Tap the heart icon on any recording to add it to your favorites.")
+                            .font(.resBodySm)
+                            .foregroundColor(.resTextMuted)
+                            .lineSpacing(4)
+                    )
+                } else {
+                    AnyView(
+                        VStack(spacing: 0) {
+                            ForEach(favoriteRecordings.prefix(5)) { recording in
+                                FavoriteRecordingRow(recording: recording)
+                                
+                                if recording.id != favoriteRecordings.prefix(5).last?.id {
+                                    Rectangle()
+                                        .fill(Color.resBorder)
+                                        .frame(height: 1)
+                                }
+                            }
+                        }
+                    )
+                }
+            }
             
             CollapsibleSection(
                 title: "How it's been",
@@ -203,5 +297,60 @@ struct HomeView: View {
                 isExpanded: .constant(false)
             )
         }
+    }
+}
+
+// MARK: - Favorite Recording Row
+struct FavoriteRecordingRow: View {
+    let recording: Recording
+    @EnvironmentObject var appState: AppState
+    
+    var body: some View {
+        Button(action: {
+            appState.playRecording(recording)
+        }) {
+            HStack(spacing: 12) {
+                // Play button
+                ZStack {
+                    Circle()
+                        .fill(Color.resSageSoft)
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.resSage)
+                        .offset(x: 1)
+                }
+                
+                // Recording info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(recording.title)
+                        .font(.resSerif16)
+                        .foregroundColor(.resText)
+                        .lineLimit(1)
+                    
+                    HStack(spacing: 8) {
+                        Text(recording.durationFormatted)
+                            .font(.resCaption)
+                            .foregroundColor(.resTextMuted)
+                        
+                        if let category = recording.category {
+                            Text(category)
+                                .font(.custom("PlusJakartaSans-Medium", size: 11))
+                                .foregroundColor(.resSage)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // Heart icon
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.resWarm)
+            }
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(.plain)
     }
 }

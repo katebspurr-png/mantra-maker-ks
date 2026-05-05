@@ -15,19 +15,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         if useSwiftUIVersion {
             // Launch SwiftUI version
-            let appState = AppState()
-            let contentView = Group {
-                if appState.hasCompletedOnboarding {
-                    MainTabView()
-                        .environmentObject(appState)
-                } else {
-                    OnboardingFlow()
-                        .environmentObject(appState)
-                }
-            }
+            let contentView = ResonanceRootView()
             
             window = UIWindow(frame: UIScreen.main.bounds)
-            window?.rootViewController = UIHostingController(rootView: contentView.environmentObject(appState))
+            window?.rootViewController = UIHostingController(rootView: contentView)
             window?.makeKeyAndVisible()
         }
         

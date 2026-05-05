@@ -49,6 +49,10 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Resonance needs microphone access to record your personal affirmations and mantras.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 	<key>UIAppFonts</key>
 	<array>
 		<string>CormorantGaramond-Light.ttf</string>

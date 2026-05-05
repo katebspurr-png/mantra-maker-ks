@@ -14,39 +14,59 @@ import SwiftUI
 // MARK: - Color Palette
 
 extension Color {
-    // ── Backgrounds ──────────────────────────────
-    /// Primary app background — warm white
-    static let resBg         = Color(hex: "#FDFCF9")
+    // ── Backgrounds (Adaptive for Dark Mode) ──────
+    /// Primary app background — warm white (light) / dark warm (dark)
+    static var resBg: Color {
+        Color(light: "#FDFCF9", dark: "#0F0C07")
+    }
     /// Warm cream — used for featured content blocks
-    static let resBgWarm     = Color(hex: "#F5EFE6")
-    /// Card surface — pure white
-    static let resCard       = Color(hex: "#FFFFFF")
+    static var resBgWarm: Color {
+        Color(light: "#F5EFE6", dark: "#1C1610")
+    }
+    /// Card surface — pure white (light) / dark card (dark)
+    static var resCard: Color {
+        Color(light: "#FFFFFF", dark: "#1C1814")
+    }
     /// Dimmed surface — inputs, inactive areas
-    static let resBgDim      = Color(hex: "#F0EBE2")
+    static var resBgDim: Color {
+        Color(light: "#F0EBE2", dark: "#252218")
+    }
 
-    // ── Text ─────────────────────────────────────
+    // ── Text (Adaptive for Dark Mode) ─────────────
     /// Primary text
-    static let resText       = Color(hex: "#1C1A16")
+    static var resText: Color {
+        Color(light: "#1C1A16", dark: "#FAF4EC")
+    }
     /// Secondary text
-    static let resTextSoft   = Color(hex: "#7A7468")
+    static var resTextSoft: Color {
+        Color(light: "#7A7468", dark: "#B5ADA3")
+    }
     /// Muted / placeholder text
-    static let resTextMuted  = Color(hex: "#B5ADA3")
+    static var resTextMuted: Color {
+        Color(light: "#B5ADA3", dark: "#7A7468")
+    }
 
     // ── Accent — Sage ─────────────────────────────
     /// Primary action accent (sage green)
     static let resSage       = Color(hex: "#4A6741")
     /// Sage tint for backgrounds
-    static let resSageSoft   = Color(hex: "#4A6741").opacity(0.10)
+    static var resSageSoft: Color {
+        Color.resSage.opacity(0.10)
+    }
 
     // ── Accent — Terracotta ───────────────────────
     /// Warm accent (terracotta) — suggestions, categories
     static let resWarm       = Color(hex: "#C07A52")
     /// Terracotta tint
-    static let resWarmSoft   = Color(hex: "#C07A52").opacity(0.10)
+    static var resWarmSoft: Color {
+        Color.resWarm.opacity(0.10)
+    }
 
-    // ── Structural ────────────────────────────────
+    // ── Structural (Adaptive for Dark Mode) ───────
     /// Dividers, card borders
-    static let resBorder     = Color(hex: "#E8E2D9")
+    static var resBorder: Color {
+        Color(light: "#E8E2D9", dark: "#2A2620")
+    }
 
     // ── Dark (Immersive Player) ───────────────────
     /// Immersive player background — dark warm
@@ -55,6 +75,15 @@ extension Color {
     static let resDarkText   = Color(hex: "#FAF4EC")
     /// Muted text on dark surfaces
     static let resDarkMuted  = Color(hex: "#FAF4EC").opacity(0.28)
+    
+    // ── Helper initializer for adaptive colors ────
+    init(light: String, dark: String) {
+        self.init(UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ?
+                UIColor(Color(hex: dark)) :
+                UIColor(Color(hex: light))
+        })
+    }
 
     // ── Hex initialiser ───────────────────────────
     init(hex: String) {

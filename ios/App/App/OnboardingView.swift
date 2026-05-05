@@ -79,7 +79,10 @@ struct OnboardingVibeView: View {
             
             Spacer()
             
-            Button(action: { currentStep = 1 }) {
+            Button(action: { 
+                print("Vibe Continue tapped - moving to step 2")
+                currentStep = 1 
+            }) {
                 Text("Continue")
                     .font(.custom("PlusJakartaSans-Medium", size: 16))
                     .foregroundColor(.resBg)
@@ -89,10 +92,12 @@ struct OnboardingVibeView: View {
                     .cornerRadius(ResRadius.md)
             }
             .disabled(selectedVibe == nil)
+            .buttonStyle(.plain)
             .padding(.horizontal, 26)
-            .padding(.bottom, 44)
+            .padding(.bottom, 24)
         }
         .background(Color.resBg)
+        .ignoresSafeArea(.keyboard)
     }
 }
 
@@ -151,7 +156,10 @@ struct OnboardingIntentionView: View {
             
             Spacer()
             
-            Button(action: onComplete) {
+            Button(action: {
+                print("Continue button tapped - completing onboarding")
+                onComplete()
+            }) {
                 Text("Continue")
                     .font(.custom("PlusJakartaSans-Medium", size: 16))
                     .foregroundColor(.resBg)
@@ -161,10 +169,12 @@ struct OnboardingIntentionView: View {
                     .cornerRadius(ResRadius.md)
             }
             .disabled(selectedIntention == nil)
+            .buttonStyle(.plain)
             .padding(.horizontal, 26)
-            .padding(.bottom, 44)
+            .padding(.bottom, 24)
         }
         .background(Color.resBg)
+        .ignoresSafeArea(.keyboard)
     }
 }
 

@@ -1,18 +1,14 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @State private var selectedTheme = 4 // Lavender
+    @EnvironmentObject var themeManager: ThemeManager
+    @EnvironmentObject var appState: AppState
+    @Environment(\.colorScheme) var colorScheme
+    @State private var showingThemeSettings = false
+    @State private var showingMyAffirmations = false
+    @State private var showingImportRecordings = false
     @State private var notificationsEnabled = true
     @State private var autoSaveSounds = true
-    
-    let themes: [(name: String, color: Color)] = [
-        ("Calm", Color(hex: "#3B3840")),
-        ("Golden", Color.resWarm),
-        ("Ocean", Color(hex: "#3B9DAD")),
-        ("Forest", Color(hex: "#4A8C6A")),
-        ("Lavender", Color(hex: "#7D5EAA")),
-        ("Rose", Color(hex: "#C0506A"))
-    ]
     
     var body: some View {
         ScrollView {
@@ -28,10 +24,129 @@ struct ProfileView: View {
                 userCard
                     .padding(.horizontal, ResSpacing.screen)
                 
-                // Color Theme
-                colorThemeSection
-                    .padding(.horizontal, ResSpacing.screen)
-                    .padding(.top, 28)
+                // Import Recordings Button
+                Button(action: {
+                    HapticManager.shared.buttonTap()
+                    showingImportRecordings = true
+                }) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.system(size: 20))
+                            .foregroundColor(themeManager.selectedTheme.primaryColor)
+                            .frame(width: 28, height: 28)
+                        
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Import Recordings")
+                                .font(.resBodyMd)
+                                .foregroundColor(.themedText(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                            Text("Bring in your existing recordings")
+                                .font(.resCaption)
+                                .foregroundColor(.themedTextMuted(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.themedTextMuted(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+                    .background(Color.themedCard(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ResRadius.md)
+                            .stroke(Color.themedBorder(theme: themeManager.selectedTheme, colorScheme: colorScheme), lineWidth: 1)
+                    )
+                    .cornerRadius(ResRadius.md)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, ResSpacing.screen)
+                .padding(.top, 28)
+                
+                // My Affirmations Button
+                Button(action: {
+                    HapticManager.shared.buttonTap()
+                    showingMyAffirmations = true
+                }) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "layers.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(themeManager.selectedTheme.primaryColor)
+                            .frame(width: 28, height: 28)
+                        
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("My Affirmations")
+                                .font(.resBodyMd)
+                                .foregroundColor(.themedText(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                            
+                            let affirmationCount = Dictionary(grouping: appState.recordings.filter { $0.affirmationId != nil }) { $0.affirmationId! }.count
+                            Text("\(affirmationCount) \(affirmationCount == 1 ? "affirmation" : "affirmations") · Multiple takes")
+                                .font(.resCaption)
+                                .foregroundColor(.themedTextMuted(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.themedTextMuted(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+                    .background(Color.themedCard(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ResRadius.md)
+                            .stroke(Color.themedBorder(theme: themeManager.selectedTheme, colorScheme: colorScheme), lineWidth: 1)
+                    )
+                    .cornerRadius(ResRadius.md)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, ResSpacing.screen)
+                .padding(.top, 28)
+                
+                // Theme Settings Button
+                Button(action: {
+                    HapticManager.shared.buttonTap()
+                    showingThemeSettings = true
+                }) {
+                    HStack(spacing: 16) {
+                        // Theme preview
+                        HStack(spacing: -8) {
+                            Circle()
+                                .fill(themeManager.selectedTheme.primaryColor)
+                                .frame(width: 28, height: 28)
+                            Circle()
+                                .fill(themeManager.selectedTheme.secondaryColor)
+                                .frame(width: 28, height: 28)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Theme")
+                                .font(.resBodyMd)
+                                .foregroundColor(.themedText(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                            Text("\(themeManager.selectedTheme.icon) \(themeManager.selectedTheme.displayName) · \(themeManager.colorSchemeMode.displayName)")
+                                .font(.resCaption)
+                                .foregroundColor(.themedTextMuted(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.themedTextMuted(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                    }
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+                    .background(Color.themedCard(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: ResRadius.md)
+                            .stroke(Color.themedBorder(theme: themeManager.selectedTheme, colorScheme: colorScheme), lineWidth: 1)
+                    )
+                    .cornerRadius(ResRadius.md)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, ResSpacing.screen)
+                .padding(.top, 28)
                 
                 // Playback Settings
                 settingsGroup(
@@ -91,7 +206,19 @@ struct ProfileView: View {
             }
             .padding(.bottom, ResTabBar.height + 20)
         }
-        .background(Color.resBg)
+        .background(Color.themedBg(theme: themeManager.selectedTheme, colorScheme: colorScheme))
+        .sheet(isPresented: $showingThemeSettings) {
+            ThemeSettingsView()
+                .environmentObject(themeManager)
+        }
+        .sheet(isPresented: $showingMyAffirmations) {
+            MyAffirmationsView()
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $showingImportRecordings) {
+            ImportRecordingsView()
+                .environmentObject(appState)
+        }
     }
     
     var userCard: some View {
@@ -127,44 +254,7 @@ struct ProfileView: View {
         .cornerRadius(ResRadius.lg)
     }
     
-    var colorThemeSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("COLOUR THEME")
-                .font(.resMicro)
-                .foregroundColor(.resTextMuted)
-                .kerning(0.07)
-            
-            HStack(spacing: 12) {
-                ForEach(Array(themes.enumerated()), id: \.offset) { index, theme in
-                    VStack(spacing: 6) {
-                        ZStack {
-                            Circle()
-                                .fill(theme.color)
-                                .frame(width: 36, height: 36)
-                            
-                            if selectedTheme == index {
-                                Circle()
-                                    .stroke(Color.resBg, lineWidth: 2.5)
-                                    .frame(width: 36, height: 36)
-                                
-                                Circle()
-                                    .stroke(theme.color, lineWidth: 4)
-                                    .frame(width: 46, height: 46)
-                            }
-                        }
-                        .onTapGesture {
-                            selectedTheme = index
-                        }
-                        
-                        Text(theme.name)
-                            .font(.custom("PlusJakartaSans-Regular", size: 9))
-                            .foregroundColor(.resTextMuted)
-                    }
-                }
-            }
-        }
-    }
-    
+
     func settingsGroup(title: String, rows: [SettingRow]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
