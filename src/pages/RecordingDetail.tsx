@@ -473,10 +473,8 @@ const RecordingDetail = () => {
                 try {
                   await downloadRecording(recording);
                 } catch (err) {
-                  toast({
-                    title: "Download failed",
+                  toast.error("Download failed", {
                     description: String((err as Error)?.message ?? err),
-                    variant: "destructive",
                   });
                 } finally {
                   setIsDownloading(false);
