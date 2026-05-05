@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.rewrite-thought]
 verify_jwt = true
+
+[functions.export-user-recordings]
+verify_jwt = false
