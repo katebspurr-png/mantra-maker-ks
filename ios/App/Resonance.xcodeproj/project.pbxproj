@@ -46,6 +46,7 @@
 		E7DEE3F52FAA82BD009ABAF2 /* PlaylistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3F42FAA82BD009ABAF2 /* PlaylistDetailView.swift */; };
 		E7DEE3F72FAA82C6009ABAF2 /* EditPlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3F62FAA82C6009ABAF2 /* EditPlaylistView.swift */; };
 		E7DEE3F92FAAA524009ABAF2 /* ThoughtTransformerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3F82FAAA524009ABAF2 /* ThoughtTransformerView.swift */; };
+		E7E4D13F2FABA77F00B95E65 /* PlaybackOptionsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E4D13E2FABA77F00B95E65 /* PlaybackOptionsSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -90,6 +91,7 @@
 		E7DEE3F42FAA82BD009ABAF2 /* PlaylistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailView.swift; sourceTree = "<group>"; };
 		E7DEE3F62FAA82C6009ABAF2 /* EditPlaylistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditPlaylistView.swift; sourceTree = "<group>"; };
 		E7DEE3F82FAAA524009ABAF2 /* ThoughtTransformerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThoughtTransformerView.swift; sourceTree = "<group>"; };
+		E7E4D13E2FABA77F00B95E65 /* PlaybackOptionsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackOptionsSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -166,6 +168,7 @@
 				E7DEE3F42FAA82BD009ABAF2 /* PlaylistDetailView.swift */,
 				E7DEE3F62FAA82C6009ABAF2 /* EditPlaylistView.swift */,
 				E7DEE3F82FAAA524009ABAF2 /* ThoughtTransformerView.swift */,
+				E7E4D13E2FABA77F00B95E65 /* PlaybackOptionsSheet.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -280,6 +283,7 @@
 				E7DEE32F2FA81DC8009ABAF2 /* Models.swift in Sources */,
 				E7DEE3412FA81ECA009ABAF2 /* ProfileView.swift in Sources */,
 				E7DEE3312FA81DEE009ABAF2 /* Components.swift in Sources */,
+				E7E4D13F2FABA77F00B95E65 /* PlaybackOptionsSheet.swift in Sources */,
 				E7DEE3F52FAA82BD009ABAF2 /* PlaylistDetailView.swift in Sources */,
 				E7DEE33F2FA81EA5009ABAF2 /* PlaylistsView.swift in Sources */,
 				E7DEE3F92FAAA524009ABAF2 /* ThoughtTransformerView.swift in Sources */,

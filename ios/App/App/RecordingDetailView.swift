@@ -10,7 +10,10 @@ struct RecordingDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var themeManager: ThemeManager
-    @StateObject private var audioManager = AudioManager()
+
+    private var audioManager: AudioManager {
+        appState.audioManager
+    }
     
     let recording: Recording
     

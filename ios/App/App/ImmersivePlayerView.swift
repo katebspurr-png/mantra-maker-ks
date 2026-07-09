@@ -3,11 +3,17 @@ import SwiftUI
 struct ImmersivePlayerView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
-    @StateObject private var audioManager = AudioManager()
     
-    let recording: Recording
-    @State private var isLooping = false
+    private var audioManager: AudioManager {
+        appState.audioManager
+    }
+
+    private var currentRecording: Recording? {
+        appState.currentlyPlaying
+    }
+
     @State private var showingAmbientSelector = false
+    @State private var showingPlaybackOptions = false
     @State private var selectedAmbient: AmbientSound?
     
     var progress: Double {
@@ -16,6 +22,15 @@ struct ImmersivePlayerView: View {
     }
     
     var body: some View {
+        if let recording = currentRecording {
+            content(recording: recording)
+        } else {
+            Color.clear
+                .onAppear { dismiss() }
+        }
+    }
+
+    private func content(recording: Recording) -> some View {
         ZStack {
             // Background gradient
             LinearGradient(
@@ -129,15 +144,24 @@ struct ImmersivePlayerView: View {
                     HStack(spacing: 44) {
                         Button(action: {
                             HapticManager.shared.toggle()
-                            isLooping.toggle()
+                            audioManager.setPlaybackLooping(!audioManager.isPlaybackLooping)
                         }) {
                             Image(systemName: "repeat")
                                 .font(.system(size: 20))
-                                .foregroundColor(.resDarkText.opacity(isLooping ? 1.0 : 0.6))
+                                .foregroundColor(.resDarkText.opacity(audioManager.isPlaybackLooping ? 1.0 : 0.6))
                         }
-                        .opacity(isLooping ? 1.0 : 0.5)
+                        .opacity(audioManager.isPlaybackLooping ? 1.0 : 0.5)
                         
                         Button(action: {
+                            HapticManager.shared.buttonTap()
+                            showingPlaybackOptions = true
+                        }) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 20))
+                                .foregroundColor(.resDarkText.opacity(0.7))
+                        }
+                        
+                        Button(action: { 
                             if audioManager.isPlaying {
                                 audioManager.pause()
                             } else {
@@ -175,6 +199,33 @@ struct ImmersivePlayerView: View {
                         }
                         .opacity(audioManager.isAmbientPlaying ? 1.0 : 0.4)
                     }
+
+                    if appState.playbackQueue.count > 1 {
+                        HStack(spacing: 18) {
+                            Button(action: {
+                                HapticManager.shared.buttonTap()
+                                appState.skipToPreviousInQueue()
+                            }) {
+                                Image(systemName: "backward.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.resDarkText.opacity(0.7))
+                            }
+
+                            Text("\(appState.playbackQueueIndex + 1)/\(appState.playbackQueue.count)")
+                                .font(.resCaption)
+                                .foregroundColor(.resDarkMuted)
+
+                            Button(action: {
+                                HapticManager.shared.buttonTap()
+                                appState.skipToNextInQueue()
+                            }) {
+                                Image(systemName: "forward.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.resDarkText.opacity(0.7))
+                            }
+                        }
+                        .padding(.top, 10)
+                    }
                 }
                 .padding(.horizontal, 36)
                 .padding(.bottom, 48)
@@ -197,11 +248,13 @@ struct ImmersivePlayerView: View {
             // Set Now Playing metadata
             audioManager.setNowPlayingMetadata(title: recording.title, text: recording.text)
             
-            do {
-                try audioManager.play(recordingId: recording.id)
-                print("✅ Playback started")
-            } catch {
-                print("❌ Failed to play recording: \(error.localizedDescription)")
+            if appState.currentlyPlaying?.id != recording.id || !audioManager.isPlaying {
+                do {
+                    try audioManager.play(recordingId: recording.id)
+                    print("✅ Playback started")
+                } catch {
+                    print("❌ Failed to play recording: \(error.localizedDescription)")
+                }
             }
         }
         .onDisappear {
@@ -214,6 +267,20 @@ struct ImmersivePlayerView: View {
                 audioManager: audioManager
             )
         }
+        .sheet(isPresented: $showingPlaybackOptions) {
+            PlaybackOptionsSheet(
+                audioManager: audioManager,
+                selectedAmbient: $selectedAmbient,
+                isPlayingQueue: appState.playbackQueue.count > 1,
+                onOpenAmbientSelector: {
+                    showingPlaybackOptions = false
+                    showingAmbientSelector = true
+                },
+                onStopPlayback: {
+                    appState.stopPlaybackAndClearQueue()
+                }
+            )
+        }
     }
 }
 
@@ -223,7 +290,10 @@ struct AmbientSoundSelector: View {
     @Binding var selectedAmbient: AmbientSound?
     @ObservedObject var audioManager: AudioManager
     
-    let ambientSounds = AmbientSound.sampleData
+    private var orderedAmbientSounds: [AmbientSound] {
+        _ = audioManager.ambientSoundPreferencesVersion
+        return audioManager.orderedAmbientSoundsForDisplay(AmbientSound.sampleData)
+    }
     
     var body: some View {
         NavigationView {
@@ -281,23 +351,31 @@ struct AmbientSoundSelector: View {
                 // Sound options
                 ScrollView {
                     VStack(spacing: 0) {
-                        ForEach(ambientSounds) { sound in
+                        ForEach(orderedAmbientSounds) { sound in
                             AmbientSoundRow(
                                 sound: sound,
                                 isSelected: selectedAmbient?.id == sound.id,
-                                isPlaying: audioManager.isAmbientPlaying && selectedAmbient?.id == sound.id
-                            ) {
-                                if sound.name == "None" {
-                                    audioManager.stopAmbientSound()
-                                    selectedAmbient = nil
-                                } else {
-                                    selectedAmbient = sound
-                                    audioManager.playAmbientSound(sound)
+                                isPlaying: audioManager.isAmbientPlaying && selectedAmbient?.id == sound.id,
+                                isFavorite: audioManager.isAmbientSoundFavorite(sound),
+                                onTap: {
+                                    HapticManager.shared.buttonTap()
+                                    if sound.id == "none" || sound.fileName.isEmpty {
+                                        audioManager.stopAmbientSound()
+                                        selectedAmbient = nil
+                                    } else {
+                                        selectedAmbient = sound
+                                        audioManager.playAmbientSound(sound)
+                                    }
+                                    dismiss()
+                                },
+                                onToggleFavorite: {
+                                    guard !(sound.id == "none" || sound.fileName.isEmpty) else { return }
+                                    HapticManager.shared.selection()
+                                    audioManager.toggleAmbientSoundFavorite(sound)
                                 }
-                                dismiss()
-                            }
+                            )
                             
-                            if sound.id != ambientSounds.last?.id {
+                            if sound.id != orderedAmbientSounds.last?.id {
                                 Rectangle()
                                     .fill(Color.resBorder)
                                     .frame(height: 1)
@@ -319,45 +397,60 @@ struct AmbientSoundRow: View {
     let sound: AmbientSound
     let isSelected: Bool
     let isPlaying: Bool
+    let isFavorite: Bool
     let onTap: () -> Void
+    let onToggleFavorite: () -> Void
+    
+    private var canFavorite: Bool {
+        !(sound.id == "none" || sound.fileName.isEmpty)
+    }
     
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.resSageSoft : Color.resBgDim)
-                        .frame(width: 48, height: 48)
-                    
-                    Image(systemName: sound.icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(isSelected ? .resSage : .resTextMuted)
-                }
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(isSelected ? Color.resSageSoft : Color.resBgDim)
+                    .frame(width: 48, height: 48)
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sound.name)
-                        .font(.resBodyMd)
-                        .foregroundColor(.resText)
-                    
-                    if isPlaying {
-                        Text("Playing")
-                            .font(.resCaption)
-                            .foregroundColor(.resSage)
-                    }
-                }
+                Image(systemName: sound.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .resSage : .resTextMuted)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(sound.name)
+                    .font(.resBodyMd)
+                    .foregroundColor(.resText)
                 
-                Spacer()
-                
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 22))
+                if isPlaying {
+                    Text("Playing")
+                        .font(.resCaption)
                         .foregroundColor(.resSage)
                 }
             }
-            .padding(.horizontal, ResSpacing.screen)
-            .padding(.vertical, 16)
-            .background(Color.resBg)
+            
+            Spacer()
+            
+            if canFavorite {
+                Button(action: onToggleFavorite) {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(isFavorite ? .resWarm : .resTextMuted)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 2)
+            }
+            
+            if isSelected {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(.resSage)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, ResSpacing.screen)
+        .padding(.vertical, 16)
+        .background(Color.resBg)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
     }
 }

@@ -6,7 +6,10 @@ struct RecordView: View {
     
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
-    @StateObject private var audioManager = AudioManager()
+
+    private var audioManager: AudioManager {
+        appState.audioManager
+    }
     @State private var hasRecorded = false
     @State private var affirmationText: String
     @State private var showTeleprompter = true

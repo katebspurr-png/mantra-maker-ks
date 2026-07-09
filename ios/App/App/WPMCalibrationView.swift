@@ -350,8 +350,10 @@ class CalibrationManager: NSObject, ObservableObject {
     }
     
     func calculateWPM() {
-        let wpm = (Self.scriptWordCount * 60) / audioDuration
-        resultWPM = max(40, min(300, wpm)) // Clamp between 40-300 WPM
+        let rawWPM = (Self.scriptWordCount * 60) / audioDuration
+        // Reduce by 20% to make teleprompter feel more comfortable
+        let adjustedWPM = Int(Double(rawWPM) * 0.8)
+        resultWPM = max(40, min(300, adjustedWPM)) // Clamp between 40-300 WPM
         phase = .result
         
         // Clean up recording

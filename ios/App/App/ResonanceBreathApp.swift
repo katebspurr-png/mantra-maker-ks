@@ -14,12 +14,13 @@ struct ResonanceBreathApp: App {
                 if appState.hasCompletedOnboarding {
                     MainTabView()
                         .environmentObject(appState)
+                        .environmentObject(themeManager)
                 } else {
                     OnboardingFlow()
                         .environmentObject(appState)
+                        .environmentObject(themeManager)
                 }
             }
-            .environmentObject(themeManager)
             .preferredColorScheme(themeManager.preferredColorScheme(for: systemColorScheme))
         }
     }
@@ -27,11 +28,19 @@ struct ResonanceBreathApp: App {
 
 // MARK: - App State
 class AppState: ObservableObject {
-    @Published var hasCompletedOnboarding: Bool = false
+    @Published var hasCompletedOnboarding: Bool {
+        didSet {
+            UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding")
+        }
+    }
     @Published var recordings: [Recording] = []
     @Published var playlists: [Playlist] = Playlist.sampleData
     @Published var currentlyPlaying: Recording?
     @Published var showingImmersivePlayer: Bool = false
+
+    @Published private(set) var playbackQueue: [String] = []
+    @Published private(set) var playbackQueueIndex: Int = 0
+    @Published var isPlaylistLooping: Bool = false
     
     // Teleprompter WPM settings
     @Published var teleprompterWPM: Int = 120
@@ -41,6 +50,9 @@ class AppState: ObservableObject {
     let audioManager = AudioManager()
     
     init() {
+        // Load onboarding status
+        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        
         // Load recordings from persistent storage
         loadRecordings()
         
@@ -52,13 +64,91 @@ class AppState: ObservableObject {
         
         // Load WPM settings
         loadWPMSettings()
+
+        audioManager.onPlaybackFinished = { [weak self] in
+            self?.handlePlaybackFinished()
+        }
     }
     
     func playRecording(_ recording: Recording) {
-        print("🎵 Playing recording: \(recording.title)")
-        print("📁 Recording ID: \(recording.id)")
-        currentlyPlaying = recording
-        showingImmersivePlayer = true
+        playQueue(recordingIds: [recording.id], startAtIndex: 0, loopPlaylist: false)
+    }
+
+    func playQueue(recordingIds: [String], startAtIndex: Int, loopPlaylist: Bool) {
+        guard !recordingIds.isEmpty else { return }
+
+        let clampedIndex = max(0, min(startAtIndex, recordingIds.count - 1))
+        playbackQueue = recordingIds
+        playbackQueueIndex = clampedIndex
+        isPlaylistLooping = loopPlaylist
+
+        if let recording = recordings.first(where: { $0.id == recordingIds[clampedIndex] }) {
+            print("🎵 Playing recording: \(recording.title)")
+            print("📁 Recording ID: \(recording.id)")
+            currentlyPlaying = recording
+            showingImmersivePlayer = true
+        }
+
+        audioManager.setPlaybackMode(.once)
+        audioManager.setRepeatCount(1)
+        audioManager.setPlaybackRate(audioManager.playbackRate)
+
+        do {
+            try audioManager.play(recordingId: recordingIds[clampedIndex])
+        } catch {
+            print("❌ Failed to play recording: \(error.localizedDescription)")
+        }
+    }
+
+    func playPlaylist(playlistId: String, startAtIndex: Int = 0, loopPlaylist: Bool) {
+        guard let playlist = playlists.first(where: { $0.id == playlistId }) else { return }
+        let ids = playlist.recordingIds
+        playQueue(recordingIds: ids, startAtIndex: startAtIndex, loopPlaylist: loopPlaylist)
+    }
+
+    func skipToNextInQueue() {
+        guard !playbackQueue.isEmpty else { return }
+        let nextIndex = playbackQueueIndex + 1
+        if nextIndex < playbackQueue.count {
+            playQueue(recordingIds: playbackQueue, startAtIndex: nextIndex, loopPlaylist: isPlaylistLooping)
+            return
+        }
+        if isPlaylistLooping {
+            playQueue(recordingIds: playbackQueue, startAtIndex: 0, loopPlaylist: true)
+        }
+    }
+
+    func skipToPreviousInQueue() {
+        guard !playbackQueue.isEmpty else { return }
+        let previousIndex = playbackQueueIndex - 1
+        if previousIndex >= 0 {
+            playQueue(recordingIds: playbackQueue, startAtIndex: previousIndex, loopPlaylist: isPlaylistLooping)
+            return
+        }
+        if isPlaylistLooping {
+            playQueue(recordingIds: playbackQueue, startAtIndex: max(0, playbackQueue.count - 1), loopPlaylist: true)
+        }
+    }
+
+    func stopPlaybackAndClearQueue() {
+        audioManager.stop()
+        playbackQueue = []
+        playbackQueueIndex = 0
+        isPlaylistLooping = false
+        currentlyPlaying = nil
+        showingImmersivePlayer = false
+    }
+
+    private func handlePlaybackFinished() {
+        guard !playbackQueue.isEmpty else { return }
+        guard playbackQueueIndex < playbackQueue.count else { return }
+
+        skipToNextInQueue()
+
+        if playbackQueueIndex == playbackQueue.count - 1, !isPlaylistLooping {
+            playbackQueue = []
+            playbackQueueIndex = 0
+        }
     }
     
     func toggleFavorite(_ recording: Recording) {

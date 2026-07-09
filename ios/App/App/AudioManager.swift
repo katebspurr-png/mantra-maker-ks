@@ -9,15 +9,47 @@ import Combine
 import MediaPlayer
 
 class AudioManager: NSObject, ObservableObject {
+    enum PlaybackMode: String, CaseIterable {
+        case once
+        case loop
+        case repeatCount
+        case duration
+    }
+
+    private enum PlaybackDefaults {
+        static let rateKey = "playback_rate"
+        static let modeKey = "playback_mode"
+        static let repeatCountKey = "playback_repeatCount"
+        static let durationSecondsKey = "playback_durationSeconds"
+        static let backgroundEnabledKey = "ambient_enabled"
+        static let ambientVolumeKey = "ambient_volume"
+        static let duckingAmountKey = "ambient_duckingAmount"
+        static let autosaveDefaultsKey = "playback_autosaveDefaults"
+    }
+
+    var onPlaybackFinished: (() -> Void)?
     // MARK: - Published Properties
     
     @Published var isRecording: Bool = false
     @Published var isPlaying: Bool = false
     @Published var currentTime: TimeInterval = 0
     @Published var duration: TimeInterval = 0
+    @Published var isPlaybackLooping: Bool = false
+    @Published var playbackRate: Float = 1.0
+    @Published var playbackMode: PlaybackMode = .once
+    @Published var repeatCount: Int = 1
+    @Published var durationLimitSeconds: TimeInterval = 300
+    @Published var isBackgroundSoundsEnabled: Bool = true
+    @Published var ambientDuckingAmount: Float = 0.83
+    @Published var autosavePlaybackDefaults: Bool = false
     @Published var recordingLevel: Float = 0 // For waveform visualization
     @Published var ambientVolume: Float = 0.3 // Ambient sound volume
     @Published var isAmbientPlaying: Bool = false
+    @Published private(set) var ambientSoundPreferencesVersion: Int = 0
+    
+    private var normalAmbientVolume: Float = 0.3 // Store normal volume for ducking
+    private var duckedAmbientVolume: Float = 0.1 // Lowered volume during playback
+    private var durationModeTimer: Timer?
     
     // MARK: - Private Properties
     
@@ -38,9 +70,11 @@ class AudioManager: NSObject, ObservableObject {
     
     override init() {
         super.init()
+        loadPlaybackDefaults()
         configureAudioSessionForBackgroundPlayback()
         setupRemoteControls()
         setupNotifications()
+        updateDuckedAmbientVolume()
     }
     
     /// Configure audio session for background playback
@@ -335,6 +369,137 @@ class AudioManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - Playback Defaults
+
+    private func loadPlaybackDefaults() {
+        autosavePlaybackDefaults = UserDefaults.standard.bool(forKey: PlaybackDefaults.autosaveDefaultsKey)
+
+        let savedRate = UserDefaults.standard.float(forKey: PlaybackDefaults.rateKey)
+        if savedRate > 0 { playbackRate = savedRate }
+
+        if let rawMode = UserDefaults.standard.string(forKey: PlaybackDefaults.modeKey),
+           let mode = PlaybackMode(rawValue: rawMode) {
+            playbackMode = mode
+        }
+
+        let savedRepeat = UserDefaults.standard.integer(forKey: PlaybackDefaults.repeatCountKey)
+        if savedRepeat > 0 { repeatCount = savedRepeat }
+
+        let savedDuration = UserDefaults.standard.double(forKey: PlaybackDefaults.durationSecondsKey)
+        if savedDuration > 0 { durationLimitSeconds = savedDuration }
+
+        if UserDefaults.standard.object(forKey: PlaybackDefaults.backgroundEnabledKey) != nil {
+            isBackgroundSoundsEnabled = UserDefaults.standard.bool(forKey: PlaybackDefaults.backgroundEnabledKey)
+        }
+
+        let savedAmbientVol = UserDefaults.standard.float(forKey: PlaybackDefaults.ambientVolumeKey)
+        if savedAmbientVol > 0 { ambientVolume = savedAmbientVol }
+        normalAmbientVolume = ambientVolume
+
+        let savedDucking = UserDefaults.standard.float(forKey: PlaybackDefaults.duckingAmountKey)
+        if savedDucking > 0 { ambientDuckingAmount = savedDucking }
+    }
+
+    func savePlaybackDefaults() {
+        UserDefaults.standard.set(autosavePlaybackDefaults, forKey: PlaybackDefaults.autosaveDefaultsKey)
+        UserDefaults.standard.set(playbackRate, forKey: PlaybackDefaults.rateKey)
+        UserDefaults.standard.set(playbackMode.rawValue, forKey: PlaybackDefaults.modeKey)
+        UserDefaults.standard.set(repeatCount, forKey: PlaybackDefaults.repeatCountKey)
+        UserDefaults.standard.set(durationLimitSeconds, forKey: PlaybackDefaults.durationSecondsKey)
+        UserDefaults.standard.set(isBackgroundSoundsEnabled, forKey: PlaybackDefaults.backgroundEnabledKey)
+        UserDefaults.standard.set(ambientVolume, forKey: PlaybackDefaults.ambientVolumeKey)
+        UserDefaults.standard.set(ambientDuckingAmount, forKey: PlaybackDefaults.duckingAmountKey)
+    }
+
+    func setAutosavePlaybackDefaults(_ enabled: Bool) {
+        autosavePlaybackDefaults = enabled
+        UserDefaults.standard.set(enabled, forKey: PlaybackDefaults.autosaveDefaultsKey)
+    }
+
+    func setPlaybackRate(_ rate: Float) {
+        playbackRate = max(0.5, min(2.0, rate))
+        applyPlaybackRateIfPossible()
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(playbackRate, forKey: PlaybackDefaults.rateKey)
+        }
+    }
+
+    func setPlaybackMode(_ mode: PlaybackMode) {
+        playbackMode = mode
+        applyPlaybackModeIfPossible()
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(playbackMode.rawValue, forKey: PlaybackDefaults.modeKey)
+        }
+    }
+
+    func setRepeatCount(_ count: Int) {
+        repeatCount = max(1, count)
+        applyPlaybackModeIfPossible()
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(repeatCount, forKey: PlaybackDefaults.repeatCountKey)
+        }
+    }
+
+    func setDurationLimitSeconds(_ seconds: TimeInterval) {
+        durationLimitSeconds = max(5, seconds)
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(durationLimitSeconds, forKey: PlaybackDefaults.durationSecondsKey)
+        }
+    }
+
+    func setBackgroundSoundsEnabled(_ enabled: Bool) {
+        isBackgroundSoundsEnabled = enabled
+        if !enabled {
+            stopAmbientSound()
+        }
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(enabled, forKey: PlaybackDefaults.backgroundEnabledKey)
+        }
+    }
+
+    func setAmbientDuckingAmount(_ amount: Float) {
+        ambientDuckingAmount = max(0, min(1, amount))
+        updateDuckedAmbientVolume()
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(ambientDuckingAmount, forKey: PlaybackDefaults.duckingAmountKey)
+        }
+    }
+
+    private func updateDuckedAmbientVolume() {
+        duckedAmbientVolume = normalAmbientVolume * (1 - ambientDuckingAmount)
+    }
+
+    private func applyPlaybackRateIfPossible() {
+        audioPlayer?.enableRate = true
+        audioPlayer?.rate = playbackRate
+    }
+
+    private func applyPlaybackModeIfPossible() {
+        durationModeTimer?.invalidate()
+        durationModeTimer = nil
+
+        switch playbackMode {
+        case .once:
+            audioPlayer?.numberOfLoops = 0
+        case .loop:
+            audioPlayer?.numberOfLoops = -1
+        case .repeatCount:
+            audioPlayer?.numberOfLoops = max(0, repeatCount - 1)
+        case .duration:
+            audioPlayer?.numberOfLoops = -1
+        }
+    }
+
+    private func startDurationModeTimerIfNeeded() {
+        guard playbackMode == .duration else { return }
+        durationModeTimer?.invalidate()
+        durationModeTimer = Timer.scheduledTimer(withTimeInterval: durationLimitSeconds, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.stop()
+        }
+        RunLoop.main.add(durationModeTimer!, forMode: .common)
+    }
+
     // MARK: - Playback Setup
     
     func setupPlayer(for recordingId: String) throws {
@@ -364,6 +529,9 @@ class AudioManager: NSObject, ObservableObject {
         
         audioPlayer = try AVAudioPlayer(contentsOf: fileURL)
         audioPlayer?.delegate = self
+        audioPlayer?.enableRate = true
+        audioPlayer?.rate = playbackRate
+        applyPlaybackModeIfPossible()
         audioPlayer?.prepareToPlay()
         
         duration = audioPlayer?.duration ?? 0
@@ -398,6 +566,11 @@ class AudioManager: NSObject, ObservableObject {
             print("❌ Failed to activate audio session: \(error)")
         }
         
+        // Duck ambient audio if playing
+        if isAmbientPlaying {
+            duckAmbientAudio()
+        }
+        
         // Start playback
         let success = player.play()
         print("🔊 Audio player play() returned: \(success)")
@@ -413,6 +586,7 @@ class AudioManager: NSObject, ObservableObject {
         
         // Start playback timer
         startPlaybackTimer()
+        startDurationModeTimerIfNeeded()
     }
     
     private func startPlaybackTimer() {
@@ -447,10 +621,21 @@ class AudioManager: NSObject, ObservableObject {
         RunLoop.main.add(playbackTimer!, forMode: .common)
     }
     
+    func setPlaybackLooping(_ enabled: Bool) {
+        isPlaybackLooping = enabled
+        setPlaybackMode(enabled ? .loop : .once)
+    }
+    
     func pause() {
+        durationModeTimer?.invalidate()
+        durationModeTimer = nil
         audioPlayer?.pause()
         isPlaying = false
         playbackTimer?.invalidate()
+        
+        // Restore ambient volume when pausing
+        restoreAmbientAudio()
+        
         updateNowPlayingInfo()
         
         // Haptic feedback for pause
@@ -470,11 +655,16 @@ class AudioManager: NSObject, ObservableObject {
     }
     
     func stop() {
+        durationModeTimer?.invalidate()
+        durationModeTimer = nil
         audioPlayer?.stop()
         audioPlayer?.currentTime = 0
         isPlaying = false
         currentTime = 0
         playbackTimer?.invalidate()
+        
+        // Restore ambient volume if it was ducked
+        restoreAmbientAudio()
         
         // Stop ambient sound as well
         stopAmbientSound()
@@ -494,7 +684,80 @@ class AudioManager: NSObject, ObservableObject {
     
     // MARK: - Ambient Sound Controls
     
+    private enum AmbientSoundDefaults {
+        static let favoriteIdsKey = "ambientSound_favoriteIds"
+        static let lastUsedPrefix = "ambientSound_lastUsed_"
+    }
+    
+    func isAmbientSoundFavorite(_ sound: AmbientSound) -> Bool {
+        favoriteAmbientSoundIds().contains(sound.id)
+    }
+    
+    func toggleAmbientSoundFavorite(_ sound: AmbientSound) {
+        var favorites = favoriteAmbientSoundIds()
+        if favorites.contains(sound.id) {
+            favorites.remove(sound.id)
+        } else {
+            favorites.insert(sound.id)
+        }
+        UserDefaults.standard.set(Array(favorites), forKey: AmbientSoundDefaults.favoriteIdsKey)
+        ambientSoundPreferencesVersion += 1
+    }
+    
+    func ambientSoundLastUsedAt(_ sound: AmbientSound) -> Date? {
+        let key = AmbientSoundDefaults.lastUsedPrefix + sound.id
+        let timeInterval = UserDefaults.standard.double(forKey: key)
+        guard timeInterval > 0 else { return nil }
+        return Date(timeIntervalSince1970: timeInterval)
+    }
+    
+    private func markAmbientSoundUsed(_ sound: AmbientSound, at date: Date = Date()) {
+        let key = AmbientSoundDefaults.lastUsedPrefix + sound.id
+        UserDefaults.standard.set(date.timeIntervalSince1970, forKey: key)
+        ambientSoundPreferencesVersion += 1
+    }
+    
+    func orderedAmbientSoundsForDisplay(_ sounds: [AmbientSound]) -> [AmbientSound] {
+        let noneSound = sounds.first(where: { $0.id == "none" || $0.fileName.isEmpty })
+        let otherSounds = sounds.filter { !($0.id == "none" || $0.fileName.isEmpty) }
+        
+        let favorites = favoriteAmbientSoundIds()
+        let favoriteSounds = otherSounds
+            .filter { favorites.contains($0.id) }
+            .sorted { (lhs, rhs) in
+                let lhsDate = ambientSoundLastUsedAt(lhs) ?? .distantPast
+                let rhsDate = ambientSoundLastUsedAt(rhs) ?? .distantPast
+                if lhsDate != rhsDate { return lhsDate > rhsDate }
+                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            }
+        
+        let recentSounds = otherSounds
+            .filter { !favorites.contains($0.id) }
+            .filter { ambientSoundLastUsedAt($0) != nil }
+            .sorted { (lhs, rhs) in
+                (ambientSoundLastUsedAt(lhs) ?? .distantPast) > (ambientSoundLastUsedAt(rhs) ?? .distantPast)
+            }
+        
+        let excludedIds = Set(favoriteSounds.map(\.id) + recentSounds.map(\.id))
+        let remainingSounds = otherSounds.filter { !excludedIds.contains($0.id) }
+        
+        var ordered: [AmbientSound] = []
+        if let noneSound {
+            ordered.append(noneSound)
+        }
+        ordered.append(contentsOf: favoriteSounds)
+        ordered.append(contentsOf: recentSounds)
+        ordered.append(contentsOf: remainingSounds)
+        return ordered
+    }
+    
+    private func favoriteAmbientSoundIds() -> Set<String> {
+        let ids = UserDefaults.standard.stringArray(forKey: AmbientSoundDefaults.favoriteIdsKey) ?? []
+        return Set(ids)
+    }
+    
     func playAmbientSound(_ sound: AmbientSound) {
+        guard isBackgroundSoundsEnabled else { return }
         guard let url = sound.fileURL else {
             print("❌ Ambient sound file not found: \(sound.fileName)")
             return
@@ -517,6 +780,9 @@ class AudioManager: NSObject, ObservableObject {
             
             let success = ambientPlayer?.play() ?? false
             isAmbientPlaying = success
+            if success {
+                markAmbientSoundUsed(sound)
+            }
             print("✅ Ambient sound \(success ? "playing" : "failed to play"): \(sound.name)")
         } catch {
             print("❌ Failed to play ambient sound: \(error)")
@@ -532,8 +798,39 @@ class AudioManager: NSObject, ObservableObject {
     }
     
     func setAmbientVolume(_ volume: Float) {
-        ambientVolume = max(0, min(1, volume))
+        let clampedVolume = max(0, min(1, volume))
+        ambientVolume = clampedVolume
+        normalAmbientVolume = clampedVolume // Update the normal volume when user adjusts
+        updateDuckedAmbientVolume()
         ambientPlayer?.volume = ambientVolume
+
+        if autosavePlaybackDefaults {
+            UserDefaults.standard.set(ambientVolume, forKey: PlaybackDefaults.ambientVolumeKey)
+        }
+    }
+    
+    // MARK: - Audio Ducking
+    
+    private func duckAmbientAudio() {
+        guard isAmbientPlaying else { return }
+        
+        // Smoothly lower ambient volume
+        UIView.animate(withDuration: 0.3) {
+            self.ambientPlayer?.volume = self.duckedAmbientVolume
+        }
+        
+        print("🔉 Ducked ambient audio to \(duckedAmbientVolume)")
+    }
+    
+    private func restoreAmbientAudio() {
+        guard isAmbientPlaying else { return }
+        
+        // Smoothly restore ambient volume
+        UIView.animate(withDuration: 0.3) {
+            self.ambientPlayer?.volume = self.normalAmbientVolume
+        }
+        
+        print("🔊 Restored ambient audio to \(normalAmbientVolume)")
     }
     
     // MARK: - Now Playing Info
@@ -647,9 +944,13 @@ extension AudioManager: AVAudioPlayerDelegate {
         isPlaying = false
         currentTime = 0
         playbackTimer?.invalidate()
-        
+
         if flag {
             print("Playback finished successfully")
+        }
+
+        DispatchQueue.main.async {
+            self.onPlaybackFinished?()
         }
     }
     

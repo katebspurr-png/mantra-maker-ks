@@ -7,6 +7,7 @@ struct PlaylistDetailView: View {
     let playlistId: String
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
+    @State private var loopPlaylist = false
     
     var playlist: Playlist? {
         appState.playlists.first { $0.id == playlistId }
@@ -59,7 +60,8 @@ struct PlaylistDetailView: View {
                     
                     // Play All Button
                     if !playlistRecordings.isEmpty {
-                        Button(action: playAll) {
+                        VStack(spacing: 12) {
+                            Button(action: playAll) {
                             HStack(spacing: 12) {
                                 Image(systemName: "play.fill")
                                     .font(.system(size: 16))
@@ -72,7 +74,20 @@ struct PlaylistDetailView: View {
                             .background(Color.resSage)
                             .cornerRadius(ResRadius.md)
                         }
-                        .padding(.horizontal, ResSpacing.screen)
+
+                            Toggle(isOn: $loopPlaylist) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "repeat")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.resTextSoft)
+                                    Text("Loop playlist")
+                                        .font(.resBodySm)
+                                        .foregroundColor(.resTextSoft)
+                                }
+                            }
+                            .toggleStyle(SwitchToggleStyle(tint: .resSage))
+                            .padding(.horizontal, ResSpacing.screen)
+                        }
                         .padding(.bottom, 24)
                     }
                     
@@ -102,7 +117,7 @@ struct PlaylistDetailView: View {
                                     recording: recording,
                                     index: index + 1
                                 ) {
-                                    appState.playRecording(recording)
+                                    appState.playPlaylist(playlistId: playlistId, startAtIndex: index, loopPlaylist: loopPlaylist)
                                 } onRemove: {
                                     removeRecording(recording)
                                 }
@@ -138,9 +153,7 @@ struct PlaylistDetailView: View {
     }
     
     private func playAll() {
-        if let first = playlistRecordings.first {
-            appState.playRecording(first)
-        }
+        appState.playPlaylist(playlistId: playlistId, startAtIndex: 0, loopPlaylist: loopPlaylist)
     }
     
     private func removeRecording(_ recording: Recording) {

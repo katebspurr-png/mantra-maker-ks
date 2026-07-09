@@ -227,50 +227,71 @@ struct ToneAnalysisView: View {
     // MARK: - Mock Analysis Generator
     
     private func generateMockAnalysis(for recording: Recording) -> ToneAnalysis {
-        // Generate semi-random but consistent scores based on recording properties
-        _ = recording.text.count
-        let seed = recording.id.hashValue
+        // Use UUID to generate a stable seed value
+        let uuidString = recording.id
+        var seedValue = 0
+        for char in uuidString.unicodeScalars {
+            seedValue = seedValue &+ Int(char.value)
+        }
+        let seed = abs(seedValue)
         
         // Generate scores (60-95 range for demo)
-        let conviction = 60 + (abs(seed % 35))
-        let sincerity = 65 + (abs((seed * 7) % 30))
+        let conviction = 60 + (seed % 35)
+        let sincerity = 65 + ((seed * 7) % 30)
         
-        let summaries = [
+        // Single summary based on seed
+        let summaryOptions = [
             "Your delivery shows genuine emotion and strong vocal presence. The pacing feels natural, allowing each word to land with intention.",
             "There's a warm authenticity in your tone. Consider emphasizing key phrases slightly more to deepen the emotional impact.",
             "You speak with clarity and conviction. Your voice conveys confidence, and the affirmation feels personally meaningful.",
             "Your delivery is steady and grounded. There's room to explore more emotional range to enhance the connection with the words.",
         ]
+        let summary = summaryOptions[seed % 4]
         
-        let allStrengths = [
+        // Select strengths
+        let strengthOptions = [
             "Clear, confident vocal tone",
             "Natural pacing and rhythm",
             "Genuine emotional connection",
             "Strong emphasis on key words",
             "Steady, grounded delivery",
         ]
+        let strengths = [
+            strengthOptions[seed % 5],
+            strengthOptions[(seed + 1) % 5],
+            strengthOptions[(seed + 2) % 5]
+        ]
         
-        let allImprovements = [
+        // Select improvements
+        let improvementOptions = [
             "Try varying your pitch for emotional emphasis",
             "Pause slightly longer between phrases",
             "Explore softer, more intimate moments",
             "Experiment with breathing techniques",
         ]
+        let improvements = [
+            improvementOptions[seed % 4],
+            improvementOptions[(seed + 1) % 4]
+        ]
         
-        let exercises = [
+        // Select exercise
+        let exerciseOptions = [
             "Record this affirmation again with your eyes closed, focusing entirely on the feeling behind the words.",
             "Try saying this affirmation while placing your hand on your heart. Notice how it changes your delivery.",
             "Practice emphasizing different words each time you say it, and notice which feels most powerful.",
         ]
+        let exercise = exerciseOptions[seed % 3]
         
         return ToneAnalysis(
+            id: UUID().uuidString,
             recordingId: recording.id,
+            createdAt: Date(),
             sincerityScore: sincerity,
             convictionScore: conviction,
-            summary: summaries[abs(seed % summaries.count)],
-            strengths: Array(allStrengths.shuffled().prefix(3)),
-            improvements: Array(allImprovements.shuffled().prefix(2)),
-            practiceExercise: exercises[abs(seed % exercises.count)]
+            summary: summary,
+            strengths: strengths,
+            improvements: improvements,
+            practiceExercise: exercise
         )
     }
     

@@ -4,17 +4,22 @@ import UIKit
 /// Root view that manages app state and navigation between onboarding and main app
 struct ResonanceRootView: View {
     @StateObject private var appState = AppState()
+    @StateObject private var themeManager = ThemeManager()
+    @Environment(\.colorScheme) var systemColorScheme
     
     var body: some View {
         Group {
             if appState.hasCompletedOnboarding {
                 MainTabView()
                     .environmentObject(appState)
+                    .environmentObject(themeManager)
             } else {
                 OnboardingFlow()
                     .environmentObject(appState)
+                    .environmentObject(themeManager)
             }
         }
+        .preferredColorScheme(themeManager.preferredColorScheme(for: systemColorScheme))
         .onAppear {
             printAvailableFonts()
         }

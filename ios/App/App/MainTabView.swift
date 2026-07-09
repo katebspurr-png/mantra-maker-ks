@@ -2,24 +2,29 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var themeManager: ThemeManager
     @State private var selectedTab = 0
     
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView(selection: $selectedTab) {
                 HomeView()
+                    .environmentObject(themeManager)
                     .tag(0)
                 
                 LibraryView()
+                    .environmentObject(themeManager)
                     .tag(1)
                 
                 Color.clear
                     .tag(2)
                 
                 PlaylistsView()
+                    .environmentObject(themeManager)
                     .tag(3)
                 
                 ProfileView()
+                    .environmentObject(themeManager)
                     .tag(4)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -28,10 +33,8 @@ struct MainTabView: View {
         }
         .ignoresSafeArea(.keyboard)
         .fullScreenCover(isPresented: $appState.showingImmersivePlayer) {
-            if let recording = appState.currentlyPlaying {
-                ImmersivePlayerView(recording: recording)
-                    .environmentObject(appState)
-            }
+            ImmersivePlayerView()
+                .environmentObject(appState)
         }
     }
 }
