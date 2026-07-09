@@ -39,9 +39,7 @@ struct HomeView: View {
                 }
                 
                 // Divider
-                Rectangle()
-                    .fill(Color.resBorder)
-                    .frame(height: 1)
+                Hairline()
                     .padding(.top, 36)
                 
                 // Record Button

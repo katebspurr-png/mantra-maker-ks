@@ -183,8 +183,8 @@ struct RecordReadyView: View {
                 // Microphone Button
                 VStack(spacing: 16) {
                     ZStack {
-                        BreathingRing(diameter: 130, color: .resSage, delay: 0)
-                        BreathingRing(diameter: 108, color: .resSage, delay: 1)
+                        BreathingRing(diameter: 130, color: .resWarm, delay: 0)
+                        BreathingRing(diameter: 108, color: .resWarm, delay: 1)
                         
                         Button(action: {
                             if audioManager.isRecording {
@@ -255,10 +255,10 @@ struct RecordReadyView: View {
                                     if appState.calibratedWPM != nil {
                                         Text("CALIBRATED")
                                             .font(.custom("PlusJakartaSans-SemiBold", size: 9))
-                                            .foregroundColor(.resSage)
+                                            .foregroundColor(.resWarm)
                                             .padding(.horizontal, 6)
                                             .padding(.vertical, 2)
-                                            .background(Color.resSageSoft)
+                                            .background(Color.resWarmSoft)
                                             .cornerRadius(4)
                                     }
                                 }
@@ -318,7 +318,7 @@ struct RecordReadyView: View {
                                                 appState.saveWPMSettings()
                                             }
                                         )
-                                        .accentColor(.resSage)
+                                        .accentColor(.resWarm)
                                         
                                         Text("Faster")
                                             .font(.custom("PlusJakartaSans-Regular", size: 10))
@@ -434,7 +434,7 @@ struct ToggleButton: View {
             HStack(spacing: 7) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 9)
-                        .fill(isOn ? Color.resSage : Color.resBorder)
+                        .fill(isOn ? Color.resWarm : Color.resBorder)
                         .frame(width: 30, height: 17)
                     
                     Circle()
@@ -665,12 +665,12 @@ struct RadioButton: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .stroke(isSelected ? Color.resSage : Color.resBorder, lineWidth: 2)
+                        .stroke(isSelected ? Color.resWarm : Color.resBorder, lineWidth: 2)
                         .frame(width: 18, height: 18)
                     
                     if isSelected {
                         Circle()
-                            .fill(Color.resSage)
+                            .fill(Color.resWarm)
                             .frame(width: 8, height: 8)
                     }
                 }
