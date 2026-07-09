@@ -89,7 +89,7 @@ struct ThoughtTransformerView: View {
                     // Result Section
                     if !transformedAffirmation.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
-                            Divider()
+                            Hairline()
                                 .padding(.vertical, 8)
                             
                             VStack(alignment: .leading, spacing: 12) {

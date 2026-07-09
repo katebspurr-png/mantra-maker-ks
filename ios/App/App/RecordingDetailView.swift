@@ -263,7 +263,7 @@ struct RecordingDetailView: View {
                             actionRow(icon: "square.and.arrow.up", label: "Share Recording", color: .resTextSoft)
                         }
                         
-                        Divider()
+                        Hairline()
                             .padding(.leading, 56)
                         
                         // Favorite
@@ -295,7 +295,7 @@ struct RecordingDetailView: View {
                             }
                         }
                         
-                        Divider()
+                        Hairline()
                             .padding(.leading, 56)
                         
                         // Delete
@@ -361,9 +361,7 @@ struct RecordingDetailView: View {
     // MARK: - Helper Views
     
     func sectionDivider() -> some View {
-        Rectangle()
-            .fill(Color.resBorder)
-            .frame(height: 1)
+        Hairline()
     }
     
     func actionRow(icon: String, label: String, color: Color) -> some View {

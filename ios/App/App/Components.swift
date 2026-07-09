@@ -177,9 +177,7 @@ struct CollapsibleSection: View {
         .background(
             VStack {
                 Spacer()
-                Rectangle()
-                    .fill(Color.resBorder)
-                    .frame(height: 1)
+                Hairline()
             }
         )
     }

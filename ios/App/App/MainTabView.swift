@@ -52,9 +52,7 @@ struct CustomTabBar: View {
                 .fill(Color.resBg.opacity(0.95))
                 .background(.ultraThinMaterial)
                 .overlay(
-                    Rectangle()
-                        .fill(Color.resBorder)
-                        .frame(height: 1),
+                    Hairline(),
                     alignment: .top
                 )
             
@@ -94,6 +92,7 @@ struct CustomTabBar: View {
                     Text("Record")
                         .font(.resNavLabel)
                         .foregroundColor(.resTextMuted)
+                        .padding(.bottom, ResTabBar.labelPadBottom)
                 }
                 .frame(maxWidth: .infinity)
                 
@@ -139,6 +138,7 @@ struct TabBarItem: View {
                 Text(label)
                     .font(isSelected ? .resNavLabelActive : .resNavLabel)
                     .foregroundColor(isSelected ? .resSage : .resTextMuted)
+                    .padding(.bottom, ResTabBar.labelPadBottom)
             }
         }
         .frame(maxWidth: .infinity)
