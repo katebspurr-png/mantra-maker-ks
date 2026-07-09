@@ -96,7 +96,7 @@ struct RecordView: View {
                 
                 ToolbarItem(placement: .principal) {
                     Text(hasRecorded ? "Save Affirmation" : "New Affirmation")
-                        .font(.resSerif17)
+                        .font(.resSerif16)
                         .foregroundColor(.resText)
                 }
             }
@@ -494,7 +494,7 @@ struct RecordSaveView: View {
                     EyebrowLabel("Your affirmation", color: .resWarm)
                     
                     AffirmationQuoteView(text: affirmationText, size: .small)
-                        .font(.resSerif19)
+                        .font(.resSerif18)
                 }
                 .padding(.horizontal, 22)
                 .padding(.vertical, 20)

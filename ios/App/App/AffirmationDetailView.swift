@@ -16,7 +16,7 @@ struct AffirmationDetailView: View {
                     // Affirmation text card
                     VStack(alignment: .leading, spacing: 12) {
                         Text(group.text)
-                            .font(.resSerif19)
+                            .font(.resSerif18)
                             .foregroundColor(.resText)
                             .lineSpacing(4)
                     }

@@ -235,7 +235,7 @@ struct ProfileView: View {
             
             VStack(alignment: .leading, spacing: 1) {
                 Text("Kate")
-                    .font(.resSerif17)
+                    .font(.resSerif16)
                     .foregroundColor(.resText)
                 
                 Text("kate@example.com")

@@ -1,23 +1,5 @@
 import SwiftUI
 
-// MARK: - Eyebrow Label
-struct EyebrowLabel: View {
-    let text: String
-    let color: Color
-    
-    init(_ text: String, color: Color = .resSage) {
-        self.text = text
-        self.color = color
-    }
-    
-    var body: some View {
-        Text(text.uppercased())
-            .font(.resMicro)
-            .foregroundColor(color)
-            .kerning(0.1)
-    }
-}
-
 // MARK: - Affirmation Quote View
 struct AffirmationQuoteView: View {
     let text: String
@@ -131,7 +113,7 @@ struct CategoryChip: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
                 .background(isActive ? Color.resText : Color.resSageSoft)
-                .cornerRadius(ResRadius.pill)
+                .cornerRadius(ResRadius.lg)
         }
     }
 }

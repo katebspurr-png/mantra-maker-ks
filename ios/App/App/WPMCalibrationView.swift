@@ -41,7 +41,7 @@ struct WPMCalibrationView: View {
                                     .kerning(0.07)
                                 
                                 Text(CalibrationManager.calibrationScript)
-                                    .font(.resSerif19)
+                                    .font(.resSerif18)
                                     .foregroundColor(.resText)
                                     .lineSpacing(8)
                                     .padding(20)

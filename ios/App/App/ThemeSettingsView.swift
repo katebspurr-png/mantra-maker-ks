@@ -66,7 +66,7 @@ struct ThemeSettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("Theme")
-                        .font(.resSerif17)
+                        .font(.resSerif16)
                         .foregroundColor(.themedText(theme: themeManager.selectedTheme, colorScheme: colorScheme))
                 }
                 

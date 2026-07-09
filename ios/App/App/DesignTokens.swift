@@ -111,6 +111,12 @@ extension Font {
 struct EyebrowLabel: View {
     let text: String
     var color: Color = .resSage
+    
+    init(_ text: String, color: Color = .resSage) {
+        self.text = text
+        self.color = color
+    }
+    
     var body: some View {
         Text(text.uppercased())
             .font(.resMicro)

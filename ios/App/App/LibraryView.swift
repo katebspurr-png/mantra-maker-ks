@@ -268,7 +268,7 @@ struct SuggestionRow: View {
             
             // Suggestion text
             Text("\"\(suggestion.text)\"")
-                .font(.resSerif19)
+                .font(.resSerif18)
                 .foregroundColor(.resText)
                 .lineSpacing(6)
             
@@ -287,7 +287,7 @@ struct SuggestionRow: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                     .background(Color.resText)
-                    .cornerRadius(ResRadius.pill)
+                    .cornerRadius(ResRadius.lg)
                 }
                 
                 Button(action: {
@@ -306,7 +306,7 @@ struct SuggestionRow: View {
                     .padding(.vertical, 10)
                     .background(Color.clear)
                     .overlay(
-                        RoundedRectangle(cornerRadius: ResRadius.pill)
+                        RoundedRectangle(cornerRadius: ResRadius.lg)
                             .stroke(Color.resBorder, lineWidth: 1)
                     )
                 }
@@ -326,7 +326,7 @@ struct SuggestionRow: View {
                     .padding(.vertical, 10)
                     .background(Color.clear)
                     .overlay(
-                        RoundedRectangle(cornerRadius: ResRadius.pill)
+                        RoundedRectangle(cornerRadius: ResRadius.lg)
                             .stroke(Color.resBorder, lineWidth: 1)
                     )
                 }

@@ -107,7 +107,7 @@ struct RecordingDetailView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(Color.resSageSoft)
-                            .cornerRadius(ResRadius.pill)
+                            .cornerRadius(ResRadius.lg)
                         }
                         
                         Text(recording.durationFormatted)
@@ -327,7 +327,7 @@ struct RecordingDetailView: View {
             
             ToolbarItem(placement: .principal) {
                 Text("Recording")
-                    .font(.resSerif17)
+                    .font(.resSerif16)
                     .foregroundColor(.resText)
             }
         }
