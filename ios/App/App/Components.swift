@@ -153,7 +153,7 @@ struct CollapsibleSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button(action: { withAnimation { isExpanded.toggle() } }) {
+            Button(action: { withAnimation(ResMotion.standard) { isExpanded.toggle() } }) {
                 HStack {
                     Text(title)
                         .font(.custom("PlusJakartaSans-SemiBold", size: 16))
