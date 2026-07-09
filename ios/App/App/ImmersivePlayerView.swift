@@ -14,6 +14,7 @@ struct ImmersivePlayerView: View {
 
     @State private var showingAmbientSelector = false
     @State private var showingPlaybackOptions = false
+    @State private var showingFeelingCapture = false
     @State private var selectedAmbient: AmbientSound?
     
     var progress: Double {
@@ -73,7 +74,12 @@ struct ImmersivePlayerView: View {
                     
                     Button(action: {
                         HapticManager.shared.buttonTap()
-                        dismiss()
+                        // Show feeling capture if session was long enough (≥ 1 loop, ~10 seconds)
+                        if audioManager.currentTime >= 10 {
+                            showingFeelingCapture = true
+                        } else {
+                            dismiss()
+                        }
                     }) {
                         ZStack {
                             Circle()
@@ -280,6 +286,17 @@ struct ImmersivePlayerView: View {
                     appState.stopPlaybackAndClearQueue()
                 }
             )
+        }
+        .fullScreenCover(isPresented: $showingFeelingCapture, onDismiss: {
+            dismiss()
+        }) {
+            if let recording = currentRecording {
+                FeelingCaptureView(
+                    recording: recording,
+                    playlist: nil
+                )
+                .environmentObject(appState)
+            }
         }
     }
 }
