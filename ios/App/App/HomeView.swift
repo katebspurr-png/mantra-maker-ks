@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var showingRecordSheet = false
     @State private var showingThoughtTransformer = false
     @State private var showingRecordWithSuggestion = false
+    @State private var showingReflections = false
     
     var currentRecording: Recording? {
         appState.recordings.first
@@ -69,6 +70,10 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingRecordWithSuggestion) {
             RecordView(prefillText: todaySuggestion)
+                .environmentObject(appState)
+        }
+        .sheet(isPresented: $showingReflections) {
+            ReflectionsView()
                 .environmentObject(appState)
         }
         .onAppear {
@@ -294,8 +299,56 @@ struct HomeView: View {
             CollapsibleSection(
                 title: "How it's been",
                 subtitle: nil,
-                isExpanded: .constant(false)
-            )
+                isExpanded: Binding(
+                    get: { expandedSections.contains("reflections") },
+                    set: { isExpanded in
+                        if isExpanded {
+                            expandedSections.insert("reflections")
+                        } else {
+                            expandedSections.remove("reflections")
+                        }
+                    }
+                )
+            ) {
+                AnyView(reflectionsContent)
+            }
+        }
+    }
+    
+    private var reflectionsContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if appState.reflections.isEmpty {
+                // Empty state
+                Text("After you listen, you can leave a word about how you feel. It gathers here.")
+                    .font(.custom("PlusJakartaSans-Regular", size: 13))
+                    .foregroundColor(.resTextSoft)
+                    .lineSpacing(3)
+            } else {
+                // Show recent words
+                Text("Words you've left after listening, lately:")
+                    .font(.resBodySm)
+                    .foregroundColor(.resTextSoft)
+                
+                let recentWords = appState.getRecentReflectionWords(limit: 3)
+                Text(recentWords.joined(separator: " · "))
+                    .font(.custom("CormorantGaramond-LightItalic", size: 24))
+                    .foregroundColor(.resText)
+                    .lineSpacing(10)  // 1.9 line-height ≈ 10pt extra at 24pt
+                    .padding(.vertical, 4)
+                
+                // Link to full page
+                Button(action: { showingReflections = true }) {
+                    HStack(spacing: 5) {
+                        Text("See your reflections")
+                            .font(.resBodyMd)
+                            .foregroundColor(.resSage)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13))
+                            .foregroundColor(.resSage)
+                    }
+                }
+            }
         }
     }
 }
