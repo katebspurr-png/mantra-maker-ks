@@ -1,11 +1,18 @@
 // ─────────────────────────────────────────────────
-// Resonance — Design Tokens
-// "Breath" direction · Generated from design mocks
+// Resonance — Design Tokens · v3 "Minimal / High-End"
+// Supersedes the earlier DesignTokens.swift
 // ─────────────────────────────────────────────────
 //
 // Usage: Add this file to your Xcode project.
 // Fonts require Cormorant Garamond + Plus Jakarta Sans
 // (see FontSetup.md for integration guide)
+//
+// v3 changes from v1:
+//   · textSoft / textMuted darkened (accessibility)
+//   · Hairline dividers (0.5pt), not 1pt
+//   · Eyebrows: 10pt, tracking 0.14em
+//   · Tab bar: 4 tabs, 92pt, 10.5pt labels
+//   · Motion: one shared curve, fades only
 //
 // ─────────────────────────────────────────────────
 
@@ -14,76 +21,45 @@ import SwiftUI
 // MARK: - Color Palette
 
 extension Color {
-    // ── Backgrounds (Adaptive for Dark Mode) ──────
-    /// Primary app background — warm white (light) / dark warm (dark)
-    static var resBg: Color {
-        Color(light: "#FDFCF9", dark: "#0F0C07")
-    }
-    /// Warm cream — used for featured content blocks
-    static var resBgWarm: Color {
-        Color(light: "#F5EFE6", dark: "#1C1610")
-    }
-    /// Card surface — pure white (light) / dark card (dark)
-    static var resCard: Color {
-        Color(light: "#FFFFFF", dark: "#1C1814")
-    }
-    /// Dimmed surface — inputs, inactive areas
-    static var resBgDim: Color {
-        Color(light: "#F0EBE2", dark: "#252218")
-    }
+    // ── Backgrounds ──────────────────────────────
+    /// Primary app background — warm white
+    static let resBg         = Color(hex: "#FDFCF9")
+    /// Warm cream — featured content blocks
+    static let resBgWarm     = Color(hex: "#F5EFE6")
+    /// Card surface — pure white (rare in v3; most surfaces are de-boxed)
+    static let resCard       = Color(hex: "#FFFFFF")
+    /// Dimmed surface — inputs, segmented control track
+    static let resBgDim      = Color(hex: "#F0EBE2")
 
-    // ── Text (Adaptive for Dark Mode) ─────────────
+    // ── Text ─────────────────────────────────────
     /// Primary text
-    static var resText: Color {
-        Color(light: "#1C1A16", dark: "#FAF4EC")
-    }
-    /// Secondary text
-    static var resTextSoft: Color {
-        Color(light: "#7A7468", dark: "#B5ADA3")
-    }
-    /// Muted / placeholder text
-    static var resTextMuted: Color {
-        Color(light: "#B5ADA3", dark: "#7A7468")
-    }
+    static let resText       = Color(hex: "#1C1A16")
+    /// Secondary text — v3: darkened for contrast
+    static let resTextSoft   = Color(hex: "#6E6759")
+    /// Muted / metadata text — v3: darkened, passes AA at 12pt+
+    static let resTextMuted  = Color(hex: "#857B6D")
 
     // ── Accent — Sage ─────────────────────────────
-    /// Primary action accent (sage green)
+    /// Sage green. v3 rule: sage owns Library, Playlists,
+    /// Reflections, onboarding — anything about growth/collection.
     static let resSage       = Color(hex: "#4A6741")
-    /// Sage tint for backgrounds
-    static var resSageSoft: Color {
-        Color.resSage.opacity(0.10)
-    }
+    static let resSageSoft   = Color(hex: "#4A6741").opacity(0.10)
 
     // ── Accent — Terracotta ───────────────────────
-    /// Warm accent (terracotta) — suggestions, categories
+    /// Terracotta. v3 rule: warm owns the ENTIRE recording flow
+    /// (rings, toggles, radios, waveform, rec indicator) and the
+    /// Try Today block. NEVER mix sage + warm on one screen.
     static let resWarm       = Color(hex: "#C07A52")
-    /// Terracotta tint
-    static var resWarmSoft: Color {
-        Color.resWarm.opacity(0.10)
-    }
+    static let resWarmSoft   = Color(hex: "#C07A52").opacity(0.10)
 
-    // ── Structural (Adaptive for Dark Mode) ───────
-    /// Dividers, card borders
-    static var resBorder: Color {
-        Color(light: "#E8E2D9", dark: "#2A2620")
-    }
+    // ── Structural ────────────────────────────────
+    /// Dividers (draw at 0.5pt), input borders
+    static let resBorder     = Color(hex: "#E8E2D9")
 
-    // ── Dark (Immersive Player) ───────────────────
-    /// Immersive player background — dark warm
+    // ── Dark (Immersive Player + Feeling Capture) ─
     static let resDarkBg     = Color(hex: "#1C1610")
-    /// Primary text on dark surfaces
     static let resDarkText   = Color(hex: "#FAF4EC")
-    /// Muted text on dark surfaces
-    static let resDarkMuted  = Color(hex: "#FAF4EC").opacity(0.28)
-    
-    // ── Helper initializer for adaptive colors ────
-    init(light: String, dark: String) {
-        self.init(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ?
-                UIColor(Color(hex: dark)) :
-                UIColor(Color(hex: light))
-        })
-    }
+    static let resDarkMuted  = Color(hex: "#FAF4EC").opacity(0.30)
 
     // ── Hex initialiser ───────────────────────────
     init(hex: String) {
@@ -103,114 +79,122 @@ extension Color {
 
 // MARK: - Typography
 
-// Custom font names (after adding to project — see FontSetup.md)
-// Family: Cormorant Garamond
-//   CormorantGaramond-Light
-//   CormorantGaramond-LightItalic
-//   CormorantGaramond-Regular
-//   CormorantGaramond-Italic          ← primary display font
-//   CormorantGaramond-Medium
-//   CormorantGaramond-MediumItalic
-//   CormorantGaramond-SemiBold
-//   CormorantGaramond-SemiBoldItalic
-// Family: Plus Jakarta Sans
-//   PlusJakartaSans-Light
-//   PlusJakartaSans-Regular
-//   PlusJakartaSans-Medium
-//   PlusJakartaSans-SemiBold
-//   PlusJakartaSans-Bold
-
 extension Font {
-    // ── Display — Cormorant Garamond Italic ───────
-    /// Page titles e.g. "Kate", "Library" (32pt)
-    static let resDisplay = Font.custom("CormorantGaramond-Italic", size: 32)
-    /// Large affirmation quotes (28–34pt depending on length)
+    // ── Display — Cormorant Garamond ──────────────
+    /// Page titles e.g. "Kate", "Library" (32pt, upright)
+    static let resDisplay = Font.custom("CormorantGaramond-Regular", size: 32)
+    /// Affirmation quotes — Light Italic
     static let resAffirmationLg = Font.custom("CormorantGaramond-LightItalic", size: 32)
     static let resAffirmationMd = Font.custom("CormorantGaramond-LightItalic", size: 26)
-    static let resAffirmationSm = Font.custom("CormorantGaramond-LightItalic", size: 22)
-    /// Compact serif italic — recording rows, playlist names
-    static let resSerif16 = Font.custom("CormorantGaramond-Italic", size: 16)
-    static let resSerif17 = Font.custom("CormorantGaramond-Italic", size: 17)
+    static let resAffirmationSm = Font.custom("CormorantGaramond-LightItalic", size: 23)
+    /// Feeling words (Reflections) — 24–25pt Light Italic
+    static let resFeelingWord = Font.custom("CormorantGaramond-LightItalic", size: 25)
+    /// List row titles — v3: 16pt Medium Italic (was 15 Regular)
+    static let resSerif16 = Font.custom("CormorantGaramond-MediumItalic", size: 16)
     static let resSerif18 = Font.custom("CormorantGaramond-LightItalic", size: 18)
-    static let resSerif19 = Font.custom("CormorantGaramond-LightItalic", size: 19)
 
     // ── Body — Plus Jakarta Sans ──────────────────
-    /// Primary body text
     static let resBody     = Font.custom("PlusJakartaSans-Regular", size: 15)
     static let resBodyMd   = Font.custom("PlusJakartaSans-Medium",  size: 15)
     static let resBodySm   = Font.custom("PlusJakartaSans-Regular", size: 14)
-    /// Buttons, section labels
     static let resSemibold = Font.custom("PlusJakartaSans-SemiBold", size: 15)
     static let resSemiboldSm = Font.custom("PlusJakartaSans-SemiBold", size: 13)
-    /// Tab bar labels, tags, micro copy
     static let resCaption  = Font.custom("PlusJakartaSans-Regular",  size: 12)
-    static let resMicro    = Font.custom("PlusJakartaSans-SemiBold", size: 11)
-    /// Tab bar nav labels
-    static let resNavLabel = Font.custom("PlusJakartaSans-Regular",  size: 9)
-    static let resNavLabelActive = Font.custom("PlusJakartaSans-SemiBold", size: 9)
+    /// Eyebrows — v3: 10pt (was 11), always uppercase + 0.14em tracking
+    static let resMicro    = Font.custom("PlusJakartaSans-SemiBold", size: 10)
+    /// Tab bar labels — v3: 10.5pt (was 9)
+    static let resNavLabel = Font.custom("PlusJakartaSans-Regular",  size: 10.5)
+    static let resNavLabelActive = Font.custom("PlusJakartaSans-SemiBold", size: 10.5)
+}
+
+// Eyebrow helper — the canonical treatment
+struct EyebrowLabel: View {
+    let text: String
+    var color: Color = .resSage
+    var body: some View {
+        Text(text.uppercased())
+            .font(.resMicro)
+            .kerning(1.4)          // ≈ 0.14em at 10pt
+            .foregroundColor(color)
+    }
 }
 
 // MARK: - Spacing & Layout
 
 enum ResSpacing {
-    /// Horizontal screen padding (26pt)
-    static let screen: CGFloat = 26
-    /// Gap between major sections (32–40pt)
+    static let screen: CGFloat = 26      // horizontal page padding
+    static let safeTop: CGFloat = 66     // content top (below status bar)
     static let section: CGFloat = 32
     static let sectionLg: CGFloat = 40
-    /// Card internal padding
     static let card: CGFloat = 22
-    static let cardSm: CGFloat = 18
-    /// Row vertical padding (both sides)
-    static let row: CGFloat = 16
-    /// Small element gap
+    static let row: CGFloat = 16         // list row vertical padding
     static let sm: CGFloat = 8
     static let xs: CGFloat = 4
-    /// Stack gap between form elements
-    static let formGap: CGFloat = 10
 }
 
 // MARK: - Corner Radii
 
 enum ResRadius {
     static let sm:   CGFloat = 10
-    static let md:   CGFloat = 14   // default card
-    static let lg:   CGFloat = 20   // large cards
-    static let pill: CGFloat = 20   // tags, small buttons
-    static let full: CGFloat = 999  // circular buttons
+    static let md:   CGFloat = 14   // buttons, inputs
+    static let lg:   CGFloat = 20   // the one warm block per screen
+    static let full: CGFloat = 999
 }
 
-// MARK: - Tab Bar
+// MARK: - Hairlines (v3)
+
+/// All dividers are hairlines. Use in place of Divider().
+struct Hairline: View {
+    var body: some View {
+        Rectangle().fill(Color.resBorder).frame(height: 0.5)
+    }
+}
+
+// MARK: - Motion (v3)
+
+/// ONE shared curve for everything. Fades, not slides.
+/// The only other rhythm in the app is the 3.5s breathing tempo.
+enum ResMotion {
+    /// cubic-bezier(0.22, 1, 0.36, 1) @ 500ms
+    static let standard = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.5)
+    /// Breathing pulse (record rings, ambient orbs)
+    static let breath = Animation.easeInOut(duration: 3.5).repeatForever(autoreverses: true)
+}
+
+// MARK: - Tab Bar (v3: 4 tabs)
 
 enum ResTabBar {
-    static let height:       CGFloat = 80
-    /// CTA (Record) button size
-    static let ctaSize:      CGFloat = 46
-    static let ctaRadius:    CGFloat = 14
-    /// CTA lifts above the bar by this amount
-    static let ctaLift:      CGFloat = 14
+    /// Home · Library · [Record CTA] · Profile
+    static let height:    CGFloat = 92
+    static let labelPadBottom: CGFloat = 18
+    static let ctaSize:   CGFloat = 46
+    static let ctaRadius: CGFloat = 14
+    static let ctaLift:   CGFloat = 14
 }
 
-// MARK: - Shadows
+// MARK: - Buttons (v3: exactly two styles)
 
-struct ResShadow: ViewModifier {
-    func body(content: Content) -> some View {
-        content.shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 1)
+/// Style 1 — Filled dark primary. The ONLY filled button.
+struct ResPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.resBodyMd)
+            .foregroundColor(.resBg)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(Color.resText)
+            .cornerRadius(ResRadius.md)
+            .opacity(configuration.isPressed ? 0.85 : 1)
     }
 }
 
-struct ResCardShadow: ViewModifier {
-    func body(content: Content) -> some View {
-        content.shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-    }
-}
-
-extension View {
-    func resShadow() -> some View {
-        modifier(ResShadow())
-    }
-    
-    func resCardShadow() -> some View {
-        modifier(ResCardShadow())
+/// Style 2 — Quiet text link. Everything else.
+/// (No outlined pills, no dashed boxes — removed in v3.)
+struct ResTextButtonStyle: ButtonStyle {
+    var color: Color = .resTextSoft
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.custom("PlusJakartaSans-Medium", size: 14))
+            .foregroundColor(color)
+            .opacity(configuration.isPressed ? 0.6 : 1)
     }
 }
