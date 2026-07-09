@@ -16,6 +16,7 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		E74CDB002FFFDF510035F56D /* FeelingCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74CDAFF2FFFDF510035F56D /* FeelingCaptureView.swift */; };
+		E74CDB022FFFDFF10035F56D /* ReflectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74CDB012FFFDFF10035F56D /* ReflectionsView.swift */; };
 		E7DEE32D2FA81DA3009ABAF2 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE32C2FA81DA3009ABAF2 /* DesignTokens.swift */; };
 		E7DEE32F2FA81DC8009ABAF2 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE32E2FA81DC8009ABAF2 /* Models.swift */; };
 		E7DEE3312FA81DEE009ABAF2 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3302FA81DEE009ABAF2 /* Components.swift */; };
@@ -62,6 +63,7 @@
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		E74CDAFF2FFFDF510035F56D /* FeelingCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeelingCaptureView.swift; sourceTree = "<group>"; };
+		E74CDB012FFFDFF10035F56D /* ReflectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionsView.swift; sourceTree = "<group>"; };
 		E7DEE32C2FA81DA3009ABAF2 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		E7DEE32E2FA81DC8009ABAF2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		E7DEE3302FA81DEE009ABAF2 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
@@ -172,6 +174,7 @@
 				E7DEE3F82FAAA524009ABAF2 /* ThoughtTransformerView.swift */,
 				E7E4D13E2FABA77F00B95E65 /* PlaybackOptionsSheet.swift */,
 				E74CDAFF2FFFDF510035F56D /* FeelingCaptureView.swift */,
+				E74CDB012FFFDFF10035F56D /* ReflectionsView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -282,6 +285,7 @@
 				E7DEE3E32FAA1529009ABAF2 /* ShareManager.swift in Sources */,
 				E7DEE3D62FA8E171009ABAF2 /* AudioManager.swift in Sources */,
 				E7DEE3EF2FAA1EA9009ABAF2 /* ToneAnalysisView.swift in Sources */,
+				E74CDB022FFFDFF10035F56D /* ReflectionsView.swift in Sources */,
 				E7DEE3E92FAA1AC5009ABAF2 /* RecordingDetailView.swift in Sources */,
 				E7DEE32F2FA81DC8009ABAF2 /* Models.swift in Sources */,
 				E7DEE3412FA81ECA009ABAF2 /* ProfileView.swift in Sources */,
