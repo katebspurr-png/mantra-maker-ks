@@ -15,6 +15,7 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		E74CDB002FFFDF510035F56D /* FeelingCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E74CDAFF2FFFDF510035F56D /* FeelingCaptureView.swift */; };
 		E7DEE32D2FA81DA3009ABAF2 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE32C2FA81DA3009ABAF2 /* DesignTokens.swift */; };
 		E7DEE32F2FA81DC8009ABAF2 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE32E2FA81DC8009ABAF2 /* Models.swift */; };
 		E7DEE3312FA81DEE009ABAF2 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3302FA81DEE009ABAF2 /* Components.swift */; };
@@ -60,6 +61,7 @@
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		E74CDAFF2FFFDF510035F56D /* FeelingCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeelingCaptureView.swift; sourceTree = "<group>"; };
 		E7DEE32C2FA81DA3009ABAF2 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		E7DEE32E2FA81DC8009ABAF2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		E7DEE3302FA81DEE009ABAF2 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
@@ -169,6 +171,7 @@
 				E7DEE3F62FAA82C6009ABAF2 /* EditPlaylistView.swift */,
 				E7DEE3F82FAAA524009ABAF2 /* ThoughtTransformerView.swift */,
 				E7E4D13E2FABA77F00B95E65 /* PlaybackOptionsSheet.swift */,
+				E74CDAFF2FFFDF510035F56D /* FeelingCaptureView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -298,6 +301,7 @@
 				E7DEE3E52FAA15C6009ABAF2 /* ThemeManager.swift in Sources */,
 				E7DEE3432FA81EF6009ABAF2 /* OnboardingView.swift in Sources */,
 				E7DEE3352FA81E06009ABAF2 /* MainTabView.swift in Sources */,
+				E74CDB002FFFDF510035F56D /* FeelingCaptureView.swift in Sources */,
 				E7DEE3F32FAA82A7009ABAF2 /* CreatePlaylistView.swift in Sources */,
 				E7DEE3E12FA93218009ABAF2 /* HapticManager.swift in Sources */,
 			);
