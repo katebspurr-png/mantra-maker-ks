@@ -86,6 +86,58 @@ struct AmbientSound: Identifiable {
     }
 }
 
+// MARK: - Reflection Model
+struct Reflection: Identifiable, Codable {
+    let id: String
+    let word: String              // ≤ ~24 chars, user-chosen or from suggestions
+    let createdAt: Date           // stored precisely, DISPLAYED vaguely
+    let sourceType: SourceType    // 'affirmation' | 'playlist'
+    let sourceId: String
+    let sourceTitle: String       // denormalized for display
+    
+    enum SourceType: String, Codable {
+        case affirmation
+        case playlist
+    }
+    
+    init(id: String = UUID().uuidString, word: String, createdAt: Date = Date(), sourceType: SourceType, sourceId: String, sourceTitle: String) {
+        self.id = id
+        self.word = word
+        self.createdAt = createdAt
+        self.sourceType = sourceType
+        self.sourceId = sourceId
+        self.sourceTitle = sourceTitle
+    }
+    
+    // Display helpers for vague time formatting
+    func displayDay() -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let daysSince = calendar.dateComponents([.day], from: createdAt, to: now).day ?? 0
+        
+        if daysSince < 7 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return formatter.string(from: createdAt)
+        } else if daysSince < 14 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE"
+            return "Last \(formatter.string(from: createdAt))"
+        } else if daysSince < 30 {
+            return "Two weeks ago"
+        } else {
+            return "Last month"
+        }
+    }
+    
+    func isThisWeek() -> Bool {
+        let calendar = Calendar.current
+        let now = Date()
+        let daysSince = calendar.dateComponents([.day], from: createdAt, to: now).day ?? 0
+        return daysSince < 7
+    }
+}
+
 // MARK: - Tone Analysis Model
 struct ToneAnalysis: Identifiable, Codable {
     let id: String

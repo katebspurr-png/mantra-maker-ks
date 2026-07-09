@@ -35,6 +35,7 @@ class AppState: ObservableObject {
     }
     @Published var recordings: [Recording] = []
     @Published var playlists: [Playlist] = Playlist.sampleData
+    @Published var reflections: [Reflection] = []
     @Published var currentlyPlaying: Recording?
     @Published var showingImmersivePlayer: Bool = false
 
@@ -61,6 +62,9 @@ class AppState: ObservableObject {
         
         // Load playlists
         loadPlaylists()
+        
+        // Load reflections
+        loadReflections()
         
         // Load WPM settings
         loadWPMSettings()
@@ -333,6 +337,74 @@ class AppState: ObservableObject {
             try data.write(to: playlistsFileURL)
         } catch {
             print("Failed to save playlists: \(error)")
+        }
+    }
+    
+    // MARK: - Reflection Management
+    
+    func addReflection(word: String, sourceType: Reflection.SourceType, sourceId: String, sourceTitle: String) {
+        let reflection = Reflection(
+            word: word,
+            sourceType: sourceType,
+            sourceId: sourceId,
+            sourceTitle: sourceTitle
+        )
+        reflections.insert(reflection, at: 0)  // Add to beginning (most recent first)
+        saveReflections()
+    }
+    
+    func deleteReflection(_ reflection: Reflection) {
+        reflections.removeAll { $0.id == reflection.id }
+        saveReflections()
+    }
+    
+    func getRecentReflectionWords(limit: Int = 3) -> [String] {
+        // Get the most recent distinct words
+        var seen = Set<String>()
+        var result: [String] = []
+        
+        for reflection in reflections {
+            let lowercased = reflection.word.lowercased()
+            if !seen.contains(lowercased) {
+                seen.insert(lowercased)
+                result.append(reflection.word)
+                if result.count >= limit {
+                    break
+                }
+            }
+        }
+        
+        return result
+    }
+    
+    private var reflectionsFileURL: URL {
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        return paths[0].appendingPathComponent("reflections.json")
+    }
+    
+    private func loadReflections() {
+        guard FileManager.default.fileExists(atPath: reflectionsFileURL.path) else {
+            print("📝 No saved reflections - starting fresh")
+            reflections = []
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: reflectionsFileURL)
+            reflections = try JSONDecoder().decode([Reflection].self, from: data)
+            print("✅ Loaded \(reflections.count) reflections from storage")
+        } catch {
+            print("❌ Failed to load reflections: \(error)")
+            reflections = []
+        }
+    }
+    
+    private func saveReflections() {
+        do {
+            let data = try JSONEncoder().encode(reflections)
+            try data.write(to: reflectionsFileURL)
+        } catch {
+            print("Failed to save reflections: \(error)")
         }
     }
     
