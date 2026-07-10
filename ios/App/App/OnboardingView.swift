@@ -228,7 +228,7 @@ struct OnboardingOptionCard: View {
                     
                     Text(subtitle)
                         .font(.resSemiboldSm)
-                        .foregroundColor(.resTextMuted)
+                        .foregroundColor(.resTextSoft)
                 }
                 
                 Spacer()

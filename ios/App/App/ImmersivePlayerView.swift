@@ -147,17 +147,7 @@ struct ImmersivePlayerView: View {
                     .frame(height: 20)  // Increase tap target
                     
                     // Playback controls
-                    HStack(spacing: 44) {
-                        Button(action: {
-                            HapticManager.shared.toggle()
-                            audioManager.setPlaybackLooping(!audioManager.isPlaybackLooping)
-                        }) {
-                            Image(systemName: "repeat")
-                                .font(.system(size: 20))
-                                .foregroundColor(.resDarkText.opacity(audioManager.isPlaybackLooping ? 1.0 : 0.6))
-                        }
-                        .opacity(audioManager.isPlaybackLooping ? 1.0 : 0.5)
-                        
+                    HStack(spacing: 0) {
                         Button(action: {
                             HapticManager.shared.buttonTap()
                             showingPlaybackOptions = true
@@ -166,7 +156,11 @@ struct ImmersivePlayerView: View {
                                 .font(.system(size: 20))
                                 .foregroundColor(.resDarkText.opacity(0.7))
                         }
+                        .frame(width: 44)
                         
+                        Spacer()
+                        
+                        // Centered play/pause button
                         Button(action: { 
                             if audioManager.isPlaying {
                                 audioManager.pause()
@@ -195,6 +189,8 @@ struct ImmersivePlayerView: View {
                             }
                         }
                         
+                        Spacer()
+                        
                         Button(action: {
                             HapticManager.shared.buttonTap()
                             showingAmbientSelector = true
@@ -204,6 +200,7 @@ struct ImmersivePlayerView: View {
                                 .foregroundColor(.resDarkText.opacity(audioManager.isAmbientPlaying ? 1.0 : 0.6))
                         }
                         .opacity(audioManager.isAmbientPlaying ? 1.0 : 0.4)
+                        .frame(width: 44)
                     }
 
                     if appState.playbackQueue.count > 1 {

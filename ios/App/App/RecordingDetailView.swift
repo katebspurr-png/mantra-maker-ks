@@ -393,20 +393,7 @@ struct RecordingDetailView: View {
     
     func handlePlayPause() {
         HapticManager.shared.buttonTap()
-        
-        if isPlaying {
-            audioManager.pause()
-        } else {
-            if audioManager.currentTime > 0 {
-                audioManager.resume()
-            } else {
-                do {
-                    try audioManager.play(recordingId: recording.id)
-                } catch {
-                    print("❌ Failed to play: \(error)")
-                }
-            }
-        }
+        appState.playRecording(recording)
     }
     
     func saveTitle() {

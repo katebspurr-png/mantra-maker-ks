@@ -183,20 +183,6 @@ struct LibraryView: View {
     
     var suggestionsList: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Filter by category
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(categories, id: \.self) { category in
-                        CategoryChip(category, isActive: selectedCategory == category) {
-                            selectedCategory = category
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, ResSpacing.screen)
-            .padding(.top, 20)
-            .padding(.bottom, 14)
-            
             // Suggestions list with filtering
             let filteredSuggestions = Suggestion.sampleData
                 .filter { suggestion in
