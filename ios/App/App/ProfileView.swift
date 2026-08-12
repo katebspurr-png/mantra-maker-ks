@@ -7,6 +7,7 @@ struct ProfileView: View {
     @State private var showingThemeSettings = false
     @State private var showingMyAffirmations = false
     @State private var showingImportRecordings = false
+    @State private var showingMusicCredits = false
     @State private var notificationsEnabled = true
     @State private var autoSaveSounds = true
     
@@ -188,9 +189,12 @@ struct ProfileView: View {
                 .padding(.horizontal, ResSpacing.screen)
                 .padding(.top, 24)
                 
-                // Sign Out
-                Button(action: {}) {
-                    Text("Sign Out")
+                // Music Credits
+                Button(action: {
+                    HapticManager.shared.buttonTap()
+                    showingMusicCredits = true
+                }) {
+                    Text("Music credits")
                         .font(.resBodySm)
                         .foregroundColor(.resTextSoft)
                         .frame(maxWidth: .infinity)
@@ -201,6 +205,7 @@ struct ProfileView: View {
                                 .stroke(Color.resBorder, lineWidth: 1)
                         )
                 }
+                .buttonStyle(PlainButtonStyle())
                 .padding(.horizontal, ResSpacing.screen)
                 .padding(.top, 24)
             }
@@ -218,6 +223,9 @@ struct ProfileView: View {
         .sheet(isPresented: $showingImportRecordings) {
             ImportRecordingsView()
                 .environmentObject(appState)
+        }
+        .sheet(isPresented: $showingMusicCredits) {
+            MusicCreditsView()
         }
     }
     
@@ -238,7 +246,7 @@ struct ProfileView: View {
                     .font(.resSerif16)
                     .foregroundColor(.resText)
                 
-                Text("kate@example.com")
+                Text("Your practice stays on this device")
                     .font(.resSemiboldSm)
                     .foregroundColor(.resTextMuted)
             }

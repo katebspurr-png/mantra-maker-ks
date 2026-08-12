@@ -33,6 +33,14 @@
 		E7DEE3D62FA8E171009ABAF2 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3D52FA8E171009ABAF2 /* AudioManager.swift */; };
 		E7DEE3DB2FA9288E009ABAF2 /* rain.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = E7DEE3DA2FA9288E009ABAF2 /* rain.mp3 */; };
 		E7DEE3DC2FA9288E009ABAF2 /* ocean.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = E7DEE3D82FA9288E009ABAF2 /* ocean.mp3 */; };
+		CA5E01012FAB0000009ABAF2 /* arnor.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00012FAB0000009ABAF2 /* arnor.m4a */; };
+		CA5E01022FAB0000009ABAF2 /* evening-improvisation.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00022FAB0000009ABAF2 /* evening-improvisation.m4a */; };
+		CA5E01032FAB0000009ABAF2 /* golden-hour.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00032FAB0000009ABAF2 /* golden-hour.m4a */; };
+		CA5E01042FAB0000009ABAF2 /* moonlight.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00042FAB0000009ABAF2 /* moonlight.m4a */; };
+		CA5E01052FAB0000009ABAF2 /* long-way-home.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00052FAB0000009ABAF2 /* long-way-home.m4a */; };
+		CA5E01062FAB0000009ABAF2 /* transcendence.m4a in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00062FAB0000009ABAF2 /* transcendence.m4a */; };
+		CA5E01072FAB0000009ABAF2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CA5E00072FAB0000009ABAF2 /* PrivacyInfo.xcprivacy */; };
+		CA5E01082FAB0000009ABAF2 /* MusicCreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5E00082FAB0000009ABAF2 /* MusicCreditsView.swift */; };
 		E7DEE3DD2FA9288E009ABAF2 /* piano.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = E7DEE3D92FA9288E009ABAF2 /* piano.mp3 */; };
 		E7DEE3DF2FA92A0F009ABAF2 /* WPMCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3DE2FA92A0F009ABAF2 /* WPMCalibrationView.swift */; };
 		E7DEE3E12FA93218009ABAF2 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7DEE3E02FA93218009ABAF2 /* HapticManager.swift */; };
@@ -79,6 +87,14 @@
 		E7DEE3442FA8216D009ABAF2 /* ResonanceRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceRootView.swift; sourceTree = "<group>"; };
 		E7DEE3D52FA8E171009ABAF2 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		E7DEE3D82FA9288E009ABAF2 /* ocean.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = ocean.mp3; sourceTree = "<group>"; };
+		CA5E00012FAB0000009ABAF2 /* arnor.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = arnor.m4a; sourceTree = "<group>"; };
+		CA5E00022FAB0000009ABAF2 /* evening-improvisation.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "evening-improvisation.m4a"; sourceTree = "<group>"; };
+		CA5E00032FAB0000009ABAF2 /* golden-hour.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "golden-hour.m4a"; sourceTree = "<group>"; };
+		CA5E00042FAB0000009ABAF2 /* moonlight.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = moonlight.m4a; sourceTree = "<group>"; };
+		CA5E00052FAB0000009ABAF2 /* long-way-home.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "long-way-home.m4a"; sourceTree = "<group>"; };
+		CA5E00062FAB0000009ABAF2 /* transcendence.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = transcendence.m4a; sourceTree = "<group>"; };
+		CA5E00072FAB0000009ABAF2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		CA5E00082FAB0000009ABAF2 /* MusicCreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicCreditsView.swift; sourceTree = "<group>"; };
 		E7DEE3D92FA9288E009ABAF2 /* piano.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = piano.mp3; sourceTree = "<group>"; };
 		E7DEE3DA2FA9288E009ABAF2 /* rain.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = rain.mp3; sourceTree = "<group>"; };
 		E7DEE3DE2FA92A0F009ABAF2 /* WPMCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WPMCalibrationView.swift; sourceTree = "<group>"; };
@@ -107,7 +123,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,6 +151,8 @@
 			isa = PBXGroup;
 			children = (
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
+				CA5E00072FAB0000009ABAF2 /* PrivacyInfo.xcprivacy */,
+				CA5E00082FAB0000009ABAF2 /* MusicCreditsView.swift */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
@@ -182,6 +199,12 @@
 		E7DEE3D72FA8F05F009ABAF2 /* Sounds */ = {
 			isa = PBXGroup;
 			children = (
+				CA5E00012FAB0000009ABAF2 /* arnor.m4a */,
+				CA5E00022FAB0000009ABAF2 /* evening-improvisation.m4a */,
+				CA5E00032FAB0000009ABAF2 /* golden-hour.m4a */,
+				CA5E00042FAB0000009ABAF2 /* moonlight.m4a */,
+				CA5E00052FAB0000009ABAF2 /* long-way-home.m4a */,
+				CA5E00062FAB0000009ABAF2 /* transcendence.m4a */,
 				E7DEE3D82FA9288E009ABAF2 /* ocean.mp3 */,
 				E7DEE3D92FA9288E009ABAF2 /* piano.mp3 */,
 				E7DEE3DA2FA9288E009ABAF2 /* rain.mp3 */,
@@ -209,7 +232,6 @@
 			);
 			name = Resonance;
 			packageProductDependencies = (
-				4D22ABE82AF431CB00220026 /* CapApp-SPM */,
 			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* Resonance.app */;
@@ -241,7 +263,6 @@
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
-				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
@@ -258,14 +279,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
-				50B271D11FEDC1A000F3C39B /* public in Resources */,
+				CA5E01012FAB0000009ABAF2 /* arnor.m4a in Resources */,
+				CA5E01022FAB0000009ABAF2 /* evening-improvisation.m4a in Resources */,
+				CA5E01032FAB0000009ABAF2 /* golden-hour.m4a in Resources */,
+				CA5E01042FAB0000009ABAF2 /* moonlight.m4a in Resources */,
+				CA5E01052FAB0000009ABAF2 /* long-way-home.m4a in Resources */,
+				CA5E01062FAB0000009ABAF2 /* transcendence.m4a in Resources */,
+				CA5E01072FAB0000009ABAF2 /* PrivacyInfo.xcprivacy in Resources */,
 				E7DEE3DB2FA9288E009ABAF2 /* rain.mp3 in Resources */,
 				E7DEE3DC2FA9288E009ABAF2 /* ocean.mp3 in Resources */,
 				E7DEE3DD2FA9288E009ABAF2 /* piano.mp3 in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
-				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
-				504EC30D1FED79650016851F /* Main.storyboard in Resources */,
-				2FAD9763203C412B000D30F8 /* config.xml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +301,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7DEE3F12FAA1FCD009ABAF2 /* ImportRecordingsView.swift in Sources */,
+				CA5E01082FAB0000009ABAF2 /* MusicCreditsView.swift in Sources */,
 				E7DEE3332FA81DF6009ABAF2 /* ResonanceBreathApp.swift in Sources */,
 				E7DEE3EB2FAA1C47009ABAF2 /* MyAffirmationsView.swift in Sources */,
 				E7DEE33B2FA81E73009ABAF2 /* RecordView.swift in Sources */,
@@ -472,11 +497,11 @@
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
-				PRODUCT_BUNDLE_IDENTIFIER = com.loopmantra.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.katespurr.resonance;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -497,12 +522,12 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.loopmantra.app;
+				PRODUCT_BUNDLE_IDENTIFIER = com.katespurr.resonance;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -529,20 +554,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "CapApp-SPM";
-		};
-/* End XCLocalSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		4D22ABE82AF431CB00220026 /* CapApp-SPM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */;
-			productName = "CapApp-SPM";
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 504EC2FC1FED79650016851F /* Project object */;
 }

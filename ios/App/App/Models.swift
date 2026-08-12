@@ -75,7 +75,8 @@ struct AmbientSound: Identifiable {
     let icon: String
     
     var fileURL: URL? {
-        Bundle.main.url(forResource: fileName, withExtension: "mp3")
+        Bundle.main.url(forResource: fileName, withExtension: "m4a")
+            ?? Bundle.main.url(forResource: fileName, withExtension: "mp3")
     }
     
     init(id: String = UUID().uuidString, name: String, fileName: String, icon: String) {
@@ -326,11 +327,11 @@ extension AmbientSound {
         AmbientSound(id: "rain", name: "Rain", fileName: "rain", icon: "cloud.rain.fill"),
         AmbientSound(id: "ocean", name: "Ocean Waves", fileName: "ocean", icon: "water.waves"),
         AmbientSound(id: "piano", name: "Soft Piano", fileName: "piano", icon: "music.note"),
-        AmbientSound(id: "arnor", name: "Arnor", fileName: "Arnor(chosic.com)", icon: "sparkles"),
-        AmbientSound(id: "evening-improvisation", name: "Evening Improvisation", fileName: "Evening-Improvisation-with-Ethera(chosic.com)", icon: "moon.stars"),
-        AmbientSound(id: "golden-hour", name: "Golden Hour", fileName: "Golden-Hour-chosic.com_", icon: "sun.max"),
-        AmbientSound(id: "moonlight", name: "Moonlight", fileName: "scott-buckley-moonlight(chosic.com)", icon: "moon"),
-        AmbientSound(id: "the-long-way-home", name: "The Long Way Home", fileName: "The-Long-Way-Home-chosic.com_", icon: "arrow.right"),
-        AmbientSound(id: "transcendence", name: "Transcendence", fileName: "Transcendence-chosic.com_", icon: "star"),
+        AmbientSound(id: "arnor", name: "Arnor", fileName: "arnor", icon: "sparkles"),
+        AmbientSound(id: "evening-improvisation", name: "Evening Improvisation", fileName: "evening-improvisation", icon: "moon.stars"),
+        AmbientSound(id: "golden-hour", name: "Golden Hour", fileName: "golden-hour", icon: "sun.max"),
+        AmbientSound(id: "moonlight", name: "Moonlight", fileName: "moonlight", icon: "moon"),
+        AmbientSound(id: "the-long-way-home", name: "The Long Way Home", fileName: "long-way-home", icon: "arrow.right"),
+        AmbientSound(id: "transcendence", name: "Transcendence", fileName: "transcendence", icon: "star"),
     ]
 }
