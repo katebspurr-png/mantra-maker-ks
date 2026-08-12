@@ -163,7 +163,7 @@ export default function PlaylistDetail() {
   }, [playlist?.id]); // Only on playlist load, not on every zen change
 
   // Save zen settings to playlist DB when changed (and not during playback, which handles its own saving)
-  const zenSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const zenSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedZenRef = useRef(false);
   useEffect(() => {
     if (!playlist || !id) return;

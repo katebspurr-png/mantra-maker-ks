@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,8 @@ import {
 import { DeleteRecordingDialog } from "./DeleteRecordingDialog";
 import { useDeleteRecording } from "@/hooks/useDeleteRecording";
 import { Recording } from "@/types";
+import { downloadRecording } from "@/lib/downloadRecording";
+import { useToast } from "@/hooks/use-toast";
 
 interface RecordingOptionsMenuProps {
   recording: Recording;
@@ -25,6 +27,8 @@ export function RecordingOptionsMenu({
   showRename = false,
 }: RecordingOptionsMenuProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
   
   const { deleteRecording, isDeleting } = useDeleteRecording({
     onSuccess: () => {
@@ -35,6 +39,22 @@ export function RecordingOptionsMenu({
 
   const handleDelete = () => {
     deleteRecording(recording.id, recording.audio_file_path);
+  };
+
+  const handleDownload = async (e: Event) => {
+    e.preventDefault();
+    setIsDownloading(true);
+    try {
+      await downloadRecording(recording);
+    } catch (err) {
+      toast({
+        title: "Download failed",
+        description: String((err as Error)?.message ?? err),
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -53,6 +73,14 @@ export function RecordingOptionsMenu({
               Rename
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem onSelect={handleDownload} disabled={isDownloading}>
+            {isDownloading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            Download
+          </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
             className="text-destructive focus:text-destructive"

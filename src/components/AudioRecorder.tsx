@@ -17,7 +17,7 @@ const AudioRecorder = ({ onRecordingComplete, onRecordingStart }: AudioRecorderP
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recordingTimeRef = useRef<number>(0);
 

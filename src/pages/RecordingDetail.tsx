@@ -17,7 +17,8 @@ import { DeleteRecordingDialog } from "@/components/DeleteRecordingDialog";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 import { useDeleteRecording } from "@/hooks/useDeleteRecording";
 import { usePremium } from "@/hooks/usePremium";
-import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star, Lock, Layers } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Play, Pause, Tag, Trash2, Star, Lock, Layers, Download, Loader2 } from "lucide-react";
+import { downloadRecording } from "@/lib/downloadRecording";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -31,6 +32,7 @@ const RecordingDetail = () => {
   const [isEditingTags, setIsEditingTags] = useState(false);
   const [editedTags, setEditedTags] = useState<string[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   
   // Delete recording hook
   const { deleteRecording, isDeleting } = useDeleteRecording({
@@ -461,6 +463,31 @@ const RecordingDetail = () => {
 
           {/* Delete Recording */}
           <div className="pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              className="w-full mb-2"
+              disabled={isDownloading}
+              onClick={async () => {
+                if (!recording) return;
+                setIsDownloading(true);
+                try {
+                  await downloadRecording(recording);
+                } catch (err) {
+                  toast.error("Download failed", {
+                    description: String((err as Error)?.message ?? err),
+                  });
+                } finally {
+                  setIsDownloading(false);
+                }
+              }}
+            >
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Download Recording
+            </Button>
             <Button
               variant="outline"
               className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
