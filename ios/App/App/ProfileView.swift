@@ -25,6 +25,7 @@ struct ProfileView: View {
                 userCard
                     .padding(.horizontal, ResSpacing.screen)
                 
+                #if DEBUG
                 // Import Recordings Button
                 Button(action: {
                     HapticManager.shared.buttonTap()
@@ -63,6 +64,7 @@ struct ProfileView: View {
                 .buttonStyle(.plain)
                 .padding(.horizontal, ResSpacing.screen)
                 .padding(.top, 28)
+                #endif
                 
                 // My Affirmations Button
                 Button(action: {
@@ -220,10 +222,12 @@ struct ProfileView: View {
             MyAffirmationsView()
                 .environmentObject(appState)
         }
+        #if DEBUG
         .sheet(isPresented: $showingImportRecordings) {
             ImportRecordingsView()
                 .environmentObject(appState)
         }
+        #endif
         .sheet(isPresented: $showingMusicCredits) {
             MusicCreditsView()
         }
@@ -236,13 +240,13 @@ struct ProfileView: View {
                     .fill(Color.resBgWarm)
                     .frame(width: 52, height: 52)
                 
-                Text("K")
+                Text("R")
                     .font(.custom("CormorantGaramond-Italic", size: 22))
                     .foregroundColor(.resWarm)
             }
             
             VStack(alignment: .leading, spacing: 1) {
-                Text("Kate")
+                Text("Resonance")
                     .font(.resSerif16)
                     .foregroundColor(.resText)
                 
