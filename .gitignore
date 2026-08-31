@@ -28,3 +28,7 @@ ios/App/App/public
 ios/App/Pods
 ios/App/output
 ios/capacitor-cordova-ios-plugins
+
+# Environment files
+.env
+.env.*
